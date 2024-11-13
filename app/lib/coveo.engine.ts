@@ -16,6 +16,7 @@ import {
   defineDidYouMean,
   defineBreadcrumbManager,
   defineParameterManager,
+  defineRecommendations,
 } from '@coveo/headless-react/ssr-commerce';
 
 export const engineDefinition = defineCommerceEngine({
@@ -54,6 +55,9 @@ export const engineDefinition = defineCommerceEngine({
     facetGenerator: defineFacetGenerator(),
     breadcrumbManager: defineBreadcrumbManager(),
     searchParameter: defineParameterManager(),
+    homepageRecommendations: defineRecommendations({
+      options: {slotId: 'af9208ab-3eee-400c-9078-790f4835f785'},
+    }),
   },
 });
 
@@ -78,6 +82,7 @@ export const {
   useSummary,
   useFacetGenerator,
   useBreadcrumbManager,
+  useHomepageRecommendations,
 } = engineDefinition.controllers;
 
 export type ListingStaticState = InferStaticState<
