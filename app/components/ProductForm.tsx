@@ -16,7 +16,7 @@ export function ProductForm({
   selectedVariant: ProductFragment['selectedVariant'];
   variants: Array<ProductVariantFragment>;
 }) {
-  const {open} = useAside();
+  //  const {open} = useAside();
   return (
     <div className="product-form">
       <VariantSelector
@@ -31,9 +31,9 @@ export function ProductForm({
       <br />
       <AddToCartButton
         disabled={!selectedVariant || !selectedVariant.availableForSale}
-        onClick={() => {
+        /*onClick={() => {
           open('cart');
-        }}
+        }}*/
         lines={
           selectedVariant
             ? [
