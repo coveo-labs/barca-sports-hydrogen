@@ -13,9 +13,10 @@ interface ProductCardProps {
 export function ProductCard({product}: ProductCardProps) {
   const [currentImg, setCurrentImg] = useState(product.ec_images[0]);
   const [hovered, setHovered] = useState(false);
+  console.log(product)
   return (
     <div
-      className="group relative p-8 shadow-md"
+      className="group relative p-8"
       onMouseOver={() => setHovered(true)}
       onMouseOut={() => setHovered(false)}
     >

@@ -16,6 +16,16 @@ import appStyles from '~/styles/app.css?url';
 import tailwindCss from './styles/tailwind.css?url';
 import {PageLayout} from '~/components/PageLayout';
 import {FOOTER_QUERY, HEADER_QUERY} from '~/lib/fragments';
+import {
+  engineDefinition,
+  SearchStaticState,
+  StandaloneStaticState,
+} from './lib/coveo.engine';
+import {
+  ClientSideNavigatorContextProvider,
+  ServerSideNavigatorContextProvider,
+} from './lib/navigator.provider';
+import {ListingProvider, SearchProvider} from './components/Coveo/Context';
 
 export type RootLoader = typeof loader;
 
@@ -85,8 +95,9 @@ export async function loader(args: LoaderFunctionArgs) {
  * Load data necessary for rendering content above the fold. This is the critical data
  * needed to render the page. If it's unavailable, the whole page should 400 or 500 error.
  */
-async function loadCriticalData({context}: LoaderFunctionArgs) {
+async function loadCriticalData({context, request}: LoaderFunctionArgs) {
   const {storefront} = context;
+  const cart = await context.cart.get();
 
   const [header] = await Promise.all([
     storefront.query(HEADER_QUERY, {
@@ -98,7 +109,40 @@ async function loadCriticalData({context}: LoaderFunctionArgs) {
     // Add other queries here, so that they are loaded in parallel
   ]);
 
-  return {header};
+  engineDefinition.standaloneEngineDefinition.setNavigatorContextProvider(
+    () => new ServerSideNavigatorContextProvider(request),
+  );
+
+  const staticState =
+    await engineDefinition.listingEngineDefinition.fetchStaticState({
+      controllers: {
+        cart: {
+          initialState: {
+            items: cart
+              ? cart.lines.nodes.map((node) => {
+                  const {merchandise} = node;
+                  return {
+                    productId: merchandise.product.id,
+                    name: merchandise.product.title,
+                    price: Number(merchandise.price.amount),
+                    quantity: node.quantity,
+                  };
+                })
+              : [],
+          },
+        },
+        context: {
+          language: 'en',
+          country: 'US',
+          currency: 'USD',
+          view: {
+            url: `https://sports.barca.group/plp/accessories`,
+          },
+        },
+      },
+    });
+
+  return {header, staticState};
 }
 
 /**
@@ -148,7 +192,12 @@ export function Layout({children}: {children?: React.ReactNode}) {
             shop={data.shop}
             consent={data.consent}
           >
-            <PageLayout {...data}>{children}</PageLayout>
+            <ListingProvider
+              navigatorContext={new ClientSideNavigatorContextProvider()}
+              staticState={data.staticState as any}
+            >
+              <PageLayout {...data}>{children}</PageLayout>
+            </ListingProvider>
           </Analytics.Provider>
         ) : (
           children
