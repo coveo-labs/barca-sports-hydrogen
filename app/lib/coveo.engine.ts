@@ -1,0 +1,81 @@
+import {
+  defineCommerceEngine,
+  defineFacetGenerator,
+  definePagination,
+  defineProductList,
+  type InferHydratedState,
+  type InferStaticState,
+  defineSummary,
+  defineCart,
+  defineSort,
+  defineSearchBox,
+  defineContext,
+  defineStandaloneSearchBox,
+  defineInstantProducts,
+  defineProductView,
+  defineDidYouMean,
+  defineBreadcrumbManager,
+} from '@coveo/headless-react/ssr-commerce';
+
+export const engineDefinition = defineCommerceEngine({
+  configuration: {
+    accessToken: 'xx697404a7-6cfd-48c6-93d1-30d73d17e07a',
+    organizationId: 'barcagroupproductionkwvdy6lp',
+    analytics: {
+      enabled: true,
+      trackingId: 'sports',
+    },
+    context: {
+      language: 'en',
+      country: 'US',
+      currency: 'USD',
+      view: {
+        url: 'https://sports.barca.group',
+      },
+    },
+  },
+  controllers: {
+    summary: defineSummary(),
+    productList: defineProductList(),
+    cart: defineCart(),
+    searchBox: defineSearchBox(),
+    context: defineContext(),
+    standaloneSearchBox: defineStandaloneSearchBox({
+      options: {redirectionUrl: '/search', id: 'standalone-search-box'},
+    }),
+    instantProducts: defineInstantProducts({
+      options: {searchBoxId: 'standalone-search-box'},
+    }),
+    pagination: definePagination(),
+    sort: defineSort(),
+    productView: defineProductView(),
+    didYouMean: defineDidYouMean(),
+    facetGenerator: defineFacetGenerator(),
+    breadcrumbManager: defineBreadcrumbManager(),
+  },
+});
+
+export const {
+  listingEngineDefinition,
+  searchEngineDefinition,
+  standaloneEngineDefinition,
+} = engineDefinition;
+
+export type ListingStaticState = InferStaticState<
+  typeof listingEngineDefinition
+>;
+export type ListingHydratedState = InferHydratedState<
+  typeof listingEngineDefinition
+>;
+
+export type SearchStaticState = InferStaticState<typeof searchEngineDefinition>;
+export type SearchHydratedState = InferHydratedState<
+  typeof searchEngineDefinition
+>;
+
+export type StandaloneStaticState = InferStaticState<
+  typeof standaloneEngineDefinition
+>;
+export type StandaloneHydratedState = InferHydratedState<
+  typeof standaloneEngineDefinition
+>;

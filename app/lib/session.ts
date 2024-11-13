@@ -70,3 +70,11 @@ export class AppSession implements HydrogenSession {
     return this.#sessionStorage.commitSession(this.#session);
   }
 }
+
+export function getCookie(request: Request, name: string) {
+  const value = `; ${request.headers.get('Cookie')}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) {
+    return parts.pop()?.split(';').shift();
+  }
+}
