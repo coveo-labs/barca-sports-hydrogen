@@ -14,11 +14,13 @@ import {
 interface SearchPageProps {
   staticState: SearchStaticState;
   navigatorContext: NavigatorContext;
+  q: string;
 }
 
 export function SearchProvider({
   staticState,
   navigatorContext,
+  q,
   children,
 }: PropsWithChildren<SearchPageProps>) {
   const [hydratedState, setHydratedState] = useState<
@@ -33,6 +35,7 @@ export function SearchProvider({
       .hydrateStaticState({
         searchAction: staticState.searchAction,
         controllers: {
+          searchParameter: {initialState: {parameters: {q}}},
           cart: {
             initialState: {items: staticState.controllers.cart.state.items},
           },
@@ -42,7 +45,7 @@ export function SearchProvider({
       .then((hydratedState) => {
         setHydratedState(hydratedState);
       });
-  }, [staticState]);
+  }, [staticState, q]);
 
   if (hydratedState) {
     return (
@@ -86,6 +89,7 @@ export function ListingProvider({
       .hydrateStaticState({
         searchAction: staticState.searchAction,
         controllers: {
+          searchParameter: {initialState: {parameters: {}}},
           cart: {
             initialState: {items: staticState.controllers.cart.state.items},
           },

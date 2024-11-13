@@ -23,6 +23,7 @@ export async function loader(args: LoaderFunctionArgs) {
 
   const staticState = await listingEngineDefinition.fetchStaticState({
     controllers: {
+      searchParameter: {initialState: {parameters: {}}},
       cart: {
         initialState: {
           items: cart

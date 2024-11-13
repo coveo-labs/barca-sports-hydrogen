@@ -15,6 +15,7 @@ import {
   defineProductView,
   defineDidYouMean,
   defineBreadcrumbManager,
+  defineParameterManager,
 } from '@coveo/headless-react/ssr-commerce';
 
 export const engineDefinition = defineCommerceEngine({
@@ -52,6 +53,7 @@ export const engineDefinition = defineCommerceEngine({
     didYouMean: defineDidYouMean(),
     facetGenerator: defineFacetGenerator(),
     breadcrumbManager: defineBreadcrumbManager(),
+    searchParameter: defineParameterManager(),
   },
 });
 

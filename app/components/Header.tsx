@@ -399,13 +399,17 @@ function MenuDesktop({header, setOpen}: MenuDesktopProps) {
                   transition
                   className="absolute bg-white inset-x-0 top-fulltext-sm text-gray-500 transition data-[closed]:opacity-0 data-[enter]:duration-200 data-[leave]:duration-150 data-[enter]:ease-out data-[leave]:ease-in"
                 >
-                  <div
-                    aria-hidden="true"
-                    className="absolute inset-0 top-1/2 bg-white shadow"
-                  />
-                  <div className="relative -top-1 bg-white mx-auto max-w-7xl p-0 z-50">
-                    <StandaloneSearchBox />
-                  </div>
+                  {({close}) => (
+                    <>
+                      <div
+                        aria-hidden="true"
+                        className="absolute inset-0 top-1/2 bg-white shadow"
+                      />
+                      <div className="relative -top-1 bg-white mx-auto max-w-7xl p-0 z-50">
+                        <StandaloneSearchBox close={close} />
+                      </div>
+                    </>
+                  )}
                 </PopoverPanel>
               </Popover>
 

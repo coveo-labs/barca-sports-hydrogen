@@ -25,7 +25,7 @@ import {
   ClientSideNavigatorContextProvider,
   ServerSideNavigatorContextProvider,
 } from './lib/navigator.provider';
-import {ListingProvider, SearchProvider} from './components/Coveo/Context';
+import {ListingProvider} from './components/Coveo/Context';
 
 export type RootLoader = typeof loader;
 
@@ -116,6 +116,7 @@ async function loadCriticalData({context, request}: LoaderFunctionArgs) {
   const staticState =
     await engineDefinition.listingEngineDefinition.fetchStaticState({
       controllers: {
+        searchParameter: {initialState: {parameters: {}}},
         cart: {
           initialState: {
             items: cart

@@ -11,7 +11,10 @@ import {MagnifyingGlassIcon} from '@heroicons/react/24/outline';
 import {ProductCard} from './ProductCard';
 import {useNavigate} from '@remix-run/react';
 
-export function StandaloneSearchBox() {
+interface StandaloneSearchBoxProps {
+  close?: () => void;
+}
+export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
   const searchBox = useStandaloneSearchBox();
   const instantProducts = engineDefinition.controllers.useInstantProducts();
   const navigate = useNavigate();
@@ -30,8 +33,9 @@ export function StandaloneSearchBox() {
 
       navigate(url);
       searchBox.methods?.afterRedirection();
+      close?.();
     }
-  }, [searchBox, navigate]);
+  }, [searchBox, navigate, close]);
   return (
     <>
       <Combobox
