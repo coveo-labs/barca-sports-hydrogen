@@ -13,9 +13,10 @@ interface ProductCardProps {
 export function ProductCard({product}: ProductCardProps) {
   const [currentImg, setCurrentImg] = useState(product.ec_images[0]);
   const [hovered, setHovered] = useState(false);
+  console.log(product);
   return (
     <div
-      className="group relative p-8 shadow-md"
+      className="group relative p-8"
       onMouseOver={() => setHovered(true)}
       onMouseOut={() => setHovered(false)}
     >
@@ -30,7 +31,7 @@ export function ProductCard({product}: ProductCardProps) {
       <div className="mt-4 flex justify-between">
         <div>
           <h3 className="text-sm text-gray-700">
-            <a href={product.clickUri}>
+            <a href={`/products/${product.ec_item_group_id}`}>
               <span aria-hidden="true" className="absolute inset-0" />
               {product.ec_name}
             </a>

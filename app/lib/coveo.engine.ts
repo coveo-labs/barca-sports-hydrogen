@@ -59,7 +59,24 @@ export const {
   listingEngineDefinition,
   searchEngineDefinition,
   standaloneEngineDefinition,
+  useEngine,
 } = engineDefinition;
+
+export const {
+  useCart,
+  useContext,
+  useProductList,
+  useDidYouMean,
+  useInstantProducts,
+  usePagination,
+  useProductView,
+  useSearchBox,
+  useSort,
+  useStandaloneSearchBox,
+  useSummary,
+  useFacetGenerator,
+  useBreadcrumbManager,
+} = engineDefinition.controllers;
 
 export type ListingStaticState = InferStaticState<
   typeof listingEngineDefinition

@@ -6,7 +6,9 @@ export function ProductList() {
   return (
     <>
       {productList?.state.products.map((product) => (
-        <ProductCard product={product} key={product.permanentid} />
+        <div key={product.permanentid} className="shadow-md">
+          <ProductCard product={product} />
+        </div>
       ))}
     </>
   );
