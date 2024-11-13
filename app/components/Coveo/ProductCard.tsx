@@ -11,27 +11,20 @@ interface ProductCardProps {
   product: Product;
 }
 export function ProductCard({product}: ProductCardProps) {
-  const [currentImg, setCurrentImg] = useState(product.ec_images[0]);
-  const [hovered, setHovered] = useState(false);
-  console.log(product);
   return (
-    <div
-      className="group relative p-8"
-      onMouseOver={() => setHovered(true)}
-      onMouseOut={() => setHovered(false)}
-    >
+    <div className="group relative p-8">
       <div className="aspect-h-1 aspect-w-1 w-full overflow-hidden rounded-md bg-gray-200 lg:aspect-none group-hover:opacity-75">
         <Image
           sizes="200"
           alt={product.ec_name!}
-          src={currentImg}
+          src={product.ec_images[0]}
           className="h-full w-full object-cover object-center lg:h-full lg:w-full"
         />
       </div>
       <div className="mt-4 flex justify-between">
         <div>
           <h3 className="text-sm text-gray-700">
-            <a href={`/products/${product.ec_item_group_id}`}>
+            <a href={`/products/${product.ec_item_group_id?.replace(/0/, '')}`}>
               <span aria-hidden="true" className="absolute inset-0" />
               {product.ec_name}
             </a>
@@ -79,7 +72,7 @@ export function ProductCard({product}: ProductCardProps) {
           Also available in:
           <div className="flex justify-between">
             {product.children.map((child) => {
-              if (child.ec_images[0] === currentImg) {
+              if (child.ec_images[0] === product.ec_images[0]) {
                 return null;
               }
               return (

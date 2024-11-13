@@ -50,7 +50,7 @@ export function StandaloneSearchBox() {
             onFocus={() => {
               searchBox.methods?.showSuggestions();
             }}
-            className="w-full h-12 border rounded-sm p-4"
+            className="w-full h-12 border p-4"
             aria-label="Search"
             placeholder="Search"
             onChange={(event) => {
