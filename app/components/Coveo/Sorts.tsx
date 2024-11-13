@@ -23,6 +23,7 @@ export function Sorts() {
               sort.methods?.sortBy(option);
             }}
             className={classNames(
+              'bg-white',
               sort.methods?.isSortedBy(option)
                 ? 'font-medium text-gray-900'
                 : 'text-gray-500',

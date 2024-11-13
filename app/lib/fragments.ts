@@ -172,7 +172,10 @@ const MENU_FRAGMENT = `#graphql
     url
   }
   fragment ChildMenuItem on MenuItem {
+    ...MenuItem,
+    items {
     ...MenuItem
+    }
   }
   fragment ParentMenuItem on MenuItem {
     ...MenuItem
@@ -214,6 +217,15 @@ export const HEADER_QUERY = `#graphql
     }
     menu(handle: $headerMenuHandle) {
       ...Menu
+    }
+    collections(first: 250) {
+      edges {
+        node {
+          id,
+          image {url, id}
+          title 
+        }
+      }
     }
   }
   ${MENU_FRAGMENT}

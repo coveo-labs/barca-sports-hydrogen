@@ -11,7 +11,7 @@ import {
   isRouteErrorResponse,
   type ShouldRevalidateFunction,
 } from '@remix-run/react';
-import favicon from '~/assets/favicon.svg';
+import favicon from '~/assets/favicon.ico';
 import appStyles from '~/styles/app.css?url';
 import tailwindCss from './styles/tailwind.css?url';
 import {PageLayout} from '~/components/PageLayout';
@@ -90,9 +90,9 @@ async function loadCriticalData({context}: LoaderFunctionArgs) {
 
   const [header] = await Promise.all([
     storefront.query(HEADER_QUERY, {
-      cache: storefront.CacheLong(),
+      cache: storefront.CacheNone(),
       variables: {
-        headerMenuHandle: 'main-menu', // Adjust to your header menu handle
+        headerMenuHandle: 'hydrogen-menu',
       },
     }),
     // Add other queries here, so that they are loaded in parallel
