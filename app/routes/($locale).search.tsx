@@ -1,5 +1,5 @@
-import {type LoaderFunctionArgs} from '@shopify/remix-oxygen';
-import {useLoaderData, type MetaFunction} from '@remix-run/react';
+import {defer, type LoaderFunctionArgs} from '@shopify/remix-oxygen';
+import {Await, useLoaderData, type MetaFunction} from '@remix-run/react';
 import {
   searchEngineDefinition,
   type SearchStaticState,
@@ -10,6 +10,7 @@ import {
 } from '~/lib/navigator.provider';
 import {SearchProvider} from '~/components/Coveo/Context';
 import {FullSearch} from '~/components/Coveo/FullSearch';
+import {Suspense} from 'react';
 
 export const meta: MetaFunction = () => {
   return [{title: `Coveo | Search`}];
@@ -24,7 +25,7 @@ export async function loader({request, context}: LoaderFunctionArgs) {
 
   const cart = await context.cart.get();
 
-  const staticState = await searchEngineDefinition.fetchStaticState({
+  const staticState = searchEngineDefinition.fetchStaticState({
     controllers: {
       searchParameter: {initialState: {parameters: {q}}},
       cart: {
@@ -53,22 +54,26 @@ export async function loader({request, context}: LoaderFunctionArgs) {
     },
   });
 
-  return {staticState, cart, q};
+  return defer({staticState, q});
 }
 
-/**
- * Renders the /search route
- */
 export default function SearchPage() {
   const data = useLoaderData<typeof loader>();
+
   return (
-    <SearchProvider
-      navigatorContext={new ClientSideNavigatorContextProvider()}
-      q={data.q}
-      staticState={data.staticState as SearchStaticState}
-    >
-      <FullSearch headline={`Browse ${data.q}`} />
-    </SearchProvider>
+    <Suspense>
+      <Await resolve={data.staticState}>
+        {(staticState) => (
+          <SearchProvider
+            navigatorContext={new ClientSideNavigatorContextProvider()}
+            q={data.q}
+            staticState={staticState as SearchStaticState}
+          >
+            <FullSearch headline={`Browse ${data.q}`} />
+          </SearchProvider>
+        )}
+      </Await>
+    </Suspense>
   );
   return null;
 }

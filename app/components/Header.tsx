@@ -127,8 +127,8 @@ function MenuMobile({header, open, setOpen}: MenuMobileProps) {
                             className="object-cover object-center"
                           />
                         </div>
-                        <a
-                          href={relativeLink(menuItem.url!)}
+                        <NavLink
+                          to={relativeLink(menuItem.url!)}
                           className="mt-6 block font-medium text-gray-900"
                         >
                           <span
@@ -136,30 +136,30 @@ function MenuMobile({header, open, setOpen}: MenuMobileProps) {
                             className="absolute inset-0 z-10"
                           />
                           Shop all {currentCollection?.node.title}
-                        </a>
+                        </NavLink>
                       </div>
                     </div>
                     {menuItem.items.map((subItem) => (
                       <div key={subItem.id}>
-                        <a
-                          href={relativeLink(subItem.url!)}
+                        <NavLink
+                          to={relativeLink(subItem.url!)}
                           id={`${subItem.id}-${subItem.id}-heading-mobile`}
                           className="font-medium text-gray-900"
                         >
                           {subItem.title}
-                        </a>
+                        </NavLink>
                         <ul
                           aria-labelledby={`${subItem.id}-${subItem.id}-heading-mobile`}
                           className="mt-6 flex flex-col space-y-6"
                         >
                           {subItem.items.map((leafItems) => (
                             <li key={leafItems.id} className="flow-root">
-                              <a
-                                href={relativeLink(leafItems.url!)}
+                              <NavLink
+                                to={relativeLink(leafItems.url!)}
                                 className="-m-2 block p-2 text-gray-500"
                               >
                                 {leafItems.title}
-                              </a>
+                              </NavLink>
                             </li>
                           ))}
                         </ul>
@@ -177,12 +177,12 @@ function MenuMobile({header, open, setOpen}: MenuMobileProps) {
               .map((topMenuItem) => {
                 return (
                   <div key={topMenuItem.id} className="flow-root">
-                    <a
-                      href={relativeLink(topMenuItem.url!)}
+                    <NavLink
+                      to={relativeLink(topMenuItem.url!)}
                       className="-m-2 block p-2 font-medium text-gray-900"
                     >
                       {topMenuItem.title}
-                    </a>
+                    </NavLink>
                   </div>
                 );
               })}
@@ -226,10 +226,6 @@ function MenuDesktop({header, setOpen}: MenuDesktopProps) {
 
   return (
     <header className="sticky top-0 z-10 bg-white">
-      <p className="flex h-10 items-center justify-center bg-indigo-600 px-4 text-sm font-medium text-white sm:px-6 lg:px-8">
-        Get free delivery on orders over $100
-      </p>
-
       <nav aria-label="Top" className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="">
           <div className="flex h-16 items-center">
@@ -245,10 +241,10 @@ function MenuDesktop({header, setOpen}: MenuDesktopProps) {
 
             {/* Logo */}
             <div className="ml-4 flex lg:ml-0">
-              <a href="/">
+              <NavLink to="/">
                 <span className="sr-only">{shop.name}</span>
                 <Image src={BarcaLogo} className="h-8 w-auto" sizes="200" />
-              </a>
+              </NavLink>
             </div>
 
             {/* Flyout menus */}
@@ -294,8 +290,8 @@ function MenuDesktop({header, setOpen}: MenuDesktopProps) {
                                   key={menuItem.id}
                                   className="group relative text-base sm:text-sm"
                                 >
-                                  <a
-                                    href={relativeLink(menuItem.url!)}
+                                  <NavLink
+                                    to={relativeLink(menuItem.url!)}
                                     className="mt-6 block font-medium text-gray-900 hover:underline"
                                   >
                                     <div className="aspect-h-1 aspect-w-1 overflow-hidden rounded-lg bg-gray-100 group-hover:opacity-75">
@@ -313,20 +309,20 @@ function MenuDesktop({header, setOpen}: MenuDesktopProps) {
                                       className="absolute inset-0 z-10"
                                     />
                                     Shop all {menuItem.title}
-                                  </a>
+                                  </NavLink>
                                 </div>
                               </div>
                               <div className="row-start-1 grid grid-cols-3 gap-x-8 gap-y-10 text-sm">
                                 {menuItem.items.map((subMenuItem) => {
                                   return (
                                     <div key={subMenuItem.id}>
-                                      <a
+                                      <NavLink
                                         key={subMenuItem.id}
-                                        href={relativeLink(subMenuItem.url!)}
+                                        to={relativeLink(subMenuItem.url!)}
                                         className="font-medium text-gray-900 hover:underline"
                                       >
                                         {subMenuItem.title}
-                                      </a>
+                                      </NavLink>
                                       <ul
                                         aria-labelledby={`${subMenuItem.id}-heading`}
                                         className="mt-6 space-y-6 sm:mt-4 sm:space-y-4"
@@ -337,14 +333,14 @@ function MenuDesktop({header, setOpen}: MenuDesktopProps) {
                                               key={leafMenuItem.id}
                                               className="flow-root"
                                             >
-                                              <a
-                                                href={relativeLink(
+                                              <NavLink
+                                                to={relativeLink(
                                                   leafMenuItem.url!,
                                                 )}
                                                 className="-m-2 block p-2 text-gray-500 hover:text-gray-800 hover:underline"
                                               >
                                                 {leafMenuItem.title}
-                                              </a>
+                                              </NavLink>
                                             </li>
                                           ),
                                         )}

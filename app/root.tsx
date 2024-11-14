@@ -25,7 +25,8 @@ import {
   ClientSideNavigatorContextProvider,
   ServerSideNavigatorContextProvider,
 } from './lib/navigator.provider';
-import {ListingProvider} from './components/Coveo/Context';
+import {ListingProvider, SearchProvider} from './components/Coveo/Context';
+import {GlobalLoading} from './components/ProgressBar';
 
 export type RootLoader = typeof loader;
 
@@ -203,6 +204,7 @@ export function Layout({children}: {children?: React.ReactNode}) {
         ) : (
           children
         )}
+        <GlobalLoading />
         <ScrollRestoration nonce={nonce} />
         <Scripts nonce={nonce} />
       </body>

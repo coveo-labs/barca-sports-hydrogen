@@ -1,4 +1,4 @@
-import {useLoaderData, type MetaFunction} from '@remix-run/react';
+import {NavLink, useLoaderData, type MetaFunction} from '@remix-run/react';
 import type {LoaderFunctionArgs} from '@remix-run/server-runtime';
 import {useEffect} from 'react';
 import {RecommendationsList} from '~/components/Coveo/RecommendationsList';
@@ -142,12 +142,12 @@ export default function Homepage() {
                 </div>
               </div>
 
-              <a
-                href="/collections"
+              <NavLink
+                to="/collections"
                 className="inline-block rounded-md border border-transparent bg-indigo-600 px-8 py-3 text-center font-medium text-white hover:bg-indigo-700"
               >
                 Shop Collections
-              </a>
+              </NavLink>
             </div>
           </div>
         </div>

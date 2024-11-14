@@ -5,7 +5,7 @@ import {
   ComboboxOption,
   ComboboxOptions,
 } from '@headlessui/react';
-import {KeyboardEvent, useEffect} from 'react';
+import {useEffect} from 'react';
 import {engineDefinition, useStandaloneSearchBox} from '~/lib/coveo.engine';
 import {MagnifyingGlassIcon} from '@heroicons/react/24/outline';
 import {ProductCard} from './ProductCard';
@@ -32,7 +32,6 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
       )}`;
 
       navigate(url);
-      searchBox.methods?.afterRedirection();
       close?.();
     }
   }, [searchBox, navigate, close]);
@@ -42,10 +41,15 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
         immediate
         value={searchBox.state.value}
         onChange={(val) => {
-          if (val !== null && val !== 'products') {
+          if (val === null) {
+            return;
+          }
+          if (val !== 'products') {
             searchBox.methods?.updateText(val);
             searchBox.methods?.submit();
           }
+
+          close?.();
         }}
         onClose={() => {}}
       >
@@ -59,11 +63,6 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
             placeholder="Search"
             onChange={(event) => {
               searchBox.methods?.updateText(event.target.value);
-            }}
-            onKeyDown={(event: KeyboardEvent<HTMLInputElement>) => {
-              if (event.key === 'Enter') {
-                searchBox.methods?.submit();
-              }
             }}
           />
           <ComboboxButton

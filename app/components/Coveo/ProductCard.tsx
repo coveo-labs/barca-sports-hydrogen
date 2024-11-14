@@ -6,6 +6,7 @@ import {useAside} from '../Aside';
 import {useState} from 'react';
 
 import {StarIcon} from '@heroicons/react/20/solid';
+import {NavLink} from '@remix-run/react';
 
 interface ProductCardProps {
   product: Product;
@@ -23,11 +24,13 @@ export function ProductCard({product}: ProductCardProps) {
       </div>
       <div className="mt-4 flex justify-between">
         <div>
-          <h3 className="text-sm text-gray-700">
-            <a href={`/products/${product.ec_item_group_id?.replace(/0/, '')}`}>
+          <h3 className="text-lg text-gray-700">
+            <NavLink
+              to={`/products/${product.ec_item_group_id?.replace(/0/, '')}`}
+            >
               <span aria-hidden="true" className="absolute inset-0" />
               {product.ec_name}
-            </a>
+            </NavLink>
           </h3>
           <p className="mt-1 text-sm text-gray-500">{product.ec_color}</p>
         </div>
