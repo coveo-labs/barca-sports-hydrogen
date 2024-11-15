@@ -152,7 +152,9 @@ export default function Homepage() {
                       <div className="flex items-end p-6">
                         <div>
                           <h3 className="font-semibold text-white">
-                            <NavLink to="#">
+                            <NavLink
+                              to={`/plp/${collection.node.title.toLowerCase()}`}
+                            >
                               <span className="absolute inset-0" />
                               {collection.node.title}
                             </NavLink>
@@ -185,7 +187,13 @@ export default function Homepage() {
                     <div className="flex items-end p-6 sm:absolute sm:inset-0">
                       <div>
                         <h3 className="font-semibold text-white">
-                          <NavLink to="#">
+                          <NavLink
+                            to={`/plp/${collection.node.title
+                              .toLowerCase()
+                              .replaceAll('&', '')
+                              .replaceAll(' ', '-')
+                              .replaceAll('--', '-')}`}
+                          >
                             <span className="absolute inset-0" />
                             {collection.node.title}
                           </NavLink>
