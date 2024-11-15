@@ -69,7 +69,10 @@ export default function SearchPage() {
             q={data.q}
             staticState={staticState as SearchStaticState}
           >
-            <FullSearch headline={`Browse ${data.q}`} />
+            <FullSearch
+              headline={`Browse ${data.q}`}
+              tagline="Find Your Perfect Splash! Dive into our collection and search for the water sports gear that takes your adventure to the next level. Your journey starts with a click!"
+            />
           </SearchProvider>
         )}
       </Await>

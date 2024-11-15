@@ -55,14 +55,18 @@ export async function loader(args: LoaderFunctionArgs) {
 
 export default function PLP() {
   const {staticState} = useLoaderData<typeof loader>();
-  const headline = useParams()['*']!.toUpperCase();
+  const headline = useParams()['*']!.toUpperCase().replaceAll('/', ' / ');
+  const tagline = `Make Waves, Embrace Adventure! Gear up with the latest ${headline
+    .split('/')
+    .pop()
+    ?.toLowerCase()} and turn every splash into an unforgettable thrill. Your next adventure starts here!`;
 
   return (
     <ListingProvider
       navigatorContext={new ClientSideNavigatorContextProvider()}
       staticState={staticState as ListingStaticState}
     >
-      <FullSearch headline={headline} />
+      <FullSearch headline={headline} tagline={tagline} />
     </ListingProvider>
   );
 }

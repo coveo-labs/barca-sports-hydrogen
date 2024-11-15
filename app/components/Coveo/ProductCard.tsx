@@ -36,7 +36,7 @@ export function ProductCard({product}: ProductCardProps) {
         })}
       </div>
       <div className="flex justify-between mt-1 text-lg font-medium">
-        <p
+        <div
           className={cx(
             'text-gray-900',
             product.ec_promo_price ? 'line-through' : '',
@@ -45,7 +45,7 @@ export function ProductCard({product}: ProductCardProps) {
           <Money
             data={{amount: product.ec_price?.toString(), currencyCode: 'USD'}}
           />
-        </p>
+        </div>
         {product.ec_promo_price && (
           <div className={`text-red-700`}>
             <Money

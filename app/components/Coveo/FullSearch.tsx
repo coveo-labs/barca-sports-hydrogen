@@ -31,7 +31,7 @@ export function FullSearch({headline, tagline}: SearchPageProps) {
           <h1 className="text-3xl font-bold tracking-tight text-gray-900">
             {headline}
           </h1>
-          <p className="mt-4 max-w-xl text-sm text-gray-700">{tagline}</p>
+          <p className="mt-4 max-w-xl text-base text-gray-500">{tagline}</p>
         </div>
       </div>
 

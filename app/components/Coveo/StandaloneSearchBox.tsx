@@ -97,9 +97,9 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
           })}
           {searchBox.state.suggestions.length > 0 && (
             <ComboboxOption value="products">
-              <div className="mt-6 pt-3 border-t">
-                <p className="pl-2 text-md text-gray-900">
-                  Popular {searchBox.state.suggestions[0]?.rawValue}
+              <div className="mt-6 pt-3 border-t bg-gray-50">
+                <p className="pl-2 text-2xl font-bold tracking-tight text-gray-900">
+                  Popular products
                 </p>
                 <div className="grid gap-x-8 gap-y-10 grid-cols-3 grid-rows-1 mt-6 sm:grid-cols-2 lg:grid-cols-5 xl:gap-x-8 p-4">
                   {instantProducts.state.products.map((product) => {
