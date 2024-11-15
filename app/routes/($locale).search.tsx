@@ -25,7 +25,7 @@ export async function loader({request, context}: LoaderFunctionArgs) {
 
   const cart = await context.cart.get();
 
-  const staticState = searchEngineDefinition.fetchStaticState({
+  const staticState = await searchEngineDefinition.fetchStaticState({
     controllers: {
       searchParameter: {initialState: {parameters: {q}}},
       cart: {
@@ -54,29 +54,23 @@ export async function loader({request, context}: LoaderFunctionArgs) {
     },
   });
 
-  return defer({staticState, q});
+  return {staticState, q};
 }
 
 export default function SearchPage() {
   const data = useLoaderData<typeof loader>();
 
   return (
-    <Suspense>
-      <Await resolve={data.staticState}>
-        {(staticState) => (
-          <SearchProvider
-            navigatorContext={new ClientSideNavigatorContextProvider()}
-            q={data.q}
-            staticState={staticState as SearchStaticState}
-          >
-            <FullSearch
-              headline={`Browse ${data.q}`}
-              tagline="Find Your Perfect Splash! Dive into our collection and search for the water sports gear that takes your adventure to the next level. Your journey starts with a click!"
-            />
-          </SearchProvider>
-        )}
-      </Await>
-    </Suspense>
+    <SearchProvider
+      navigatorContext={new ClientSideNavigatorContextProvider()}
+      q={data.q}
+      staticState={data.staticState as SearchStaticState}
+    >
+      <FullSearch
+        headline={`Browse ${data.q}`}
+        tagline="Find Your Perfect Splash! Dive into our collection and search for the water sports gear that takes your adventure to the next level. Your journey starts with a click!"
+      />
+    </SearchProvider>
   );
   return null;
 }

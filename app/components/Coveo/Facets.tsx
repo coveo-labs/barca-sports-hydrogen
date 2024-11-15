@@ -1,6 +1,10 @@
 import type {MappedFacetState} from '@coveo/headless/ssr-commerce';
 
 import {
+  Menu,
+  MenuButton,
+  MenuItem,
+  MenuItems,
   Popover,
   PopoverButton,
   PopoverGroup,
@@ -13,7 +17,7 @@ import {engineDefinition} from '~/lib/coveo.engine';
 export function Facets() {
   const facetGenerator = engineDefinition.controllers.useFacetGenerator();
   return (
-    <PopoverGroup className="-mx-4 flex items-center divide-x divide-gray-200">
+    <PopoverGroup className="ml-40 flex items-center divide-x divide-gray-200 flex-wrap justify-end">
       {facetGenerator.state.map((facet) => {
         if (facet.type === 'regular') {
           const facetController = facetGenerator.methods?.getFacetController(
@@ -57,26 +61,27 @@ export function Facets() {
           );
         }
 
-        if (
-          facet.type === 'numericalRange' &&
-          (facet.field === 'ec_price' || facet.field === 'ec_promo_price')
-        ) {
+        if (facet.type === 'numericalRange') {
           const facetController = facetGenerator.methods?.getFacetController(
             facet.facetId,
             'numericalRange',
           );
 
-          const formattedValue = (value: {start: number; end: number}) => {
-            const asMoney = (value: number) => {
-              return value.toLocaleString('en', {
-                style: 'currency',
-                compactDisplay: 'short',
-                maximumFractionDigits: 0,
-                currency: 'USD',
-              });
-            };
-            return `${asMoney(value.start)} to ${asMoney(value.end)}`;
-          };
+          const formattedValue =
+            ['ec_price', 'ec_promo_price'].indexOf(facet.field) !== -1
+              ? (value: {start: number; end: number}) => {
+                  const asMoney = (value: number) => {
+                    return value.toLocaleString('en', {
+                      style: 'currency',
+                      compactDisplay: 'short',
+                      maximumFractionDigits: 0,
+                      currency: 'USD',
+                    });
+                  };
+                  return `${asMoney(value.start)} to ${asMoney(value.end)}`;
+                }
+              : (value: {start: number; end: number}) =>
+                  `${value.start} to ${value.end}`;
 
           return (
             <FacetPopover
@@ -133,7 +138,7 @@ function FacetPopover<FacetType extends keyof MappedFacetState>({
   facet: MappedFacetState[FacetType];
 }) {
   return (
-    <Popover className="relative inline-block px-4 text-left">
+    <Popover className="relative inline-block px-4 text-left mt-4">
       <PopoverButton className="group inline-flex justify-center text-sm font-medium text-gray-700 hover:text-gray-900">
         <span>{facet.displayName}</span>
         {facet.hasActiveValues ? (
