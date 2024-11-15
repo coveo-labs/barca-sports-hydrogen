@@ -34,7 +34,7 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
       navigate(url);
       close?.();
     }
-  }, [searchBox, navigate, close]);
+  }, [searchBox.state.redirectTo, searchBox.state.value, navigate, close]);
   return (
     <>
       <Combobox
@@ -48,10 +48,10 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
             searchBox.methods?.updateText(val);
             searchBox.methods?.submit();
           }
-
-          close?.();
+          if (val === 'products') {
+            close?.();
+          }
         }}
-        onClose={() => {}}
       >
         <div className="relative">
           <ComboboxInput
