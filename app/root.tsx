@@ -102,7 +102,7 @@ async function loadCriticalData({context, request}: LoaderFunctionArgs) {
 
   const [header] = await Promise.all([
     storefront.query(HEADER_QUERY, {
-      cache: storefront.CacheNone(),
+      cache: storefront.CacheLong(),
       variables: {
         headerMenuHandle: 'hydrogen-menu',
       },

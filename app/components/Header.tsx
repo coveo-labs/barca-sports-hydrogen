@@ -26,10 +26,7 @@ import {Image} from '@shopify/hydrogen';
 import BarcaLogo from '~/assets/barca-logo.svg';
 import {Fragment, useState} from 'react';
 import {StandaloneSearchBox} from './Coveo/StandaloneSearchBox';
-
-const relativeLink = (url: string) => {
-  return new URL(url).pathname;
-};
+import relativeLink from '~/lib/relative.link';
 
 interface HeaderProps {
   header: HeaderQuery;

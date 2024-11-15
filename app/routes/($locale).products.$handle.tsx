@@ -1,30 +1,50 @@
-import {Suspense} from 'react';
 import {defer, redirect, type LoaderFunctionArgs} from '@shopify/remix-oxygen';
-import {Await, useLoaderData, type MetaFunction} from '@remix-run/react';
+import {useLoaderData, type MetaFunction} from '@remix-run/react';
 import type {ProductFragment} from 'storefrontapi.generated';
 import {
   getSelectedProductOptions,
-  Analytics,
+  Image,
+  Money,
   useOptimisticVariant,
 } from '@shopify/hydrogen';
 import type {SelectedOption} from '@shopify/hydrogen/storefront-api-types';
 import {getVariantUrl} from '~/lib/variants';
-import {ProductPrice} from '~/components/ProductPrice';
-import {ProductImage} from '~/components/ProductImage';
-import {ProductForm} from '~/components/ProductForm';
+
+import {
+  Radio,
+  RadioGroup,
+  Tab,
+  TabGroup,
+  TabList,
+  TabPanel,
+  TabPanels,
+} from '@headlessui/react';
+import {HeartIcon} from '@heroicons/react/24/outline';
+import {useState} from 'react';
+import cx from '~/lib/cx';
+
+const mapColor = (color: string) => {
+  switch (color.toLowerCase()) {
+    case 'black':
+      return 'zinc';
+    case 'brown':
+      return 'stone';
+    case 'khaki':
+      return 'yellow';
+    default:
+      return color.toLowerCase();
+  }
+};
 
 export const meta: MetaFunction<typeof loader> = ({data}) => {
   return [{title: `Hydrogen | ${data?.product.title ?? ''}`}];
 };
 
 export async function loader(args: LoaderFunctionArgs) {
-  // Start fetching non-critical data without blocking time to first byte
-  const deferredData = loadDeferredData(args);
-
   // Await the critical data required to render initial state of the page
   const criticalData = await loadCriticalData(args);
 
-  return defer({...deferredData, ...criticalData});
+  return {...criticalData};
 }
 
 /**
@@ -72,8 +92,19 @@ async function loadCriticalData({
     }
   }
 
+  const variants = await context.storefront
+    .query(VARIANTS_QUERY, {
+      variables: {handle: params.handle!},
+    })
+    .catch((error) => {
+      // Log query errors, but don't throw them so the page can still render
+      console.error(error);
+      return null;
+    });
+
   return {
     product,
+    variants,
   };
 }
 
@@ -132,66 +163,169 @@ export default function Product() {
     product.selectedVariant,
     variants,
   );
-
-  const {title, descriptionHtml} = product;
+  const [selectedColor, setSelectedColor] = useState(
+    selectedVariant?.selectedOptions.find((option) => option.name === 'Color')
+      ?.value || 'Black',
+  );
+  const [selectedSize, setSelectedSize] = useState(
+    selectedVariant?.selectedOptions.find((option) => option.name === 'Size')
+      ?.value || 'Medium',
+  );
 
   return (
-    <div className="product">
-      <ProductImage image={selectedVariant?.image} />
-      <div className="product-main">
-        <h1>{title}</h1>
-        <ProductPrice
-          price={selectedVariant?.price}
-          compareAtPrice={selectedVariant?.compareAtPrice}
-        />
-        <br />
-        <Suspense
-          fallback={
-            <ProductForm
-              product={product}
-              selectedVariant={selectedVariant}
-              variants={[]}
-            />
-          }
-        >
-          <Await
-            errorElement="There was a problem loading product variants"
-            resolve={variants}
-          >
-            {(data) => (
-              <ProductForm
-                product={product}
-                selectedVariant={selectedVariant}
-                variants={data?.product?.variants.nodes || []}
+    <main className="mx-auto max-w-7xl sm:px-6 sm:pt-16 lg:px-8">
+      <div className="mx-auto max-w-2xl lg:max-w-none">
+        {/* Product */}
+        <div className="lg:grid lg:grid-cols-2 lg:items-start lg:gap-x-8">
+          {/* Image gallery */}
+          <TabGroup className="flex flex-col-reverse">
+            {/* Image selector */}
+            <div className="mx-auto mt-6 hidden w-full max-w-2xl sm:block lg:max-w-none">
+              <TabList className="grid grid-cols-4 gap-6">
+                {product.images.nodes.map((imageInfo) => (
+                  <Tab
+                    key={imageInfo.id}
+                    className="group relative flex h-24 cursor-pointer items-center justify-center rounded-md bg-white text-sm font-medium uppercase text-gray-900 hover:bg-gray-50 focus:outline-none focus:ring focus:ring-indigo-500/50 focus:ring-offset-4"
+                  >
+                    <span className="sr-only">{imageInfo.altText}</span>
+                    <span className="absolute inset-0 overflow-hidden rounded-md">
+                      <Image
+                        alt={imageInfo.altText || ''}
+                        src={imageInfo.url}
+                        width={imageInfo.width || 50}
+                        height={imageInfo.height || 50}
+                        className="size-full object-cover object-center"
+                      />
+                    </span>
+                    <span
+                      aria-hidden="true"
+                      className="pointer-events-none absolute inset-0 rounded-md ring-2 ring-transparent ring-offset-2 group-data-[selected]:ring-indigo-500"
+                    />
+                  </Tab>
+                ))}
+              </TabList>
+            </div>
+
+            <TabPanels className="aspect-h-1 aspect-w-1 w-full">
+              {product.images.nodes.map((imageInfo) => (
+                <TabPanel key={imageInfo.id}>
+                  <Image
+                    alt={imageInfo.altText || ''}
+                    src={imageInfo.url}
+                    className="size-full object-cover object-center sm:rounded-lg"
+                  />
+                </TabPanel>
+              ))}
+            </TabPanels>
+          </TabGroup>
+
+          {/* Product info */}
+          <div className="mt-10 px-4 sm:mt-16 sm:px-0 lg:mt-0">
+            <h1 className="text-3xl font-bold tracking-tight text-gray-900">
+              {product.title}
+            </h1>
+
+            <div className="mt-3">
+              <h2 className="sr-only">Product information</h2>
+              <p className="text-3xl tracking-tight text-gray-900">
+                <Money data={product.selectedVariant?.price || {}} />
+              </p>
+            </div>
+            <div className="mt-6">
+              <h3 className="sr-only">Description</h3>
+
+              <div
+                dangerouslySetInnerHTML={{__html: product.descriptionHtml}}
+                className="space-y-6 text-base text-gray-700"
               />
-            )}
-          </Await>
-        </Suspense>
-        <br />
-        <br />
-        <p>
-          <strong>Description</strong>
-        </p>
-        <br />
-        <div dangerouslySetInnerHTML={{__html: descriptionHtml}} />
-        <br />
+            </div>
+
+            <form className="mt-6">
+              {/* Colors */}
+              <div>
+                <h3 className="text-sm text-gray-600">Color</h3>
+
+                <fieldset aria-label="Choose a color" className="mt-2">
+                  <RadioGroup
+                    value={selectedColor}
+                    onChange={setSelectedColor}
+                    className="flex items-center space-x-3"
+                  >
+                    {product.options
+                      .find((opt) => opt.name === 'Color')
+                      ?.optionValues.map(({name: color}) => (
+                        <Radio
+                          key={color}
+                          value={color}
+                          aria-label={color}
+                          className={cx(
+                            `ring-${mapColor(color)}-700`,
+                            'relative -m-0.5 flex cursor-pointer items-center justify-center rounded-full p-0.5 focus:outline-none data-[checked]:ring-2 data-[focus]:data-[checked]:ring data-[focus]:data-[checked]:ring-offset-1',
+                          )}
+                        >
+                          <span
+                            aria-hidden="true"
+                            className={cx(
+                              `bg-${mapColor(color)}-700`,
+                              'size-8 rounded-full border border-black/10',
+                            )}
+                          />
+                        </Radio>
+                      ))}
+                  </RadioGroup>
+                </fieldset>
+              </div>
+
+              {/* Size */}
+              <div className="mt-8">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-sm font-medium text-gray-900">Size</h2>
+                </div>
+
+                <fieldset aria-label="Choose a size" className="mt-2">
+                  <RadioGroup
+                    value={selectedSize}
+                    onChange={setSelectedSize}
+                    className="grid grid-cols-3 gap-3 sm:grid-cols-6"
+                  >
+                    {product.options
+                      .find((opt) => opt.name === 'Size')
+                      ?.optionValues.map(({name: size}) => (
+                        <Radio
+                          key={size}
+                          value={size}
+                          className={cx(
+                            'cursor-pointer focus:outline-none flex items-center justify-center rounded-md border border-gray-200 bg-white px-3 py-3 text-sm font-medium uppercase text-gray-900 hover:bg-gray-50 data-[checked]:border-transparent data-[checked]:bg-indigo-600 data-[checked]:text-white data-[focus]:ring-2 data-[focus]:ring-indigo-500 data-[focus]:ring-offset-2 data-[checked]:hover:bg-indigo-700 sm:flex-1',
+                          )}
+                        >
+                          {size}
+                        </Radio>
+                      ))}
+                  </RadioGroup>
+                </fieldset>
+              </div>
+
+              <div className="mt-10 flex">
+                <button
+                  type="submit"
+                  className="flex max-w-xs flex-1 items-center justify-center rounded-md border border-transparent bg-indigo-600 px-8 py-3 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-50 sm:w-full"
+                >
+                  Add to bag
+                </button>
+
+                <button
+                  type="button"
+                  className="ml-4 flex items-center justify-center rounded-md px-3 py-3 text-gray-400 hover:bg-gray-100 hover:text-gray-500"
+                >
+                  <HeartIcon aria-hidden="true" className="size-6 shrink-0" />
+                  <span className="sr-only">Add to favorites</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       </div>
-      <Analytics.ProductView
-        data={{
-          products: [
-            {
-              id: product.id,
-              title: product.title,
-              price: selectedVariant?.price.amount || '0',
-              vendor: product.vendor,
-              variantId: selectedVariant?.id || '',
-              variantTitle: selectedVariant?.title || '',
-              quantity: 1,
-            },
-          ],
-        }}
-      />
-    </div>
+    </main>
   );
 }
 
@@ -253,6 +387,19 @@ const PRODUCT_FRAGMENT = `#graphql
       nodes {
         ...ProductVariant
       }
+    }
+    images(first: 10) {
+      nodes {
+        id
+        url
+        altText
+        width
+        height
+      }
+    }
+    metafields(identifiers: {key: "Occasion Style"}) {
+      key
+      value
     }
     seo {
       description
