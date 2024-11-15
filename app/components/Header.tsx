@@ -287,7 +287,8 @@ function MenuDesktop({header, setOpen}: MenuDesktopProps) {
                                   key={menuItem.id}
                                   className="group relative text-base sm:text-sm"
                                 >
-                                  <NavLink
+                                  <PopoverButton
+                                    as={NavLink}
                                     to={relativeLink(menuItem.url!)}
                                     className="mt-6 block font-medium text-gray-900 hover:underline"
                                   >
@@ -306,20 +307,21 @@ function MenuDesktop({header, setOpen}: MenuDesktopProps) {
                                       className="absolute inset-0 z-10"
                                     />
                                     Shop all {menuItem.title}
-                                  </NavLink>
+                                  </PopoverButton>
                                 </div>
                               </div>
                               <div className="row-start-1 grid grid-cols-3 gap-x-8 gap-y-10 text-sm">
                                 {menuItem.items.map((subMenuItem) => {
                                   return (
                                     <div key={subMenuItem.id}>
-                                      <NavLink
+                                      <PopoverButton
+                                        as={NavLink}
                                         key={subMenuItem.id}
                                         to={relativeLink(subMenuItem.url!)}
                                         className="font-medium text-gray-900 hover:underline"
                                       >
                                         {subMenuItem.title}
-                                      </NavLink>
+                                      </PopoverButton>
                                       <ul
                                         aria-labelledby={`${subMenuItem.id}-heading`}
                                         className="mt-6 space-y-6 sm:mt-4 sm:space-y-4"
@@ -330,14 +332,15 @@ function MenuDesktop({header, setOpen}: MenuDesktopProps) {
                                               key={leafMenuItem.id}
                                               className="flow-root"
                                             >
-                                              <NavLink
+                                              <PopoverButton
+                                                as={NavLink}
                                                 to={relativeLink(
                                                   leafMenuItem.url!,
                                                 )}
                                                 className="-m-2 block p-2 text-gray-500 hover:text-gray-800 hover:underline"
                                               >
                                                 {leafMenuItem.title}
-                                              </NavLink>
+                                              </PopoverButton>
                                             </li>
                                           ),
                                         )}
