@@ -3,15 +3,23 @@ import type {
   FacetGeneratorState,
 } from '@coveo/headless/ssr-commerce';
 
-import {Disclosure, DisclosureButton, DisclosurePanel} from '@headlessui/react';
-import {MinusIcon, PlusIcon} from '@heroicons/react/20/solid';
+import {
+  Disclosure,
+  DisclosureButton,
+  DisclosurePanel,
+  Popover,
+  PopoverButton,
+  PopoverGroup,
+  PopoverPanel,
+} from '@headlessui/react';
+import {ChevronDownIcon, MinusIcon, PlusIcon} from '@heroicons/react/20/solid';
 import {engineDefinition} from '~/lib/coveo.engine';
 
 export function Facets() {
   const facetGenerator = engineDefinition.controllers.useFacetGenerator();
   return (
-    <>
-      {facetGenerator.state.map((facet) => {
+    <PopoverGroup className="-mx-4 flex items-center divide-x divide-gray-200">
+      {facetGenerator.state.map((facet, sectionIdx) => {
         if (facet.type === 'regular') {
           const facetController = facetGenerator.methods?.getFacetController(
             facet.facetId,
@@ -19,58 +27,59 @@ export function Facets() {
           );
 
           return (
-            <Disclosure
+            <Popover
               key={facet.facetId}
-              as="div"
-              className="border-b border-gray-200 py-6"
+              className="relative inline-block px-4 text-left"
             >
-              <h3 className="-my-3 flow-root">
-                <DisclosureButton className="group flex w-full items-center justify-between bg-white py-3 text-sm text-gray-400 hover:text-gray-500">
-                  <span className="font-medium text-gray-900">
-                    {facet.displayName}
+              <PopoverButton className="group inline-flex justify-center text-sm font-medium text-gray-700 hover:text-gray-900">
+                <span>{facet.displayName}</span>
+                {facet.hasActiveValues ? (
+                  <span className="ml-1.5 rounded bg-gray-200 px-1.5 py-0.5 text-xs font-semibold tabular-nums text-gray-700">
+                    {
+                      facet.values.filter((value) => value.state === 'selected')
+                        .length
+                    }
                   </span>
-                  <span className="ml-6 flex items-center">
-                    <PlusIcon
-                      aria-hidden="true"
-                      className="h-5 w-5 group-data-[open]:hidden"
-                    />
-                    <MinusIcon
-                      aria-hidden="true"
-                      className="h-5 w-5 [.group:not([data-open])_&]:hidden"
-                    />
-                  </span>
-                </DisclosureButton>
-              </h3>
-              <DisclosurePanel className="pt-6">
-                <div className="space-y-4">
-                  {facet.values.map((facetValue, facetValueIdx) => (
+                ) : null}
+                <ChevronDownIcon
+                  aria-hidden="true"
+                  className="-mr-1 ml-1 size-5 shrink-0 text-gray-400 group-hover:text-gray-500"
+                />
+              </PopoverButton>
+
+              <PopoverPanel
+                transition
+                className="absolute right-0 z-10 mt-2 origin-top-right rounded-md bg-white p-4 shadow-2xl ring-1 ring-black/5 transition focus:outline-none data-[closed]:scale-95 data-[closed]:transform data-[closed]:opacity-0 data-[enter]:duration-100 data-[leave]:duration-75 data-[enter]:ease-out data-[leave]:ease-in"
+              >
+                <form className="space-y-4">
+                  {facet.values.map((facetValue, optionIdx) => (
                     <div key={facetValue.value} className="flex items-center">
                       <input
                         defaultValue={facetValue.value}
                         defaultChecked={facetValue.state === 'selected'}
-                        id={`filter-${facet.facetId}-${facetValueIdx}`}
-                        name={`${facet.facetId}[]`}
+                        id={`filter-${facet.facetId}-${optionIdx}`}
+                        name={`${facetValue.value}[]`}
                         type="checkbox"
-                        className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                        className="size-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                         onChange={() => {
                           facetController?.toggleSelect(facetValue);
                         }}
                       />
                       <label
-                        htmlFor={`filter-${facet.facetId}-${facetValueIdx}`}
-                        className="ml-3 text-sm text-gray-600"
+                        htmlFor={`filter-${facet.facetId}-${optionIdx}`}
+                        className="ml-3 whitespace-nowrap pr-6 text-sm font-medium text-gray-900"
                       >
                         {facetValue.value} ({facetValue.numberOfResults})
                       </label>
                     </div>
                   ))}
-                </div>
-              </DisclosurePanel>
-            </Disclosure>
+                </form>
+              </PopoverPanel>
+            </Popover>
           );
         }
         return null;
       })}
-    </>
+    </PopoverGroup>
   );
 }
