@@ -39,7 +39,7 @@ export function ProductCard({product}: ProductCardProps) {
         <div
           className={cx(
             'text-gray-900',
-            product.ec_promo_price ? 'line-through' : '',
+            product.ec_promo_price ? 'line-through text-gray-300' : '',
           )}
         >
           <Money
@@ -47,7 +47,7 @@ export function ProductCard({product}: ProductCardProps) {
           />
         </div>
         {product.ec_promo_price && (
-          <div className={`text-red-700`}>
+          <div className={`text-gray-900`}>
             <Money
               data={{
                 amount: product.ec_promo_price?.toString(),

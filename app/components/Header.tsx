@@ -1,4 +1,4 @@
-import {NavLink} from '@remix-run/react';
+import {Await, NavLink} from '@remix-run/react';
 import type {HeaderQuery, CartApiQueryFragment} from 'storefrontapi.generated';
 
 import {
@@ -24,7 +24,7 @@ import {
 } from '@heroicons/react/24/outline';
 import {Image} from '@shopify/hydrogen';
 import BarcaLogo from '~/assets/barca-logo.svg';
-import {Fragment, useState} from 'react';
+import {Fragment, Suspense, useState} from 'react';
 import {StandaloneSearchBox} from './Coveo/StandaloneSearchBox';
 import relativeLink from '~/lib/relative.link';
 
@@ -43,7 +43,7 @@ export function Header({
   const [open, setOpen] = useState(false);
   return (
     <>
-      <MenuDesktop header={header} setOpen={setOpen} />
+      <MenuDesktop header={header} setOpen={setOpen} cart={cart} />
       <MenuMobile header={header} open={open} setOpen={setOpen} />
     </>
   );
@@ -217,8 +217,9 @@ function MenuMobile({header, open, setOpen}: MenuMobileProps) {
 interface MenuDesktopProps {
   header: HeaderQuery;
   setOpen: (open: boolean) => void;
+  cart: Promise<CartApiQueryFragment | null>;
 }
-function MenuDesktop({header, setOpen}: MenuDesktopProps) {
+function MenuDesktop({header, setOpen, cart}: MenuDesktopProps) {
   const {shop, menu, collections} = header;
 
   return (
@@ -411,16 +412,25 @@ function MenuDesktop({header, setOpen}: MenuDesktopProps) {
 
               {/* Cart */}
               <div className="ml-4 flow-root lg:ml-6">
-                <button className="group -m-2 flex items-center p-2">
+                <NavLink
+                  to="/cart"
+                  className="group -m-2 flex items-center p-2"
+                >
                   <ShoppingBagIcon
                     aria-hidden="true"
                     className="h-6 w-6 shrink-0 text-gray-400 group-hover:text-gray-500"
                   />
-                  <span className="ml-2 text-sm font-medium text-gray-700 group-hover:text-gray-800">
-                    0
-                  </span>
+                  <Suspense>
+                    <Await resolve={cart}>
+                      {(cartLoaded) => (
+                        <span className="ml-2 text-sm font-medium text-gray-700 group-hover:text-gray-800">
+                          {cartLoaded?.totalQuantity}
+                        </span>
+                      )}
+                    </Await>
+                  </Suspense>
                   <span className="sr-only">items in cart, view bag</span>
-                </button>
+                </NavLink>
               </div>
             </div>
           </div>

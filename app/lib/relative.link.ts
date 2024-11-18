@@ -1,3 +1,3 @@
-export default function relativeLin(url: string) {
+export default function relativeLink(url: string) {
   return new URL(url).pathname;
 }

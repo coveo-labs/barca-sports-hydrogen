@@ -1,10 +1,29 @@
-import {Await, type MetaFunction, useRouteLoaderData} from '@remix-run/react';
-import {Suspense} from 'react';
+import {
+  Await,
+  type MetaFunction,
+  useLoaderData,
+  useRouteLoaderData,
+} from '@remix-run/react';
+import {Suspense, useEffect} from 'react';
 import type {CartQueryDataReturn} from '@shopify/hydrogen';
 import {CartForm} from '@shopify/hydrogen';
-import {json, type ActionFunctionArgs} from '@shopify/remix-oxygen';
+import {
+  json,
+  LoaderFunctionArgs,
+  type ActionFunctionArgs,
+} from '@shopify/remix-oxygen';
 import {CartMain} from '~/components/CartMain';
 import type {RootLoader} from '~/root';
+import {
+  SearchStaticState,
+  standaloneEngineDefinition,
+  useCartRecommendations,
+} from '~/lib/coveo.engine';
+import {
+  ClientSideNavigatorContextProvider,
+  ServerSideNavigatorContextProvider,
+} from '~/lib/navigator.provider';
+import {SearchProvider} from '~/components/Coveo/Context';
 
 export const meta: MetaFunction = () => {
   return [{title: `Hydrogen | Cart`}];
@@ -95,23 +114,77 @@ export async function action({request, context}: ActionFunctionArgs) {
   );
 }
 
+export async function loader({context, request}: LoaderFunctionArgs) {
+  standaloneEngineDefinition.setNavigatorContextProvider(
+    () => new ServerSideNavigatorContextProvider(request),
+  );
+
+  const cart = await context.cart.get();
+
+  const staticState = await standaloneEngineDefinition.fetchStaticState({
+    controllers: {
+      searchParameter: {initialState: {parameters: {q: ''}}},
+      cart: {
+        initialState: {
+          items: cart
+            ? cart.lines.nodes.map((node) => {
+                const {merchandise} = node;
+                return {
+                  productId: merchandise.product.id,
+                  name: merchandise.product.title,
+                  price: Number(merchandise.price.amount),
+                  quantity: node.quantity,
+                };
+              })
+            : [],
+        },
+      },
+      context: {
+        language: 'en',
+        country: 'US',
+        currency: 'USD',
+        view: {
+          url: `https://sports.barca.group`,
+        },
+      },
+    },
+  });
+
+  return {staticState};
+}
+
 export default function Cart() {
   const rootData = useRouteLoaderData<RootLoader>('root');
+  const {staticState} = useLoaderData<typeof loader>();
+  const cartRecommendations = useCartRecommendations();
+  useEffect(() => {
+    cartRecommendations.methods?.refresh();
+  }, [cartRecommendations.methods]);
+
   if (!rootData) return null;
 
   return (
-    <div className="cart">
-      <h1>Cart</h1>
-      <Suspense fallback={<p>Loading cart ...</p>}>
-        <Await
-          resolve={rootData.cart}
-          errorElement={<div>An error occurred</div>}
-        >
-          {(cart) => {
-            return <CartMain layout="page" cart={cart} />;
-          }}
-        </Await>
-      </Suspense>
-    </div>
+    <Suspense>
+      <Await
+        resolve={rootData.cart}
+        errorElement={<div>An error occurred</div>}
+      >
+        {(cart) => {
+          return (
+            <SearchProvider
+              navigatorContext={new ClientSideNavigatorContextProvider()}
+              q=""
+              staticState={staticState as SearchStaticState}
+            >
+              <CartMain
+                recommendations={cartRecommendations.state}
+                layout="page"
+                cart={cart}
+              />
+            </SearchProvider>
+          );
+        }}
+      </Await>
+    </Suspense>
   );
 }

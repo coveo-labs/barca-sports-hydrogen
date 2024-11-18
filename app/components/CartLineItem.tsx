@@ -4,8 +4,8 @@ import {CartForm, Image, type OptimisticCartLine} from '@shopify/hydrogen';
 import {useVariantUrl} from '~/lib/variants';
 import {Link} from '@remix-run/react';
 import {ProductPrice} from './ProductPrice';
-import {useAside} from './Aside';
 import type {CartApiQueryFragment} from 'storefrontapi.generated';
+import {XMarkIcon as XMarkIconMini} from '@heroicons/react/20/solid';
 
 type CartLine = OptimisticCartLine<CartApiQueryFragment>;
 
@@ -23,7 +23,6 @@ export function CartLineItem({
   const {id, merchandise} = line;
   const {product, title, image, selectedOptions} = merchandise;
   const lineItemUrl = useVariantUrl(product.handle, selectedOptions);
-  const {close} = useAside();
 
   return (
     <li key={id} className="cart-line">
@@ -114,7 +113,7 @@ function CartLineQuantity({line}: {line: CartLine}) {
  * when the line item is new, and the server hasn't yet responded
  * that it was successfully added to the cart.
  */
-function CartLineRemoveButton({
+export function CartLineRemoveButton({
   lineIds,
   disabled,
 }: {
@@ -127,14 +126,19 @@ function CartLineRemoveButton({
       action={CartForm.ACTIONS.LinesRemove}
       inputs={{lineIds}}
     >
-      <button disabled={disabled} type="submit">
-        Remove
+      <button
+        disabled={disabled}
+        type="submit"
+        className="-m-2 inline-flex p-2 text-gray-400 hover:text-gray-500"
+      >
+        <span className="sr-only">Remove</span>
+        <XMarkIconMini aria-hidden="true" className="size-5" />
       </button>
     </CartForm>
   );
 }
 
-function CartLineUpdateButton({
+export function CartLineUpdateButton({
   children,
   lines,
 }: {

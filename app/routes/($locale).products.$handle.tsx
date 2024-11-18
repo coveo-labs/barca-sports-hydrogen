@@ -22,6 +22,7 @@ import {
 import {HeartIcon} from '@heroicons/react/24/outline';
 import {useState} from 'react';
 import cx from '~/lib/cx';
+import {AddToCartButton} from '~/components/AddToCartButton';
 
 const mapColor = (color: string) => {
   switch (color.toLowerCase()) {
@@ -306,13 +307,27 @@ export default function Product() {
               </div>
 
               <div className="mt-10 flex">
-                <button
-                  type="submit"
-                  className="flex max-w-xs flex-1 items-center justify-center rounded-md border border-transparent bg-indigo-600 px-8 py-3 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-50 sm:w-full"
+                <AddToCartButton
+                  disabled={
+                    !selectedVariant || !selectedVariant.availableForSale
+                  }
+                  onClick={() => {}}
+                  lines={
+                    selectedVariant
+                      ? [
+                          {
+                            merchandiseId: selectedVariant.id,
+                            quantity: 1,
+                            selectedVariant,
+                          },
+                        ]
+                      : []
+                  }
                 >
-                  Add to bag
-                </button>
-
+                  {selectedVariant?.availableForSale
+                    ? 'Add to cart'
+                    : 'Sold out'}
+                </AddToCartButton>
                 <button
                   type="button"
                   className="ml-4 flex items-center justify-center rounded-md px-3 py-3 text-gray-400 hover:bg-gray-100 hover:text-gray-500"
