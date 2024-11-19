@@ -1,21 +1,22 @@
 import {
   Await,
-  type MetaFunction,
   useLoaderData,
   useRouteLoaderData,
+  type MetaFunction,
 } from '@remix-run/react';
-import {Suspense, useEffect} from 'react';
 import type {CartQueryDataReturn} from '@shopify/hydrogen';
 import {CartForm} from '@shopify/hydrogen';
 import {
+  defer,
   json,
-  LoaderFunctionArgs,
+  type LoaderFunctionArgs,
   type ActionFunctionArgs,
 } from '@shopify/remix-oxygen';
+import {Suspense, useEffect} from 'react';
 import {CartMain} from '~/components/CartMain';
-import type {RootLoader} from '~/root';
+import {SearchProvider} from '~/components/Coveo/Context';
 import {
-  SearchStaticState,
+  type SearchStaticState,
   standaloneEngineDefinition,
   useCartRecommendations,
 } from '~/lib/coveo.engine';
@@ -23,7 +24,7 @@ import {
   ClientSideNavigatorContextProvider,
   ServerSideNavigatorContextProvider,
 } from '~/lib/navigator.provider';
-import {SearchProvider} from '~/components/Coveo/Context';
+import type {RootLoader} from '~/root';
 
 export const meta: MetaFunction = () => {
   return [{title: `Hydrogen | Cart`}];
@@ -121,7 +122,7 @@ export async function loader({context, request}: LoaderFunctionArgs) {
 
   const cart = await context.cart.get();
 
-  const staticState = await standaloneEngineDefinition.fetchStaticState({
+  const staticState = standaloneEngineDefinition.fetchStaticState({
     controllers: {
       searchParameter: {initialState: {parameters: {q: ''}}},
       cart: {
@@ -150,7 +151,7 @@ export async function loader({context, request}: LoaderFunctionArgs) {
     },
   });
 
-  return {staticState};
+  return defer({staticState});
 }
 
 export default function Cart() {
@@ -163,13 +164,13 @@ export default function Cart() {
 
   if (!rootData) return null;
 
+  const allData = Promise.all([rootData.cart, staticState]);
+
   return (
     <Suspense>
-      <Await
-        resolve={rootData.cart}
-        errorElement={<div>An error occurred</div>}
-      >
-        {(cart) => {
+      <Await resolve={allData} errorElement={<div>An error occurred</div>}>
+        {([cart, staticState]) => {
+          console.log('cart', cart);
           return (
             <SearchProvider
               navigatorContext={new ClientSideNavigatorContextProvider()}
@@ -178,7 +179,6 @@ export default function Cart() {
             >
               <CartMain
                 recommendations={cartRecommendations.state}
-                layout="page"
                 cart={cart}
               />
             </SearchProvider>

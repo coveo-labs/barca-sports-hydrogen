@@ -12,20 +12,15 @@ import {
   type ShouldRevalidateFunction,
 } from '@remix-run/react';
 import favicon from '~/assets/favicon.ico';
-import appStyles from '~/styles/app.css?url';
 import tailwindCss from './styles/tailwind.css?url';
 import {PageLayout} from '~/components/PageLayout';
 import {FOOTER_QUERY, HEADER_QUERY} from '~/lib/fragments';
-import {
-  engineDefinition,
-  SearchStaticState,
-  StandaloneStaticState,
-} from './lib/coveo.engine';
+import {engineDefinition} from './lib/coveo.engine';
 import {
   ClientSideNavigatorContextProvider,
   ServerSideNavigatorContextProvider,
 } from './lib/navigator.provider';
-import {ListingProvider, SearchProvider} from './components/Coveo/Context';
+import {ListingProvider} from './components/Coveo/Context';
 import {GlobalLoading} from './components/ProgressBar';
 
 export type RootLoader = typeof loader;
@@ -51,7 +46,6 @@ export const shouldRevalidate: ShouldRevalidateFunction = ({
 export function links() {
   return [
     {rel: 'stylesheet', href: tailwindCss},
-    {rel: 'stylesheet', href: appStyles},
     {
       rel: 'preconnect',
       href: 'https://cdn.shopify.com',

@@ -1,31 +1,15 @@
+import {NavLink} from '@remix-run/react';
 import {Money, useOptimisticCart} from '@shopify/hydrogen';
-import {Link, NavLink} from '@remix-run/react';
 import type {CartApiQueryFragment} from 'storefrontapi.generated';
-import {useAside} from '~/components/Aside';
-import {CartLineItem, CartLineRemoveButton} from '~/components/CartLineItem';
-import {CartSummary} from './CartSummary';
-import {
-  Bars3Icon,
-  MagnifyingGlassIcon,
-  ShoppingBagIcon,
-  XMarkIcon as XMarkIconOutline,
-} from '@heroicons/react/24/outline';
-import {
-  CheckIcon,
-  ClockIcon,
-  XMarkIcon as XMarkIconMini,
-  QuestionMarkCircleIcon,
-} from '@heroicons/react/20/solid';
-import {useCartRecommendations} from '~/lib/coveo.engine';
-import {useEffect} from 'react';
+import type {RecommendationsState} from '@coveo/headless-react/ssr-commerce';
+import {CheckIcon, QuestionMarkCircleIcon} from '@heroicons/react/20/solid';
+import {CartLineRemoveButton} from './CartLineItem';
 import {ProductCard} from './Coveo/ProductCard';
-import {RecommendationsState} from '@coveo/headless-react/ssr-commerce';
 
 export type CartLayout = 'page' | 'aside';
 
 export type CartMainProps = {
   cart: CartApiQueryFragment | null;
-  layout: CartLayout;
   recommendations: RecommendationsState;
 };
 
@@ -33,22 +17,10 @@ export type CartMainProps = {
  * The main cart component that displays the cart items and summary.
  * It is used by both the /cart route and the cart aside dialog.
  */
-export function CartMain({
-  layout,
-  cart: originalCart,
-  recommendations,
-}: CartMainProps) {
+export function CartMain({cart: originalCart, recommendations}: CartMainProps) {
   // The useOptimisticCart hook applies pending actions to the cart
   // so the user immediately sees feedback when they modify the cart.
   const cart = useOptimisticCart(originalCart);
-
-  const linesCount = Boolean(cart?.lines?.nodes?.length || 0);
-  const withDiscount =
-    cart &&
-    Boolean(cart?.discountCodes?.filter((code) => code.applicable)?.length);
-  const className = `cart-main ${withDiscount ? 'with-discount' : ''}`;
-  const cartHasItems = cart?.totalQuantity! > 0;
-
   return (
     <main className="mx-auto max-w-2xl px-4 pb-24 pt-16 sm:px-6 lg:max-w-7xl lg:px-8">
       <h1 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
@@ -114,7 +86,7 @@ export function CartMain({
                         Quantity, {cartLine.quantity}
                       </label>
                       <select
-                        value={cartLine.quantity}
+                        defaultValue={cartLine.quantity}
                         id={`quantity-${productIdx}`}
                         name={`quantity-${productIdx}`}
                         className="max-w-full rounded-md border border-gray-300 py-1.5 text-left text-base/5 font-medium text-gray-700 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm"
@@ -253,26 +225,5 @@ export function CartMain({
         </div>
       </section>
     </main>
-  );
-}
-
-function CartEmpty({
-  hidden = false,
-}: {
-  hidden: boolean;
-  layout?: CartMainProps['layout'];
-}) {
-  return (
-    <div hidden={hidden}>
-      <br />
-      <p>
-        Looks like you haven&rsquo;t added anything yet, let&rsquo;s get you
-        started!
-      </p>
-      <br />
-      <Link to="/collections" onClick={close} prefetch="viewport">
-        Continue shopping →
-      </Link>
-    </div>
   );
 }

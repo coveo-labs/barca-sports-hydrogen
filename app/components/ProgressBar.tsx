@@ -1,4 +1,4 @@
-import * as React from 'react';
+import {useEffect, useRef, useState} from 'react';
 import {useNavigation} from '@remix-run/react';
 import cx from '~/lib/cx';
 
@@ -6,10 +6,10 @@ function GlobalLoading() {
   const navigation = useNavigation();
   const active = navigation.state !== 'idle';
 
-  const ref = React.useRef<HTMLDivElement>(null);
-  const [animationComplete, setAnimationComplete] = React.useState(true);
+  const ref = useRef<HTMLDivElement>(null);
+  const [animationComplete, setAnimationComplete] = useState(true);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!ref.current) return;
     if (active) setAnimationComplete(false);
 

@@ -1,7 +1,6 @@
 import {MenuItem} from '@headlessui/react';
 import {engineDefinition} from '~/lib/coveo.engine';
 import {SortBy} from '@coveo/headless/commerce';
-import {useActionData, useNavigate} from '@remix-run/react';
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(' ');

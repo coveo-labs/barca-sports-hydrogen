@@ -1,6 +1,5 @@
 import {engineDefinition} from '~/lib/coveo.engine';
 import {ProductCard} from './ProductCard';
-import {NavLink} from '@remix-run/react';
 
 export function ProductList() {
   const productList = engineDefinition.controllers.useProductList();

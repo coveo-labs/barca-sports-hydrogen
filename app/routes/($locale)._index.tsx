@@ -1,20 +1,14 @@
 import {NavLink, useLoaderData, type MetaFunction} from '@remix-run/react';
 import type {LoaderFunctionArgs} from '@remix-run/server-runtime';
-import {Image, Money} from '@shopify/hydrogen';
 import {useEffect} from 'react';
 import {ProductCard} from '~/components/Coveo/ProductCard';
-import {RecommendationsList} from '~/components/Coveo/RecommendationsList';
 import {Hero} from '~/components/Hero';
 import {
-  engineDefinition,
-  searchEngineDefinition,
   standaloneEngineDefinition,
   useHomepageRecommendations,
 } from '~/lib/coveo.engine';
 import {HEADER_QUERY} from '~/lib/fragments';
 import {ServerSideNavigatorContextProvider} from '~/lib/navigator.provider';
-import relativeLink from '~/lib/relative.link';
-
 export const meta: MetaFunction = () => {
   return [{title: 'Hydrogen | Home'}];
 };
@@ -196,7 +190,7 @@ export default function Homepage() {
         <section aria-labelledby="cause-heading">
           <div className="relative bg-gray-800 px-6 py-32 sm:px-12 sm:py-40 lg:px-16">
             <div className="absolute inset-0 overflow-hidden">
-              <Image
+              <img
                 alt=""
                 src="https://images.barca.group/Barca-Sports-Assets/kayak-explained.webp"
                 className="size-full object-cover object-center"

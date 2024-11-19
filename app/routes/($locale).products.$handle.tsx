@@ -1,9 +1,8 @@
-import {defer, redirect, type LoaderFunctionArgs} from '@shopify/remix-oxygen';
-import {useLoaderData, type MetaFunction} from '@remix-run/react';
+import {redirect, type LoaderFunctionArgs} from '@shopify/remix-oxygen';
+import {useLoaderData, useParams, type MetaFunction} from '@remix-run/react';
 import type {ProductFragment} from 'storefrontapi.generated';
 import {
   getSelectedProductOptions,
-  Image,
   Money,
   useOptimisticVariant,
 } from '@shopify/hydrogen';
@@ -190,7 +189,7 @@ export default function Product() {
                   >
                     <span className="sr-only">{imageInfo.altText}</span>
                     <span className="absolute inset-0 overflow-hidden rounded-md">
-                      <Image
+                      <img
                         alt={imageInfo.altText || ''}
                         src={imageInfo.url}
                         width={imageInfo.width || 50}
@@ -210,7 +209,7 @@ export default function Product() {
             <TabPanels className="aspect-h-1 aspect-w-1 w-full">
               {product.images.nodes.map((imageInfo) => (
                 <TabPanel key={imageInfo.id}>
-                  <Image
+                  <img
                     alt={imageInfo.altText || ''}
                     src={imageInfo.url}
                     className="size-full object-cover object-center sm:rounded-lg"
@@ -311,7 +310,7 @@ export default function Product() {
                   disabled={
                     !selectedVariant || !selectedVariant.availableForSale
                   }
-                  onClick={() => {}}
+                  redirectTo={`/products/${useParams().handle}`}
                   lines={
                     selectedVariant
                       ? [

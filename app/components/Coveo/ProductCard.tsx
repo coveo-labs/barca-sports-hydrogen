@@ -1,13 +1,8 @@
 import type {Product} from '@coveo/headless/commerce';
-import {Image, Money, useOptimisticVariant} from '@shopify/hydrogen';
-import {AddToCartButton} from '../AddToCartButton';
-import {useAside} from '../Aside';
-import {useState} from 'react';
+import {Money} from '@shopify/hydrogen';
 
 import {StarIcon} from '@heroicons/react/20/solid';
 import {NavLink} from '@remix-run/react';
-import cx from '~/lib/cx';
-
 interface ProductCardProps {
   product: Product;
 }
@@ -37,10 +32,11 @@ export function ProductCard({product}: ProductCardProps) {
       </div>
       <div className="flex justify-between mt-1 text-lg font-medium">
         <div
-          className={cx(
-            'text-gray-900',
-            product.ec_promo_price ? 'line-through text-gray-300' : '',
-          )}
+          className={
+            product.ec_promo_price
+              ? 'text-gray-400 line-through'
+              : 'text-gray-900'
+          }
         >
           <Money
             data={{amount: product.ec_price?.toString(), currencyCode: 'USD'}}

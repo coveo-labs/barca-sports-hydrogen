@@ -22,7 +22,6 @@ import {
   ShoppingBagIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline';
-import {Image} from '@shopify/hydrogen';
 import BarcaLogo from '~/assets/barca-logo.svg';
 import {Fragment, Suspense, useState} from 'react';
 import {StandaloneSearchBox} from './Coveo/StandaloneSearchBox';
@@ -241,7 +240,12 @@ function MenuDesktop({header, setOpen, cart}: MenuDesktopProps) {
             <div className="ml-4 flex lg:ml-0">
               <NavLink to="/">
                 <span className="sr-only">{shop.name}</span>
-                <Image src={BarcaLogo} className="h-8 w-auto" sizes="200" />
+                <img
+                  src={BarcaLogo}
+                  className="h-8 w-auto"
+                  sizes="200"
+                  alt="Barca logo"
+                />
               </NavLink>
             </div>
 

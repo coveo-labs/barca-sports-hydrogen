@@ -1,35 +1,10 @@
 import type {FooterQuery, HeaderQuery} from 'storefrontapi.generated';
-import {Fragment, useState} from 'react';
-import {
-  Dialog,
-  DialogBackdrop,
-  DialogPanel,
-  Popover,
-  PopoverButton,
-  PopoverGroup,
-  PopoverPanel,
-  Tab,
-  TabGroup,
-  TabList,
-  TabPanel,
-  TabPanels,
-} from '@headlessui/react';
-import {
-  Bars3Icon,
-  MagnifyingGlassIcon,
-  QuestionMarkCircleIcon,
-  ShoppingBagIcon,
-  XMarkIcon,
-} from '@heroicons/react/24/outline';
-import {ChevronDownIcon} from '@heroicons/react/20/solid';
 import {NavLink} from '@remix-run/react';
 import relativeLink from '~/lib/relative.link';
 import BarcaLogo from '~/assets/barca-logo.svg';
 
 interface FooterProps {
-  footer: Promise<FooterQuery | null>;
   header: HeaderQuery;
-  publicStoreDomain: string;
 }
 
 const footerNavigation = {
@@ -70,11 +45,7 @@ const footerNavigation = {
   ],
 };
 
-export function Footer({
-  footer: footerPromise,
-  header,
-  publicStoreDomain,
-}: FooterProps) {
+export function Footer({header}: FooterProps) {
   const {menu} = header;
   return (
     <footer aria-labelledby="footer-heading" className="bg-white">
@@ -85,7 +56,7 @@ export function Footer({
         <div className="">
           <div className="pb-20 pt-16">
             <div className="md:flex md:justify-center">
-              <img src={BarcaLogo} className="h-8 w-auto" />
+              <img src={BarcaLogo} className="h-8 w-auto" alt="Barca logo" />
             </div>
             <div className="mx-auto mt-16 max-w-5xl xl:grid xl:grid-cols-2 xl:gap-8">
               <div className="grid grid-cols-2 gap-8 xl:col-span-2">

@@ -1,20 +1,11 @@
-import {
-  Dialog,
-  DialogBackdrop,
-  DialogPanel,
-  Menu,
-  MenuButton,
-  MenuItems,
-} from '@headlessui/react';
-import {ChevronDownIcon, FunnelIcon} from '@heroicons/react/20/solid';
-import {XMarkIcon} from '@heroicons/react/24/outline';
+import {Menu, MenuButton, MenuItems} from '@headlessui/react';
+import {ChevronDownIcon} from '@heroicons/react/20/solid';
 import {useState} from 'react';
 import {Facets} from './Facets';
 import {PaginationFooter} from './Pagination';
 import {ProductList} from './ProductList';
 import {Sorts} from './Sorts';
 import {Breadcrumbs} from './Breadcrumbs';
-import Product from '~/routes/($locale).products.$handle';
 
 interface SearchPageProps {
   headline: string;

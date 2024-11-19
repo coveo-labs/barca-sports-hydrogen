@@ -1,10 +1,6 @@
 import type {MappedFacetState} from '@coveo/headless/ssr-commerce';
 
 import {
-  Menu,
-  MenuButton,
-  MenuItem,
-  MenuItems,
   Popover,
   PopoverButton,
   PopoverGroup,

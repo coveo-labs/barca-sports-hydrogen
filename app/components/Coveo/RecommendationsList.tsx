@@ -1,9 +1,4 @@
-import type {
-  Recommendations,
-  RecommendationsState,
-} from '@coveo/headless-react/ssr-commerce';
-import {useEffect} from 'react';
-import {useHomepageRecommendations} from '~/lib/coveo.engine';
+import type {RecommendationsState} from '@coveo/headless-react/ssr-commerce';
 import {ProductCard} from './ProductCard';
 
 interface RecommendationsListProps {

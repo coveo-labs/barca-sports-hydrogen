@@ -1,5 +1,5 @@
-import {defer, type LoaderFunctionArgs} from '@shopify/remix-oxygen';
-import {Await, useLoaderData, type MetaFunction} from '@remix-run/react';
+import {type LoaderFunctionArgs} from '@shopify/remix-oxygen';
+import {useLoaderData, type MetaFunction} from '@remix-run/react';
 import {
   searchEngineDefinition,
   type SearchStaticState,
@@ -10,7 +10,6 @@ import {
 } from '~/lib/navigator.provider';
 import {SearchProvider} from '~/components/Coveo/Context';
 import {FullSearch} from '~/components/Coveo/FullSearch';
-import {Suspense} from 'react';
 
 export const meta: MetaFunction = () => {
   return [{title: `Coveo | Search`}];
