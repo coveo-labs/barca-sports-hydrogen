@@ -152,7 +152,7 @@ export async function fetchStaticState({
       context: {
         language,
         country,
-        currency,
+        currency: currency as any,
         view: {
           url,
         },
