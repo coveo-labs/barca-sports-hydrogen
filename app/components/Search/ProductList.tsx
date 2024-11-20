@@ -1,5 +1,5 @@
 import {engineDefinition} from '~/lib/coveo.engine';
-import {ProductCard} from './ProductCard';
+import {ProductCard} from '../Products/ProductCard';
 
 export function ProductList() {
   const productList = engineDefinition.controllers.useProductList();

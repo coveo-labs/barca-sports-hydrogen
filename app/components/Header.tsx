@@ -24,7 +24,7 @@ import {
 } from '@heroicons/react/24/outline';
 import BarcaLogo from '~/assets/barca-logo.svg';
 import {Fragment, Suspense, useState} from 'react';
-import {StandaloneSearchBox} from './Coveo/StandaloneSearchBox';
+import {StandaloneSearchBox} from './Search/StandaloneSearchBox';
 import relativeLink from '~/lib/relative.link';
 
 interface HeaderProps {
@@ -33,12 +33,7 @@ interface HeaderProps {
   isLoggedIn: Promise<boolean>;
   publicStoreDomain: string;
 }
-export function Header({
-  header,
-  isLoggedIn,
-  cart,
-  publicStoreDomain,
-}: HeaderProps) {
+export function Header({header, cart}: HeaderProps) {
   const [open, setOpen] = useState(false);
   return (
     <>
@@ -55,6 +50,7 @@ interface MenuMobileProps {
 }
 function MenuMobile({header, open, setOpen}: MenuMobileProps) {
   const {menu, collections} = header;
+
   return (
     <Dialog open={open} onClose={setOpen} className="relative z-40 lg:hidden">
       <DialogBackdrop

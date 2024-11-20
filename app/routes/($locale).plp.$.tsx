@@ -4,9 +4,13 @@ import {
   ClientSideNavigatorContextProvider,
   ServerSideNavigatorContextProvider,
 } from '~/lib/navigator.provider';
-import {engineDefinition, type ListingStaticState} from '~/lib/coveo.engine';
-import {ListingProvider} from '~/components/Coveo/Context';
-import {FullSearch} from '~/components/Coveo/FullSearch';
+import {
+  engineDefinition,
+  fetchStaticState,
+  type ListingStaticState,
+} from '~/lib/coveo.engine';
+import {ListingProvider} from '~/components/Search/Context';
+import {FullSearch} from '~/components/Search/FullSearch';
 
 export const meta: MetaFunction<typeof loader> = ({data}) => {
   return [{title: `Coveo ProductListingPage Work in progress`}];
@@ -19,38 +23,14 @@ export async function loader(args: LoaderFunctionArgs) {
     () => new ServerSideNavigatorContextProvider(args.request),
   );
 
-  const cart = await context.cart.get();
-
-  const staticState = await listingEngineDefinition.fetchStaticState({
-    controllers: {
-      searchParameter: {initialState: {parameters: {}}},
-      cart: {
-        initialState: {
-          items: cart
-            ? cart.lines.nodes.map((node) => {
-                const {merchandise} = node;
-                return {
-                  productId: merchandise.product.id,
-                  name: merchandise.product.title,
-                  price: Number(merchandise.price.amount),
-                  quantity: node.quantity,
-                };
-              })
-            : [],
-        },
-      },
-      context: {
-        language: 'en',
-        country: 'US',
-        currency: 'USD',
-        view: {
-          url: `https://sports.barca.group/plp/${params['*']}`,
-        },
-      },
-    },
+  const staticState = await fetchStaticState({
+    url: `https://sports.barca.group/plp/${params['*']}`,
+    context,
+    query: '',
+    k: 'listingEngineDefinition',
   });
 
-  return {staticState, cart};
+  return {staticState};
 }
 
 export default function PLP() {

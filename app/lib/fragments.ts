@@ -243,3 +243,20 @@ export const FOOTER_QUERY = `#graphql
   }
   ${MENU_FRAGMENT}
 ` as const;
+
+export const LOCALIZATION_QUERY = `#graphql
+  query Localization(
+  $language: LanguageCode
+  $country: CountryCode
+  ) @inContext(language: $language, country: $country) {
+    localization {
+      country {
+        currency {
+          isoCode,
+          name,
+          symbol
+        }
+      }
+    }
+  }
+` as const;

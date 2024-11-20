@@ -14,13 +14,13 @@ import {
 import favicon from '~/assets/favicon.ico';
 import tailwindCss from './styles/tailwind.css?url';
 import {PageLayout} from '~/components/PageLayout';
-import {FOOTER_QUERY, HEADER_QUERY} from '~/lib/fragments';
-import {engineDefinition} from './lib/coveo.engine';
+import {FOOTER_QUERY, HEADER_QUERY, LOCALIZATION_QUERY} from '~/lib/fragments';
+import {engineDefinition, fetchStaticState} from './lib/coveo.engine';
 import {
   ClientSideNavigatorContextProvider,
   ServerSideNavigatorContextProvider,
 } from './lib/navigator.provider';
-import {ListingProvider} from './components/Coveo/Context';
+import {ListingProvider} from './components/Search/Context';
 import {GlobalLoading} from './components/ProgressBar';
 
 export type RootLoader = typeof loader;
@@ -92,7 +92,6 @@ export async function loader(args: LoaderFunctionArgs) {
  */
 async function loadCriticalData({context, request}: LoaderFunctionArgs) {
   const {storefront} = context;
-  const cart = await context.cart.get();
 
   const [header] = await Promise.all([
     storefront.query(HEADER_QUERY, {
@@ -101,6 +100,7 @@ async function loadCriticalData({context, request}: LoaderFunctionArgs) {
         headerMenuHandle: 'hydrogen-menu',
       },
     }),
+
     // Add other queries here, so that they are loaded in parallel
   ]);
 
@@ -108,36 +108,12 @@ async function loadCriticalData({context, request}: LoaderFunctionArgs) {
     () => new ServerSideNavigatorContextProvider(request),
   );
 
-  const staticState =
-    await engineDefinition.listingEngineDefinition.fetchStaticState({
-      controllers: {
-        searchParameter: {initialState: {parameters: {}}},
-        cart: {
-          initialState: {
-            items: cart
-              ? cart.lines.nodes.map((node) => {
-                  const {merchandise} = node;
-                  return {
-                    productId: merchandise.product.id,
-                    name: merchandise.product.title,
-                    price: Number(merchandise.price.amount),
-                    quantity: node.quantity,
-                  };
-                })
-              : [],
-          },
-        },
-        context: {
-          language: 'en',
-          country: 'US',
-          currency: 'USD',
-          view: {
-            url: `https://sports.barca.group/plp/accessories`,
-          },
-        },
-      },
-    });
-
+  const staticState = await fetchStaticState({
+    context,
+    k: 'standaloneEngineDefinition',
+    query: '',
+    url: 'https://sports.barca.group',
+  });
   return {header, staticState};
 }
 

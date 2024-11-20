@@ -8,7 +8,7 @@ import {
 import {useEffect} from 'react';
 import {engineDefinition, useStandaloneSearchBox} from '~/lib/coveo.engine';
 import {MagnifyingGlassIcon} from '@heroicons/react/24/outline';
-import {ProductCard} from './ProductCard';
+import {ProductCard} from '../Products/ProductCard';
 import {useNavigate} from '@remix-run/react';
 
 interface StandaloneSearchBoxProps {

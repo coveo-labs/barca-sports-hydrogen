@@ -18,6 +18,9 @@ import {
   defineParameterManager,
   defineRecommendations,
 } from '@coveo/headless-react/ssr-commerce';
+import type {CartReturn} from '@shopify/hydrogen';
+import {AppLoadContext} from '@shopify/remix-oxygen';
+import {LOCALIZATION_QUERY} from './fragments';
 
 export const engineDefinition = defineCommerceEngine({
   configuration: {
@@ -107,3 +110,53 @@ export type StandaloneStaticState = InferStaticState<
 export type StandaloneHydratedState = InferHydratedState<
   typeof standaloneEngineDefinition
 >;
+
+export async function fetchStaticState({
+  k,
+  query,
+  url,
+  context,
+}: {
+  k:
+    | 'listingEngineDefinition'
+    | 'searchEngineDefinition'
+    | 'standaloneEngineDefinition';
+  query: string;
+  url: string;
+  context: AppLoadContext;
+}) {
+  const {country, language} = context.storefront.i18n;
+  const localizationInfo = await context.storefront.query(LOCALIZATION_QUERY, {
+    cache: context.storefront.CacheNone(),
+    variables: {language, country},
+  });
+  const currency = localizationInfo.localization.country.currency.isoCode;
+  const cart = await context.cart.get();
+
+  return engineDefinition[k].fetchStaticState({
+    controllers: {
+      searchParameter: {initialState: {parameters: {q: query}}},
+      cart: {
+        initialState: {
+          items: cart?.lines.nodes.map((node) => {
+            const {merchandise} = node;
+            return {
+              productId: merchandise.product.id,
+              name: merchandise.product.title,
+              price: Number(merchandise.price.amount),
+              quantity: node.quantity,
+            };
+          }),
+        },
+      },
+      context: {
+        language,
+        country,
+        currency,
+        view: {
+          url,
+        },
+      },
+    },
+  });
+}

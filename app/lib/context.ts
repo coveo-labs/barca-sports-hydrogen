@@ -1,4 +1,4 @@
-import {createHydrogenContext} from '@shopify/hydrogen';
+import {createHydrogenContext, createStorefrontClient} from '@shopify/hydrogen';
 import {AppSession} from '~/lib/session';
 import {CART_QUERY_FRAGMENT} from '~/lib/fragments';
 import {getLocaleFromRequest} from '~/lib/i18n';
@@ -25,6 +25,10 @@ export async function createAppLoadContext(
     AppSession.init(request, [env.SESSION_SECRET]),
   ]);
 
+  const {storefront} = createStorefrontClient({
+    i18n: {language: 'EN', country: 'US'},
+  });
+
   const hydrogenContext = createHydrogenContext({
     env,
     request,
@@ -39,6 +43,7 @@ export async function createAppLoadContext(
 
   return {
     ...hydrogenContext,
+    storefront,
     // declare additional Remix loader context
   };
 }

@@ -1,4 +1,4 @@
-import type {FooterQuery, HeaderQuery} from 'storefrontapi.generated';
+import type {HeaderQuery} from 'storefrontapi.generated';
 import {NavLink} from '@remix-run/react';
 import relativeLink from '~/lib/relative.link';
 import BarcaLogo from '~/assets/barca-logo.svg';
@@ -47,6 +47,7 @@ const footerNavigation = {
 
 export function Footer({header}: FooterProps) {
   const {menu} = header;
+
   return (
     <footer aria-labelledby="footer-heading" className="bg-white">
       <h2 id="footer-heading" className="sr-only">

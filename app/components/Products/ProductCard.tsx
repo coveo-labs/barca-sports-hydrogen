@@ -14,6 +14,8 @@ export function ProductCard({product}: ProductCardProps) {
       className="group"
     >
       <img
+        width={1024}
+        height={1024}
         alt={product.ec_name!}
         src={product.ec_images[0]}
         className="aspect-square w-full rounded-lg bg-gray-200 object-cover group-hover:opacity-75 xl:aspect-[7/8]"

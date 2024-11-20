@@ -12,13 +12,14 @@ import {
   type LoaderFunctionArgs,
   type ActionFunctionArgs,
 } from '@shopify/remix-oxygen';
-import {Suspense, useEffect} from 'react';
-import {CartMain} from '~/components/CartMain';
-import {SearchProvider} from '~/components/Coveo/Context';
+import {Suspense} from 'react';
+import {CartEmpty} from '~/components/Cart/CartEmpty';
+import {CartMain} from '~/components/Cart/CartMain';
+import {ListingProvider} from '~/components/Search/Context';
 import {
-  type SearchStaticState,
-  standaloneEngineDefinition,
-  useCartRecommendations,
+  fetchStaticState,
+  listingEngineDefinition,
+  type ListingStaticState,
 } from '~/lib/coveo.engine';
 import {
   ClientSideNavigatorContextProvider,
@@ -116,39 +117,15 @@ export async function action({request, context}: ActionFunctionArgs) {
 }
 
 export async function loader({context, request}: LoaderFunctionArgs) {
-  standaloneEngineDefinition.setNavigatorContextProvider(
+  listingEngineDefinition.setNavigatorContextProvider(
     () => new ServerSideNavigatorContextProvider(request),
   );
 
-  const cart = await context.cart.get();
-
-  const staticState = standaloneEngineDefinition.fetchStaticState({
-    controllers: {
-      searchParameter: {initialState: {parameters: {q: ''}}},
-      cart: {
-        initialState: {
-          items: cart
-            ? cart.lines.nodes.map((node) => {
-                const {merchandise} = node;
-                return {
-                  productId: merchandise.product.id,
-                  name: merchandise.product.title,
-                  price: Number(merchandise.price.amount),
-                  quantity: node.quantity,
-                };
-              })
-            : [],
-        },
-      },
-      context: {
-        language: 'en',
-        country: 'US',
-        currency: 'USD',
-        view: {
-          url: `https://sports.barca.group`,
-        },
-      },
-    },
+  const staticState = fetchStaticState({
+    context,
+    k: 'listingEngineDefinition',
+    query: '',
+    url: 'https://sports.barca.group/plp/accessories',
   });
 
   return defer({staticState});
@@ -156,32 +133,28 @@ export async function loader({context, request}: LoaderFunctionArgs) {
 
 export default function Cart() {
   const rootData = useRouteLoaderData<RootLoader>('root');
-  const {staticState} = useLoaderData<typeof loader>();
-  const cartRecommendations = useCartRecommendations();
-  useEffect(() => {
-    cartRecommendations.methods?.refresh();
-  }, [cartRecommendations.methods]);
+  const loaderData = useLoaderData<typeof loader>();
 
-  if (!rootData) return null;
+  if (!rootData) {
+    return null;
+  }
 
-  const allData = Promise.all([rootData.cart, staticState]);
+  const allData = Promise.all([rootData?.cart, loaderData?.staticState]);
 
   return (
     <Suspense>
-      <Await resolve={allData} errorElement={<div>An error occurred</div>}>
+      <Await resolve={allData}>
         {([cart, staticState]) => {
-          console.log('cart', cart);
+          if (cart?.lines.nodes.length === 0) {
+            return <CartEmpty />;
+          }
           return (
-            <SearchProvider
+            <ListingProvider
               navigatorContext={new ClientSideNavigatorContextProvider()}
-              q=""
-              staticState={staticState as SearchStaticState}
+              staticState={staticState as ListingStaticState}
             >
-              <CartMain
-                recommendations={cartRecommendations.state}
-                cart={cart}
-              />
-            </SearchProvider>
+              <CartMain cart={cart} />
+            </ListingProvider>
           );
         }}
       </Await>

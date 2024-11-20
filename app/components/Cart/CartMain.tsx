@@ -1,26 +1,28 @@
 import {NavLink} from '@remix-run/react';
 import {Money, useOptimisticCart} from '@shopify/hydrogen';
 import type {CartApiQueryFragment} from 'storefrontapi.generated';
-import type {RecommendationsState} from '@coveo/headless-react/ssr-commerce';
 import {CheckIcon, QuestionMarkCircleIcon} from '@heroicons/react/20/solid';
 import {CartLineRemoveButton} from './CartLineItem';
-import {ProductCard} from './Coveo/ProductCard';
+import {useCartRecommendations} from '~/lib/coveo.engine';
+import {useEffect} from 'react';
+import {ProductCard} from '../Products/ProductCard';
 
 export type CartLayout = 'page' | 'aside';
 
 export type CartMainProps = {
   cart: CartApiQueryFragment | null;
-  recommendations: RecommendationsState;
 };
 
-/**
- * The main cart component that displays the cart items and summary.
- * It is used by both the /cart route and the cart aside dialog.
- */
-export function CartMain({cart: originalCart, recommendations}: CartMainProps) {
+export function CartMain({cart: originalCart}: CartMainProps) {
   // The useOptimisticCart hook applies pending actions to the cart
   // so the user immediately sees feedback when they modify the cart.
   const cart = useOptimisticCart(originalCart);
+  const recs = useCartRecommendations();
+
+  useEffect(() => {
+    recs.methods?.refresh();
+  }, [recs.methods]);
+
   return (
     <main className="mx-auto max-w-2xl px-4 pb-24 pt-16 sm:px-6 lg:max-w-7xl lg:px-8">
       <h1 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
@@ -34,7 +36,7 @@ export function CartMain({cart: originalCart, recommendations}: CartMainProps) {
           </h2>
 
           <ul className="divide-y divide-gray-200 border-b border-t border-gray-200">
-            {cart.lines.nodes.map((cartLine, productIdx) => (
+            {cart?.lines.nodes.map((cartLine, productIdx) => (
               <li key={cartLine.id} className="flex py-6 sm:py-10">
                 <div className="shrink-0">
                   <img
@@ -50,7 +52,7 @@ export function CartMain({cart: originalCart, recommendations}: CartMainProps) {
                       <div className="flex justify-between">
                         <h3 className="text-sm">
                           <NavLink
-                            to={`/product/${cartLine.merchandise.id}`}
+                            to={`/products/${cartLine.merchandise.product.handle}`}
                             className="font-medium text-gray-700 hover:text-gray-800"
                           >
                             {cartLine.merchandise.title}
@@ -100,7 +102,7 @@ export function CartMain({cart: originalCart, recommendations}: CartMainProps) {
 
                       <div className="absolute right-0 top-0">
                         <CartLineRemoveButton
-                          disabled={!!cartLine.isOptimistic}
+                          disabled={false}
                           lineIds={[cartLine.id]}
                         />
                       </div>
@@ -139,9 +141,9 @@ export function CartMain({cart: originalCart, recommendations}: CartMainProps) {
               <dd className="text-sm font-medium text-gray-900">
                 <Money
                   data={{
-                    amount: cart.cost?.subtotalAmount?.amount || '0',
+                    amount: cart?.cost?.subtotalAmount?.amount || '0',
                     currencyCode:
-                      cart.cost?.subtotalAmount?.currencyCode || 'CAD',
+                      cart?.cost?.subtotalAmount?.currencyCode || 'CAD',
                   }}
                 />
               </dd>
@@ -162,7 +164,15 @@ export function CartMain({cart: originalCart, recommendations}: CartMainProps) {
                   />
                 </NavLink>
               </dt>
-              <dd className="text-sm font-medium text-gray-900">$5.00</dd>
+              <dd className="text-sm font-medium text-gray-900">
+                <Money
+                  data={{
+                    amount: '0',
+                    currencyCode:
+                      cart?.cost?.totalAmount?.currencyCode || 'CAD',
+                  }}
+                />
+              </dd>
             </div>
             <div className="flex items-center justify-between border-t border-gray-200 pt-4">
               <dt className="flex text-sm text-gray-600">
@@ -183,9 +193,9 @@ export function CartMain({cart: originalCart, recommendations}: CartMainProps) {
               <dd className="text-sm font-medium text-gray-900">
                 <Money
                   data={{
-                    amount: cart.cost?.totalTaxAmount?.amount || '0',
+                    amount: cart?.cost?.totalTaxAmount?.amount || '0',
                     currencyCode:
-                      cart.cost?.totalTaxAmount?.currencyCode || 'CAD',
+                      cart?.cost?.totalTaxAmount?.currencyCode || 'CAD',
                   }}
                 />
               </dd>
@@ -194,7 +204,15 @@ export function CartMain({cart: originalCart, recommendations}: CartMainProps) {
               <dt className="text-base font-medium text-gray-900">
                 Order total
               </dt>
-              <dd className="text-base font-medium text-gray-900">$112.32</dd>
+              <dd className="text-base font-medium text-gray-900">
+                <Money
+                  data={{
+                    amount: cart?.cost?.totalAmount?.amount || '0',
+                    currencyCode:
+                      cart?.cost?.totalAmount?.currencyCode || 'CAD',
+                  }}
+                />
+              </dd>
             </div>
           </dl>
 
@@ -212,11 +230,11 @@ export function CartMain({cart: originalCart, recommendations}: CartMainProps) {
       {/* Related products */}
       <section aria-labelledby="related-heading" className="mt-24">
         <h2 id="related-heading" className="text-lg font-medium text-gray-900">
-          {recommendations.headline}
+          {recs.state.headline}
         </h2>
 
         <div className="mt-6 grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-4 xl:gap-x-8">
-          {recommendations.products.map((relatedProduct) => (
+          {recs.state.products.map((relatedProduct) => (
             <ProductCard
               product={relatedProduct}
               key={relatedProduct.permanentid}

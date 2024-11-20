@@ -1,5 +1,5 @@
 import type {RecommendationsState} from '@coveo/headless-react/ssr-commerce';
-import {ProductCard} from './ProductCard';
+import {ProductCard} from '../Products/ProductCard';
 
 interface RecommendationsListProps {
   recommendations: RecommendationsState;
