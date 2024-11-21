@@ -20,7 +20,7 @@ import {
   ClientSideNavigatorContextProvider,
   ServerSideNavigatorContextProvider,
 } from './lib/navigator.provider';
-import {ListingProvider} from './components/Search/Context';
+import {ListingProvider, SearchProvider} from './components/Search/Context';
 import {GlobalLoading} from './components/ProgressBar';
 
 export type RootLoader = typeof loader;
@@ -110,7 +110,7 @@ async function loadCriticalData({context, request}: LoaderFunctionArgs) {
 
   const staticState = await fetchStaticState({
     context,
-    k: 'standaloneEngineDefinition',
+    k: 'searchEngineDefinition',
     query: '',
     url: 'https://sports.barca.group',
   });
@@ -164,12 +164,13 @@ export function Layout({children}: {children?: React.ReactNode}) {
             shop={data.shop}
             consent={data.consent}
           >
-            <ListingProvider
+            <SearchProvider
               navigatorContext={new ClientSideNavigatorContextProvider()}
               staticState={data.staticState as any}
+              q=""
             >
               <PageLayout {...data}>{children}</PageLayout>
-            </ListingProvider>
+            </SearchProvider>
           </Analytics.Provider>
         ) : (
           children

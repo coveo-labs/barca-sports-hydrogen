@@ -62,6 +62,7 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
             aria-label="Search"
             placeholder="Search"
             onChange={(event) => {
+              console.log(event);
               searchBox.methods?.updateText(event.target.value);
             }}
           />
