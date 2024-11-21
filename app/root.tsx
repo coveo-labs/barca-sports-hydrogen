@@ -14,7 +14,7 @@ import {
 import favicon from '~/assets/favicon.ico';
 import tailwindCss from './styles/tailwind.css?url';
 import {PageLayout} from '~/components/PageLayout';
-import {FOOTER_QUERY, HEADER_QUERY, LOCALIZATION_QUERY} from '~/lib/fragments';
+import {FOOTER_QUERY, HEADER_QUERY} from '~/lib/fragments';
 import {engineDefinition, fetchStaticState} from './lib/coveo.engine';
 import {
   ClientSideNavigatorContextProvider,

@@ -130,7 +130,7 @@ export async function fetchStaticState({
     cache: context.storefront.CacheNone(),
     variables: {language, country},
   });
-  const currency = localizationInfo.localization.country.currency.isoCode;
+  const currency = 'USD'; // localizationInfo.localization.country.currency.isoCode;
   const cart = await context.cart.get();
 
   return engineDefinition[k].fetchStaticState({
@@ -150,9 +150,9 @@ export async function fetchStaticState({
         },
       },
       context: {
-        language,
-        country,
-        currency: currency as any,
+        language: 'EN',
+        country: 'US',
+        currency: 'USD', //currency as any,
         view: {
           url,
         },
