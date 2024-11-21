@@ -27,6 +27,7 @@ export async function createAppLoadContext(
 
   const {storefront} = createStorefrontClient({
     i18n: {language: 'EN', country: 'US'},
+    storeDomain: env.PUBLIC_STORE_DOMAIN,
   });
 
   const hydrogenContext = createHydrogenContext({
