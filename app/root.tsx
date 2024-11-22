@@ -20,8 +20,9 @@ import {
   ClientSideNavigatorContextProvider,
   ServerSideNavigatorContextProvider,
 } from './lib/navigator.provider';
-import {ListingProvider, SearchProvider} from './components/Search/Context';
+import {SearchProvider} from './components/Search/Context';
 import {GlobalLoading} from './components/ProgressBar';
+import {getLocaleFromRequest} from './lib/i18n';
 
 export type RootLoader = typeof loader;
 
@@ -67,9 +68,16 @@ export async function loader(args: LoaderFunctionArgs) {
 
   const {storefront, env} = args.context;
 
+  const {country, currency, language} = getLocaleFromRequest(args.request);
+
   return defer({
     ...deferredData,
     ...criticalData,
+    locale: {
+      country,
+      currency,
+      language,
+    },
     publicStoreDomain: env.PUBLIC_STORE_DOMAIN,
     shop: getShopAnalytics({
       storefront,
@@ -80,8 +88,8 @@ export async function loader(args: LoaderFunctionArgs) {
       storefrontAccessToken: env.PUBLIC_STOREFRONT_API_TOKEN,
       withPrivacyBanner: false,
       // localize the privacy banner
-      country: args.context.storefront.i18n.country,
-      language: args.context.storefront.i18n.language,
+      country,
+      language,
     },
   });
 }
@@ -113,6 +121,7 @@ async function loadCriticalData({context, request}: LoaderFunctionArgs) {
     k: 'searchEngineDefinition',
     query: '',
     url: 'https://sports.barca.group',
+    request,
   });
   return {header, staticState};
 }
@@ -169,7 +178,12 @@ export function Layout({children}: {children?: React.ReactNode}) {
               staticState={data.staticState as any}
               q=""
             >
-              <PageLayout {...data}>{children}</PageLayout>
+              <PageLayout
+                {...data}
+                key={`${data.locale.language}-${data.locale.country}`}
+              >
+                {children}
+              </PageLayout>
             </SearchProvider>
           </Analytics.Provider>
         ) : (

@@ -25,10 +25,11 @@ export async function createAppLoadContext(
     AppSession.init(request, [env.SESSION_SECRET]),
   ]);
 
-  /*const {storefront} = createStorefrontClient({
+  const {storefront} = createStorefrontClient({
     i18n: {language: 'EN', country: 'US'},
     storeDomain: env.PUBLIC_STORE_DOMAIN,
-  });*/
+    publicStorefrontToken: env.PUBLIC_STOREFRONT_API_TOKEN,
+  });
 
   const hydrogenContext = createHydrogenContext({
     env,
@@ -44,6 +45,7 @@ export async function createAppLoadContext(
 
   return {
     ...hydrogenContext,
+    storefront,
     // declare additional Remix loader context
   };
 }

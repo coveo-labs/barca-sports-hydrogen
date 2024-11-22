@@ -95,6 +95,7 @@ export async function action({request, context}: ActionFunctionArgs) {
 
   const cartId = result?.cart?.id;
   const headers = cartId ? cart.setCartId(result.cart.id) : new Headers();
+  context.session.set('cartId', cartId);
   const {cart: cartResult, errors, warnings} = result;
 
   const redirectTo = formData.get('redirectTo') ?? null;
@@ -126,6 +127,7 @@ export async function loader({context, request}: LoaderFunctionArgs) {
     k: 'listingEngineDefinition',
     query: '',
     url: 'https://sports.barca.group/plp/accessories',
+    request,
   });
 
   return defer({staticState});

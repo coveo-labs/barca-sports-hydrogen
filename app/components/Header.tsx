@@ -26,7 +26,7 @@ import BarcaLogo from '~/assets/barca-logo.svg';
 import {Fragment, Suspense, useState} from 'react';
 import {StandaloneSearchBox} from './Search/StandaloneSearchBox';
 import relativeLink from '~/lib/relative.link';
-
+import {CountrySelector} from './CountrySelector';
 interface HeaderProps {
   header: HeaderQuery;
   cart: Promise<CartApiQueryFragment | null>;
@@ -216,7 +216,6 @@ interface MenuDesktopProps {
 }
 function MenuDesktop({header, setOpen, cart}: MenuDesktopProps) {
   const {shop, menu, collections} = header;
-
   return (
     <header className="sticky top-0 z-10 bg-white">
       <nav aria-label="Top" className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -372,15 +371,7 @@ function MenuDesktop({header, setOpen, cart}: MenuDesktopProps) {
               </div>
 
               <div className="hidden lg:ml-8 lg:flex">
-                <button className="flex items-center text-gray-700 hover:text-gray-800">
-                  <img
-                    alt=""
-                    src="https://tailwindui.com/plus/img/flags/flag-canada.svg"
-                    className="block h-auto w-5 shrink-0"
-                  />
-                  <span className="ml-3 block text-sm font-medium">CAD</span>
-                  <span className="sr-only">, change currency</span>
-                </button>
+                <CountrySelector />
               </div>
 
               {/* Search */}

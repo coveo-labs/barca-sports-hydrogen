@@ -2,11 +2,13 @@ import type {Product} from '@coveo/headless/commerce';
 import {Money} from '@shopify/hydrogen';
 
 import {StarIcon} from '@heroicons/react/20/solid';
-import {NavLink} from '@remix-run/react';
+import {NavLink, useRouteLoaderData} from '@remix-run/react';
+import type {RootLoader} from '~/root';
 interface ProductCardProps {
   product: Product;
 }
 export function ProductCard({product}: ProductCardProps) {
+  const rootData = useRouteLoaderData<RootLoader>('root');
   return (
     <NavLink
       key={product.permanentid}
@@ -41,7 +43,10 @@ export function ProductCard({product}: ProductCardProps) {
           }
         >
           <Money
-            data={{amount: product.ec_price?.toString(), currencyCode: 'USD'}}
+            data={{
+              amount: product.ec_price?.toString(),
+              currencyCode: rootData?.locale.currency || 'USD',
+            }}
           />
         </div>
         {product.ec_promo_price && (
