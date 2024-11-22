@@ -9,24 +9,15 @@ import {
   type AppLoadContext,
   type ActionFunction,
 } from '@shopify/remix-oxygen';
-import {SupportedMarkets} from '~/lib/i18n';
 
 export const action: ActionFunction = async ({request, context}) => {
   const {session} = context;
   const formData = await request.formData();
-
-  // Make sure the form request is valid
   const languageCode = formData.get('language') as LanguageCode;
-
   const countryCode = formData.get('country') as CountryCode;
-
-  // Determine where to redirect to relative to where user navigated from
-  // ie. hydrogen.shop/collections -> ca.hydrogen.shop/collections
   const path = formData.get('path');
-
   const cartId = await session.get('cartId');
 
-  // Update cart buyer's country code if there is a cart id
   if (cartId) {
     await updateCartBuyerIdentity(context, {
       cartId,
