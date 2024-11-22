@@ -18,9 +18,8 @@ import {
   defineParameterManager,
   defineRecommendations,
 } from '@coveo/headless-react/ssr-commerce';
-import type {CartReturn} from '@shopify/hydrogen';
-import {AppLoadContext} from '@shopify/remix-oxygen';
-import {LOCALIZATION_QUERY} from './fragments';
+import type {AppLoadContext} from '@shopify/remix-oxygen';
+import {getLocaleFromRequest} from './i18n';
 
 export const engineDefinition = defineCommerceEngine({
   configuration: {
@@ -116,6 +115,7 @@ export async function fetchStaticState({
   query,
   url,
   context,
+  request,
 }: {
   k:
     | 'listingEngineDefinition'
@@ -124,13 +124,10 @@ export async function fetchStaticState({
   query: string;
   url: string;
   context: AppLoadContext;
+  request: Request;
 }) {
-  const {country, language} = context.storefront.i18n;
-  const localizationInfo = await context.storefront.query(LOCALIZATION_QUERY, {
-    cache: context.storefront.CacheNone(),
-    variables: {language, country},
-  });
-  const currency = 'USD'; // localizationInfo.localization.country.currency.isoCode;
+  const {country, language, currency} = getLocaleFromRequest(request);
+
   const cart = await context.cart.get();
 
   return engineDefinition[k].fetchStaticState({
@@ -150,9 +147,9 @@ export async function fetchStaticState({
         },
       },
       context: {
-        language: 'EN',
-        country: 'US',
-        currency: 'USD', //currency as any,
+        language,
+        country,
+        currency: currency as any,
         view: {
           url,
         },

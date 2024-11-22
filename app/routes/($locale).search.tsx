@@ -28,6 +28,7 @@ export async function loader({request, context}: LoaderFunctionArgs) {
     k: 'searchEngineDefinition',
     query: q,
     url: `https://sports.barca.group`,
+    request,
   });
 
   return {staticState, q};

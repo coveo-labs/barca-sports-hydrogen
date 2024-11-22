@@ -16,11 +16,10 @@ export const meta: MetaFunction<typeof loader> = ({data}) => {
   return [{title: `Coveo ProductListingPage Work in progress`}];
 };
 
-export async function loader(args: LoaderFunctionArgs) {
-  const {params, context} = args;
+export async function loader({context, params, request}: LoaderFunctionArgs) {
   const {listingEngineDefinition} = engineDefinition;
   listingEngineDefinition.setNavigatorContextProvider(
-    () => new ServerSideNavigatorContextProvider(args.request),
+    () => new ServerSideNavigatorContextProvider(request),
   );
 
   const staticState = await fetchStaticState({
@@ -28,6 +27,7 @@ export async function loader(args: LoaderFunctionArgs) {
     context,
     query: '',
     k: 'listingEngineDefinition',
+    request,
   });
 
   return {staticState};
