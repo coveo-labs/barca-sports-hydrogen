@@ -1,11 +1,12 @@
 import type {
-  FacetGenerator,
   MappedFacetState,
   RegularFacet,
   RegularFacetState,
   NumericFacetState,
   NumericFacet,
   RegularFacetValue,
+  CategoryFacetState,
+  CategoryFacet,
 } from '@coveo/headless/ssr-commerce';
 
 import {
@@ -20,6 +21,10 @@ import {
 } from '@heroicons/react/20/solid';
 import type {ReactNode} from 'react';
 import {engineDefinition} from '~/lib/coveo.engine';
+
+type FacetGenerator = ReturnType<
+  typeof engineDefinition.controllers.useFacetGenerator
+>;
 
 export function Facets() {
   const facetGenerator = engineDefinition.controllers.useFacetGenerator();
@@ -41,61 +46,24 @@ function FacetsInline({
   facetGenerator,
 }: {
   facets: FacetGenerator['state'];
-  facetGenerator: ReturnType<
-    typeof engineDefinition.controllers.useFacetGenerator
-  >;
+  facetGenerator: FacetGenerator;
 }) {
   return (
     <>
       {facets.map((facet) => {
-        if (facet.type === 'regular') {
-          const facetController = facetGenerator.methods?.getFacetController(
-            facet.facetId,
-            'regular',
-          );
-
-          return (
-            <FacetInline
-              key={facet.facetId}
-              facet={facet}
-              numActiveValues={
-                facet.values.filter((value) => value.state === 'selected')
-                  .length
-              }
-            >
-              <RegularFacetContent
-                facet={facet}
-                facetController={facetController}
-                cx="flex items-center"
-              />
-            </FacetInline>
-          );
-        }
-
-        if (facet.type === 'numericalRange') {
-          const facetController = facetGenerator.methods?.getFacetController(
-            facet.facetId,
-            'numericalRange',
-          );
-
-          return (
-            <FacetInline
-              key={facet.facetId}
-              numActiveValues={
-                facet.values.filter((value) => value.state === 'selected')
-                  .length
-              }
-              facet={facet}
-            >
-              <NumericFacetContent
-                facet={facet}
-                facetController={facetController}
-                cx="flex items-center"
-              />
-            </FacetInline>
-          );
-        }
-        return null;
+        return (
+          <FacetInline
+            key={facet.facetId}
+            facet={facet}
+            numActiveValues={
+              (facet.values as RegularFacetValue[]).filter(
+                (value) => value.state !== 'idle',
+              ).length
+            }
+          >
+            {getFacetContent({cx: 'flex items-center', facet, facetGenerator})}
+          </FacetInline>
+        );
       })}
     </>
   );
@@ -106,9 +74,7 @@ function FacetsInPanel({
   facetGenerator,
 }: {
   facets: FacetGenerator['state'];
-  facetGenerator: ReturnType<
-    typeof engineDefinition.controllers.useFacetGenerator
-  >;
+  facetGenerator: FacetGenerator;
 }) {
   if (facets.length === 0) {
     return null;
@@ -158,46 +124,15 @@ function FacetsInPanel({
           className="mx-auto grid max-w-7xl gap-10 p-4"
         >
           {facets.map((facet) => {
-            if (facet.type === 'regular') {
-              const facetController =
-                facetGenerator.methods?.getFacetController(
-                  facet.facetId,
-                  'regular',
-                );
-
-              return (
-                <fieldset key={facet.facetId}>
-                  <legend className="block font-medium">
-                    {facet.displayName}
-                  </legend>
-                  <RegularFacetContent
-                    cx="space-y-6 pt-6 sm:space-y-4 sm:pt-4"
-                    facet={facet}
-                    facetController={facetController}
-                  />
-                </fieldset>
-              );
-            }
-            if (facet.type === 'numericalRange') {
-              const facetController =
-                facetGenerator.methods?.getFacetController(
-                  facet.facetId,
-                  'numericalRange',
-                );
-              return (
-                <fieldset key={facet.facetId}>
-                  <legend className="block font-medium">
-                    {facet.displayName}
-                  </legend>
-                  <NumericFacetContent
-                    cx="space-y-6 pt-6 sm:space-y-4 sm:pt-4"
-                    facet={facet}
-                    facetController={facetController}
-                  />
-                </fieldset>
-              );
-            }
-            return null;
+            return (
+              <FacetInPanel facet={facet} key={facet.facetId}>
+                {getFacetContent({
+                  facet,
+                  facetGenerator,
+                  cx: 'space-y-6 pt-6 sm:space-y-4 sm:pt-4',
+                })}
+              </FacetInPanel>
+            );
           })}
         </form>
       </PopoverPanel>
@@ -240,6 +175,7 @@ function FacetInline<FacetType extends keyof MappedFacetState>({
 
 function FacetInPanel<FacetType extends keyof MappedFacetState>({
   facet,
+  children,
 }: {
   facet: MappedFacetState[FacetType];
   children: ReactNode;
@@ -247,13 +183,64 @@ function FacetInPanel<FacetType extends keyof MappedFacetState>({
   return (
     <fieldset>
       <legend className="block font-medium">{facet.displayName}</legend>
-      <RegularFacetContent
-        cx="space-y-6 pt-6 sm:space-y-4 sm:pt-4"
-        facet={facet}
-        facetController={facetController}
-      />
+      {children}
     </fieldset>
   );
+}
+
+function getFacetContent({
+  facet,
+  facetGenerator,
+  cx,
+}: {
+  facet: FacetGenerator['state'][number];
+  facetGenerator: FacetGenerator;
+  cx: string;
+}) {
+  let facetContent: ReactNode | null = null;
+  switch (facet.type) {
+    case 'regular':
+      facetContent = (
+        <RegularFacetContent
+          facet={facet}
+          facetController={facetGenerator.methods?.getFacetController(
+            facet.facetId,
+            'regular',
+          )}
+          cx={cx}
+        />
+      );
+      break;
+    case 'numericalRange':
+      facetContent = (
+        <NumericFacetContent
+          facet={facet}
+          facetController={facetGenerator.methods?.getFacetController(
+            facet.facetId,
+            'numericalRange',
+          )}
+          cx={cx}
+        />
+      );
+      break;
+    case 'hierarchical':
+      facetContent = (
+        <CategoryFacetContent
+          facet={facet}
+          facetController={facetGenerator.methods?.getFacetController(
+            facet.facetId,
+            'hierarchical',
+          )}
+          cx={cx}
+        />
+      );
+      break;
+    case 'dateRange':
+    case 'location':
+      console.log('TODO facet: ', facet.type);
+  }
+
+  return facetContent;
 }
 
 function RegularFacetContent({
@@ -319,27 +306,72 @@ function NumericFacetContent({
 
   return (
     <>
-      {facet.values.map((facetValue, optionIdx) => (
-        <div key={`${facetValue.start}--${facetValue.end}`} className={cx}>
-          <input
-            defaultValue={`${formattedValue(facetValue)}`}
-            defaultChecked={facetValue.state === 'selected'}
-            id={`filter-${facet.facetId}-${optionIdx}`}
-            name={`${facetValue.start}--${facetValue.end}[]`}
-            type="checkbox"
-            className="size-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-            onChange={() => {
-              facetController?.toggleSelect(facetValue);
-            }}
-          />
-          <label
-            htmlFor={`filter-${facet.facetId}-${optionIdx}`}
-            className="ml-3 whitespace-nowrap pr-6 text-sm font-medium text-gray-900"
-          >
-            {`${formattedValue(facetValue)}`} ({facetValue.numberOfResults})
-          </label>
-        </div>
-      ))}
+      {facet.values.map((facetValue, optionIdx) => {
+        if (facetValue.numberOfResults === 0) {
+          return null;
+        }
+        return (
+          <div key={`${facetValue.start}--${facetValue.end}`} className={cx}>
+            <input
+              defaultValue={`${formattedValue(facetValue)}`}
+              defaultChecked={facetValue.state === 'selected'}
+              id={`filter-${facet.facetId}-${optionIdx}`}
+              name={`${facetValue.start}--${facetValue.end}[]`}
+              type="checkbox"
+              className="size-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+              onChange={() => {
+                facetController?.toggleSelect(facetValue);
+              }}
+            />
+            <label
+              htmlFor={`filter-${facet.facetId}-${optionIdx}`}
+              className="ml-3 whitespace-nowrap pr-6 text-sm font-medium text-gray-900"
+            >
+              {`${formattedValue(facetValue)}`} ({facetValue.numberOfResults})
+            </label>
+          </div>
+        );
+      })}
+    </>
+  );
+}
+
+function CategoryFacetContent({
+  facet,
+  facetController,
+  cx,
+}: {
+  facet: CategoryFacetState;
+  facetController?: CategoryFacet;
+  cx: string;
+}) {
+  return (
+    <>
+      {facet.values.map((facetValue, optionIdx) => {
+        return (
+          <div key={facetValue.value} className={cx}>
+            <input
+              defaultValue={facetValue.value}
+              defaultChecked={facetValue.state === 'selected'}
+              id={`filter-${facet.facetId}-${optionIdx}`}
+              name={`${facetValue.value}[]`}
+              type="radio"
+              className="size-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+              onClick={() => {
+                facetValue.state === 'selected'
+                  ? facetController?.deselectAll()
+                  : facetController?.toggleSelect(facetValue);
+              }}
+            />
+            <label
+              htmlFor={`filter-${facet.facetId}-${optionIdx}`}
+              className="ml-3 whitespace-nowrap pr-6 text-sm font-medium text-gray-900"
+            >
+              {facetValue.value} ({facetValue.numberOfResults})
+            </label>
+          </div>
+        );
+      })}
     </>
   );
 }
