@@ -1,4 +1,4 @@
-import {Await, NavLink} from '@remix-run/react';
+import {Await, NavLink, useRouteLoaderData} from '@remix-run/react';
 import type {HeaderQuery, CartApiQueryFragment} from 'storefrontapi.generated';
 
 import {
@@ -27,6 +27,7 @@ import {Fragment, Suspense, useState} from 'react';
 import {StandaloneSearchBox} from './Search/StandaloneSearchBox';
 import relativeLink from '~/lib/relative.link';
 import {CountrySelector} from './CountrySelector';
+import {RootLoader} from '~/root';
 interface HeaderProps {
   header: HeaderQuery;
   cart: Promise<CartApiQueryFragment | null>;
@@ -183,11 +184,6 @@ function MenuMobile({header, open, setOpen}: MenuMobileProps) {
                 Sign in
               </button>
             </div>
-            <div className="flow-root">
-              <button className="-m-2 block p-2 font-medium text-gray-900">
-                Create account
-              </button>
-            </div>
           </div>
 
           <div className="border-t border-gray-200 px-4 py-6">
@@ -216,6 +212,7 @@ interface MenuDesktopProps {
 }
 function MenuDesktop({header, setOpen, cart}: MenuDesktopProps) {
   const {shop, menu, collections} = header;
+  const rootData = useRouteLoaderData<RootLoader>('root');
   return (
     <header className="sticky top-0 z-10 bg-white">
       <nav aria-label="Top" className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -361,13 +358,26 @@ function MenuDesktop({header, setOpen, cart}: MenuDesktopProps) {
 
             <div className="ml-auto flex items-center">
               <div className="hidden lg:flex lg:flex-1 lg:items-center lg:justify-end lg:space-x-6">
-                <button className="text-sm font-medium text-gray-700 hover:text-gray-800">
-                  Sign in
-                </button>
+                <NavLink
+                  className="text-sm font-medium text-gray-700 hover:text-gray-800 flex items-center gap-x-4"
+                  to="/account"
+                >
+                  <div>
+                    {rootData?.loggedIn
+                      ? `Welcome back, ${rootData.customerDisplayName}`
+                      : 'Sign in'}
+                  </div>
+                  <div>
+                    {rootData?.loggedIn ? (
+                      <img
+                        alt=""
+                        src={rootData.customerImageUrl}
+                        className="size-8 rounded-full bg-gray-800"
+                      />
+                    ) : null}
+                  </div>
+                </NavLink>
                 <span aria-hidden="true" className="h-6 w-px bg-gray-200" />
-                <button className="text-sm font-medium text-gray-700 hover:text-gray-800">
-                  Create account
-                </button>
               </div>
 
               <div className="hidden lg:ml-8 lg:flex">

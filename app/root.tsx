@@ -14,7 +14,7 @@ import {
 import favicon from '~/assets/favicon.ico';
 import tailwindCss from './styles/tailwind.css?url';
 import {PageLayout} from '~/components/PageLayout';
-import {FOOTER_QUERY, HEADER_QUERY} from '~/lib/fragments';
+import {FOOTER_QUERY, GET_CUSTOMER_QUERY, HEADER_QUERY} from '~/lib/fragments';
 import {engineDefinition, fetchStaticState} from './lib/coveo.engine';
 import {
   ClientSideNavigatorContextProvider,
@@ -101,6 +101,26 @@ export async function loader(args: LoaderFunctionArgs) {
 async function loadCriticalData({context, request}: LoaderFunctionArgs) {
   const {storefront, customerAccount, cart} = context;
 
+  const loggedIn = await customerAccount.isLoggedIn();
+  let customerDisplayName = '';
+  let customerImageUrl = '';
+  if (loggedIn) {
+    const {
+      data: {
+        customer: {firstName: fetchedDisplayName, imageUrl},
+      },
+    } = await context.customerAccount.query<{
+      customer: {
+        firstName: string;
+        imageUrl: string;
+      };
+    }>(GET_CUSTOMER_QUERY);
+    customerDisplayName = fetchedDisplayName;
+    customerImageUrl = imageUrl;
+  }
+
+  const customer = await customerAccount.query(GET_CUSTOMER_QUERY);
+
   const buyer = await customerAccount.UNSTABLE_getBuyer();
   if (buyer) {
     await cart.updateBuyerIdentity({
@@ -130,7 +150,13 @@ async function loadCriticalData({context, request}: LoaderFunctionArgs) {
     url: 'https://sports.barca.group',
     request,
   });
-  return {header, staticState};
+  return {
+    header,
+    staticState,
+    loggedIn: await customerAccount.isLoggedIn(),
+    customerDisplayName,
+    customerImageUrl,
+  };
 }
 
 /**
