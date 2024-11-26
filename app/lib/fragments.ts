@@ -260,3 +260,37 @@ export const LOCALIZATION_QUERY = `#graphql
     }
   }
 ` as const;
+
+export const GET_CUSTOMER_QUERY = `
+query getCustomer {
+  customer {
+    firstName
+    lastName
+    displayName
+    emailAddress {
+      emailAddress
+    }
+    defaultAddress {
+      address1
+      address2
+      city
+      company
+      country
+      formatted
+      province
+      zip
+    }
+    imageUrl
+    id
+    metafields(
+      identifiers: [
+        {namespace: "custom", key: "notes"}
+        {namespace: "custom", key: "interests"}
+      ]
+    ) {
+      value
+      key
+    }
+  }
+}
+`;
