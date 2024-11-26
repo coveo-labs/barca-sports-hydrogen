@@ -147,8 +147,7 @@ export async function fetchStaticState({
         },
       },
       context: {
-        language: 'en',
-        //language: 'asd',// language.toLowerCase(),
+        language: language.toLowerCase(),
         country,
         currency: currency as any,
         view: {

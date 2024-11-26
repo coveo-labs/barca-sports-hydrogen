@@ -99,7 +99,14 @@ export async function loader(args: LoaderFunctionArgs) {
  * needed to render the page. If it's unavailable, the whole page should 400 or 500 error.
  */
 async function loadCriticalData({context, request}: LoaderFunctionArgs) {
-  const {storefront} = context;
+  const {storefront, customerAccount, cart} = context;
+
+  const buyer = await customerAccount.UNSTABLE_getBuyer();
+  if (buyer) {
+    await cart.updateBuyerIdentity({
+      customerAccessToken: buyer.customerAccessToken,
+    });
+  }
 
   const [header] = await Promise.all([
     storefront.query(HEADER_QUERY, {
