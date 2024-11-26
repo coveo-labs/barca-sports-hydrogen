@@ -119,8 +119,6 @@ async function loadCriticalData({context, request}: LoaderFunctionArgs) {
     customerImageUrl = imageUrl;
   }
 
-  const customer = await customerAccount.query(GET_CUSTOMER_QUERY);
-
   const buyer = await customerAccount.UNSTABLE_getBuyer();
   if (buyer) {
     await cart.updateBuyerIdentity({
