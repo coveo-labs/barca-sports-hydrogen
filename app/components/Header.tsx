@@ -25,9 +25,9 @@ import {
 import BarcaLogo from '~/assets/barca-logo.svg';
 import {Fragment, Suspense, useState} from 'react';
 import {StandaloneSearchBox} from './Search/StandaloneSearchBox';
-import relativeLink from '~/lib/relative.link';
 import {CountrySelector} from './CountrySelector';
-import {RootLoader} from '~/root';
+import type {RootLoader} from '~/root';
+import {NavLinkWithLocale, relativeLink} from './NavLinkWithLocale';
 interface HeaderProps {
   header: HeaderQuery;
   cart: Promise<CartApiQueryFragment | null>;
@@ -120,7 +120,7 @@ function MenuMobile({header, open, setOpen}: MenuMobileProps) {
                             className="object-cover object-center"
                           />
                         </div>
-                        <NavLink
+                        <NavLinkWithLocale
                           to={relativeLink(menuItem.url!)}
                           className="mt-6 block font-medium text-gray-900"
                         >
@@ -129,30 +129,30 @@ function MenuMobile({header, open, setOpen}: MenuMobileProps) {
                             className="absolute inset-0 z-10"
                           />
                           Shop all {currentCollection?.node.title}
-                        </NavLink>
+                        </NavLinkWithLocale>
                       </div>
                     </div>
                     {menuItem.items.map((subItem) => (
                       <div key={subItem.id}>
-                        <NavLink
+                        <NavLinkWithLocale
                           to={relativeLink(subItem.url!)}
                           id={`${subItem.id}-${subItem.id}-heading-mobile`}
                           className="font-medium text-gray-900"
                         >
                           {subItem.title}
-                        </NavLink>
+                        </NavLinkWithLocale>
                         <ul
                           aria-labelledby={`${subItem.id}-${subItem.id}-heading-mobile`}
                           className="mt-6 flex flex-col space-y-6"
                         >
                           {subItem.items.map((leafItems) => (
                             <li key={leafItems.id} className="flow-root">
-                              <NavLink
+                              <NavLinkWithLocale
                                 to={relativeLink(leafItems.url!)}
                                 className="-m-2 block p-2 text-gray-500"
                               >
                                 {leafItems.title}
-                              </NavLink>
+                              </NavLinkWithLocale>
                             </li>
                           ))}
                         </ul>
@@ -170,12 +170,12 @@ function MenuMobile({header, open, setOpen}: MenuMobileProps) {
               .map((topMenuItem) => {
                 return (
                   <div key={topMenuItem.id} className="flow-root">
-                    <NavLink
+                    <NavLinkWithLocale
                       to={relativeLink(topMenuItem.url!)}
                       className="-m-2 block p-2 font-medium text-gray-900"
                     >
                       {topMenuItem.title}
-                    </NavLink>
+                    </NavLinkWithLocale>
                   </div>
                 );
               })}
@@ -230,7 +230,7 @@ function MenuDesktop({header, setOpen, cart}: MenuDesktopProps) {
 
             {/* Logo */}
             <div className="ml-4 flex lg:ml-0">
-              <NavLink to="/">
+              <NavLinkWithLocale to="/">
                 <span className="sr-only">{shop.name}</span>
                 <img
                   src={BarcaLogo}
@@ -238,7 +238,7 @@ function MenuDesktop({header, setOpen, cart}: MenuDesktopProps) {
                   sizes="200"
                   alt="Barca logo"
                 />
-              </NavLink>
+              </NavLinkWithLocale>
             </div>
 
             {/* Flyout menus */}
@@ -250,13 +250,13 @@ function MenuDesktop({header, setOpen, cart}: MenuDesktopProps) {
                   );
                   if (menuItem.items.length === 0) {
                     return (
-                      <NavLink
+                      <NavLinkWithLocale
                         className="relative z-10 -mb-px flex items-center border-b-2 border-transparent pt-px text-sm font-medium text-gray-700 transition-colors duration-200 ease-out hover:text-gray-800 data-[open]:border-indigo-600 data-[open]:text-indigo-600 focus:outline-none"
                         key={menuItem.id}
                         to={relativeLink(menuItem.url!)}
                       >
                         {menuItem.title}
-                      </NavLink>
+                      </NavLinkWithLocale>
                     );
                   }
                   return (
@@ -285,7 +285,7 @@ function MenuDesktop({header, setOpen, cart}: MenuDesktopProps) {
                                   className="group relative text-base sm:text-sm"
                                 >
                                   <PopoverButton
-                                    as={NavLink}
+                                    as={NavLinkWithLocale}
                                     to={relativeLink(menuItem.url!)}
                                     className="mt-6 block font-medium text-gray-900 hover:underline"
                                   >
@@ -312,7 +312,7 @@ function MenuDesktop({header, setOpen, cart}: MenuDesktopProps) {
                                   return (
                                     <div key={subMenuItem.id}>
                                       <PopoverButton
-                                        as={NavLink}
+                                        as={NavLinkWithLocale}
                                         key={subMenuItem.id}
                                         to={relativeLink(subMenuItem.url!)}
                                         className="font-medium text-gray-900 hover:underline"
@@ -330,7 +330,7 @@ function MenuDesktop({header, setOpen, cart}: MenuDesktopProps) {
                                               className="flow-root"
                                             >
                                               <PopoverButton
-                                                as={NavLink}
+                                                as={NavLinkWithLocale}
                                                 to={relativeLink(
                                                   leafMenuItem.url!,
                                                 )}
@@ -358,7 +358,7 @@ function MenuDesktop({header, setOpen, cart}: MenuDesktopProps) {
 
             <div className="ml-auto flex items-center">
               <div className="hidden lg:flex lg:flex-1 lg:items-center lg:justify-end lg:space-x-6">
-                <NavLink
+                <NavLinkWithLocale
                   className="text-sm font-medium text-gray-700 hover:text-gray-800 flex items-center gap-x-4"
                   to="/account"
                 >
@@ -376,7 +376,7 @@ function MenuDesktop({header, setOpen, cart}: MenuDesktopProps) {
                       />
                     ) : null}
                   </div>
-                </NavLink>
+                </NavLinkWithLocale>
                 <span aria-hidden="true" className="h-6 w-px bg-gray-200" />
               </div>
 
@@ -413,7 +413,7 @@ function MenuDesktop({header, setOpen, cart}: MenuDesktopProps) {
 
               {/* Cart */}
               <div className="ml-4 flow-root lg:ml-6">
-                <NavLink
+                <NavLinkWithLocale
                   to="/cart"
                   className="group -m-2 flex items-center p-2"
                 >
@@ -431,7 +431,7 @@ function MenuDesktop({header, setOpen, cart}: MenuDesktopProps) {
                     </Await>
                   </Suspense>
                   <span className="sr-only">items in cart, view bag</span>
-                </NavLink>
+                </NavLinkWithLocale>
               </div>
             </div>
           </div>

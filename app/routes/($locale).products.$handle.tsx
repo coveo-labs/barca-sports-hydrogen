@@ -20,6 +20,7 @@ import {Sizes} from '~/components/Products/Sizes';
 import {Description} from '~/components/Products/Description';
 import {RootLoader} from '~/root';
 import {engineDefinition, useProductView} from '~/lib/coveo.engine';
+import {useCallback, useEffect, useRef} from 'react';
 
 export const meta: MetaFunction<typeof loader> = ({data}) => {
   return [{title: `Hydrogen | ${data?.product.title ?? ''}`}];
@@ -121,15 +122,23 @@ function redirectToFirstVariant({
 export default function Product() {
   const {product, variants} = useLoaderData<typeof loader>();
   const productView = useProductView();
+
   const selectedVariant = useOptimisticVariant(
     product.selectedVariant,
     variants,
   );
-  productView.methods?.view({
-    name: product.title,
-    productId: product.id,
-    price: Number(selectedVariant.price.amount),
-  });
+
+  const logProductView = useCallback(() => {
+    productView.methods?.view({
+      name: product.title,
+      productId: product.id,
+      price: Number(selectedVariant.price.amount),
+    });
+  }, [product.title, product.id, selectedVariant.price.amount]);
+
+  useEffect(() => {
+    logProductView();
+  }, [logProductView]);
 
   return (
     <main className="mx-auto max-w-7xl sm:px-6 sm:pt-16 lg:px-8">
@@ -150,7 +159,7 @@ export default function Product() {
                   disabled={
                     !selectedVariant || !selectedVariant.availableForSale
                   }
-                  selectedVariant={selectedVariant}
+                  product={product}
                   redirectTo={`/products/${useParams().handle}`}
                   lines={
                     selectedVariant

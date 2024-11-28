@@ -6,7 +6,7 @@ import {
 } from '@remix-run/react';
 import type {CartQueryDataReturn} from '@shopify/hydrogen';
 import {CartForm} from '@shopify/hydrogen';
-import {Cart} from '@shopify/hydrogen/storefront-api-types';
+import type {Cart} from '@shopify/hydrogen/storefront-api-types';
 import {
   defer,
   json,
@@ -47,7 +47,7 @@ export async function action({request, context}: ActionFunctionArgs) {
     throw new Error('No action provided');
   }
 
-  let status = 200;
+  const status = 200;
   let result: CartQueryDataReturn;
 
   switch (action) {
@@ -100,7 +100,6 @@ export async function action({request, context}: ActionFunctionArgs) {
 
   const cartId = result?.cart?.id;
   const headers = cartId ? cart.setCartId(result.cart.id) : new Headers();
-  context.session.set('cartId', cartId);
   const {cart: cartResult, errors, warnings} = result;
 
   return json(

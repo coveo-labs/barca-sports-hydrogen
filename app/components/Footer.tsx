@@ -1,7 +1,7 @@
 import type {HeaderQuery} from 'storefrontapi.generated';
 import {NavLink} from '@remix-run/react';
-import relativeLink from '~/lib/relative.link';
 import BarcaLogo from '~/assets/barca-logo.svg';
+import {NavLinkWithLocale, relativeLink} from './NavLinkWithLocale';
 
 interface FooterProps {
   header: HeaderQuery;
@@ -69,12 +69,12 @@ export function Footer({header}: FooterProps) {
                     <ul className="mt-6 space-y-6">
                       {menu?.items.map((menuItem) => (
                         <li key={menuItem.title} className="text-sm">
-                          <NavLink
+                          <NavLinkWithLocale
                             to={relativeLink(menuItem.url!)}
                             className="text-gray-500 hover:text-gray-600"
                           >
                             {menuItem.title}
-                          </NavLink>
+                          </NavLinkWithLocale>
                         </li>
                       ))}
                     </ul>
@@ -184,12 +184,12 @@ export function Footer({header}: FooterProps) {
                 <p className="mt-2 text-gray-200">
                   Did you sign up to the newsletter? If so, use the keyword we
                   sent you to get access.{' '}
-                  <NavLink
+                  <NavLinkWithLocale
                     to="#"
                     className="whitespace-nowrap font-bold text-white hover:text-gray-200"
                   >
                     Go now<span aria-hidden="true"> &rarr;</span>
-                  </NavLink>
+                  </NavLinkWithLocale>
                 </p>
               </div>
             </div>
@@ -215,21 +215,6 @@ export function Footer({header}: FooterProps) {
                   {item.name}
                 </a>
               ))}
-            </div>
-
-            <div className="ml-6 border-l border-gray-200 pl-6">
-              <NavLink
-                to="#"
-                className="flex items-center text-gray-500 hover:text-gray-600"
-              >
-                <img
-                  alt=""
-                  src="https://tailwindui.com/plus/img/flags/flag-canada.svg"
-                  className="h-auto w-5 shrink-0"
-                />
-                <span className="ml-3 text-sm">Change</span>
-                <span className="sr-only">location and currency</span>
-              </NavLink>
             </div>
           </div>
         </div>

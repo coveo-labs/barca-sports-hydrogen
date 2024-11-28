@@ -33,8 +33,7 @@ export const SupportedMarkets: Partial<Record<CountryCode, I18nLocale>> = {
   },
 };
 
-export function getLocaleFromRequest(request: Request): I18nLocale {
-  const url = new URL(request.url);
+export function getLocaleFromURL(url: URL): I18nLocale {
   const firstPathPart = url.pathname.split('/')[1]?.toUpperCase() ?? '';
 
   type I18nFromUrl = [I18nLocale['language'], I18nLocale['country']];
@@ -50,4 +49,9 @@ export function getLocaleFromRequest(request: Request): I18nLocale {
   const supportedMarket = SupportedMarkets[country] || SupportedMarkets['US']!;
 
   return supportedMarket;
+}
+
+export function getLocaleFromRequest(request: Request): I18nLocale {
+  const url = new URL(request.url);
+  return getLocaleFromURL(url);
 }
