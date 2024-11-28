@@ -6,6 +6,7 @@ import {
 } from '@remix-run/react';
 import type {CartQueryDataReturn} from '@shopify/hydrogen';
 import {CartForm} from '@shopify/hydrogen';
+import {Cart} from '@shopify/hydrogen/storefront-api-types';
 import {
   defer,
   json,
@@ -30,6 +31,10 @@ import type {RootLoader} from '~/root';
 export const meta: MetaFunction = () => {
   return [{title: `Hydrogen | Cart`}];
 };
+
+export interface CartReturn {
+  cart: Cart;
+}
 
 export async function action({request, context}: ActionFunctionArgs) {
   const {cart} = context;
@@ -97,12 +102,6 @@ export async function action({request, context}: ActionFunctionArgs) {
   const headers = cartId ? cart.setCartId(result.cart.id) : new Headers();
   context.session.set('cartId', cartId);
   const {cart: cartResult, errors, warnings} = result;
-
-  const redirectTo = formData.get('redirectTo') ?? null;
-  if (typeof redirectTo === 'string') {
-    status = 303;
-    headers.set('Location', redirectTo);
-  }
 
   return json(
     {

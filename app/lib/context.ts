@@ -26,7 +26,7 @@ export async function createAppLoadContext(
   ]);
 
   const {storefront} = createStorefrontClient({
-    i18n: {language: 'EN', country: 'US'},
+    i18n: getLocaleFromRequest(request),
     storeDomain: env.PUBLIC_STORE_DOMAIN,
     publicStorefrontToken: env.PUBLIC_STOREFRONT_API_TOKEN,
   });

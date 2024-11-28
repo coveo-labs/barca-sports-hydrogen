@@ -1,5 +1,10 @@
 import {redirect, type LoaderFunctionArgs} from '@shopify/remix-oxygen';
-import {useLoaderData, useParams, type MetaFunction} from '@remix-run/react';
+import {
+  useLoaderData,
+  useParams,
+  useRouteLoaderData,
+  type MetaFunction,
+} from '@remix-run/react';
 import type {ProductFragment} from 'storefrontapi.generated';
 import {
   getSelectedProductOptions,
@@ -13,10 +18,14 @@ import {ImageGallery} from '~/components/Products/ImageGallery';
 import {Colors} from '~/components/Products/Colors';
 import {Sizes} from '~/components/Products/Sizes';
 import {Description} from '~/components/Products/Description';
+import {RootLoader} from '~/root';
+import {engineDefinition, useProductView} from '~/lib/coveo.engine';
 
 export const meta: MetaFunction<typeof loader> = ({data}) => {
   return [{title: `Hydrogen | ${data?.product.title ?? ''}`}];
 };
+
+export type ProductHandleData = typeof loader;
 
 export async function loader(args: LoaderFunctionArgs) {
   // Await the critical data required to render initial state of the page
@@ -111,10 +120,16 @@ function redirectToFirstVariant({
 
 export default function Product() {
   const {product, variants} = useLoaderData<typeof loader>();
+  const productView = useProductView();
   const selectedVariant = useOptimisticVariant(
     product.selectedVariant,
     variants,
   );
+  productView.methods?.view({
+    name: product.title,
+    productId: product.id,
+    price: Number(selectedVariant.price.amount),
+  });
 
   return (
     <main className="mx-auto max-w-7xl sm:px-6 sm:pt-16 lg:px-8">
@@ -135,6 +150,7 @@ export default function Product() {
                   disabled={
                     !selectedVariant || !selectedVariant.availableForSale
                   }
+                  selectedVariant={selectedVariant}
                   redirectTo={`/products/${useParams().handle}`}
                   lines={
                     selectedVariant

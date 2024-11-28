@@ -4,14 +4,24 @@ import {Money} from '@shopify/hydrogen';
 import {StarIcon} from '@heroicons/react/20/solid';
 import {NavLink, useRouteLoaderData} from '@remix-run/react';
 import type {RootLoader} from '~/root';
+import {useProductList} from '~/lib/coveo.engine';
 interface ProductCardProps {
   product: Product;
 }
 export function ProductCard({product}: ProductCardProps) {
   const rootData = useRouteLoaderData<RootLoader>('root');
+  const hasPromo =
+    (product.ec_promo_price && product.ec_promo_price < product.ec_price!) ||
+    false;
+
+  const interactiveProduct = useProductList().methods?.interactiveProduct({
+    options: {product},
+  });
+
   return (
     <NavLink
       key={product.permanentid}
+      onClick={interactiveProduct?.select}
       to={`/products/${product.ec_item_group_id?.replace(/0/, '')}`}
       className="group"
     >
@@ -36,11 +46,7 @@ export function ProductCard({product}: ProductCardProps) {
       </div>
       <div className="flex justify-between mt-1 text-lg font-medium">
         <div
-          className={
-            product.ec_promo_price
-              ? 'text-gray-400 line-through'
-              : 'text-gray-900'
-          }
+          className={hasPromo ? 'text-gray-400 line-through' : 'text-gray-900'}
         >
           <Money
             data={{
@@ -49,7 +55,7 @@ export function ProductCard({product}: ProductCardProps) {
             }}
           />
         </div>
-        {product.ec_promo_price && (
+        {hasPromo && (
           <div className={`text-gray-900`}>
             <Money
               data={{
