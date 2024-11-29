@@ -23,7 +23,6 @@ import {
 import {SearchProvider} from './components/Search/Context';
 import {GlobalLoading} from './components/ProgressBar';
 import {getLocaleFromRequest} from './lib/i18n';
-
 export type RootLoader = typeof loader;
 
 /**
@@ -69,29 +68,35 @@ export async function loader(args: LoaderFunctionArgs) {
   const {storefront, env} = args.context;
 
   const {country, currency, language} = getLocaleFromRequest(args.request);
-
-  return defer({
-    ...deferredData,
-    ...criticalData,
-    locale: {
-      country,
-      currency,
-      language,
+  return defer(
+    {
+      ...deferredData,
+      ...criticalData,
+      locale: {
+        country,
+        currency,
+        language,
+      },
+      publicStoreDomain: env.PUBLIC_STORE_DOMAIN,
+      shop: getShopAnalytics({
+        storefront,
+        publicStorefrontId: env.PUBLIC_STOREFRONT_ID,
+      }),
+      consent: {
+        checkoutDomain: env.PUBLIC_CHECKOUT_DOMAIN,
+        storefrontAccessToken: env.PUBLIC_STOREFRONT_API_TOKEN,
+        withPrivacyBanner: false,
+        // localize the privacy banner
+        country,
+        language,
+      },
     },
-    publicStoreDomain: env.PUBLIC_STORE_DOMAIN,
-    shop: getShopAnalytics({
-      storefront,
-      publicStorefrontId: env.PUBLIC_STOREFRONT_ID,
-    }),
-    consent: {
-      checkoutDomain: env.PUBLIC_CHECKOUT_DOMAIN,
-      storefrontAccessToken: env.PUBLIC_STOREFRONT_API_TOKEN,
-      withPrivacyBanner: false,
-      // localize the privacy banner
-      country,
-      language,
+    {
+      headers: {
+        'Set-Cookie': criticalData.coveoVisitorIdHeader,
+      },
     },
-  });
+  );
 }
 
 /**
@@ -102,58 +107,57 @@ async function loadCriticalData({context, request}: LoaderFunctionArgs) {
   const {storefront, customerAccount, cart} = context;
 
   const loggedIn = await customerAccount.isLoggedIn();
-  let customerDisplayName = '';
-  let customerImageUrl = '';
-  if (loggedIn) {
-    const {
-      data: {
-        customer: {firstName: fetchedDisplayName, imageUrl},
-      },
-    } = await context.customerAccount.query<{
-      customer: {
-        firstName: string;
-        imageUrl: string;
-      };
-    }>(GET_CUSTOMER_QUERY);
-    customerDisplayName = fetchedDisplayName;
-    customerImageUrl = imageUrl;
-  }
 
-  const buyer = await customerAccount.UNSTABLE_getBuyer();
-  if (buyer) {
-    await cart.updateBuyerIdentity({
-      customerAccessToken: buyer.customerAccessToken,
-    });
-  }
+  const coveoNavigatorProvider = new ServerSideNavigatorContextProvider(
+    request,
+  );
 
-  const [header] = await Promise.all([
+  const coveoVisitorIdHeader = coveoNavigatorProvider.getCookieHeader(
+    coveoNavigatorProvider.clientId,
+  );
+
+  engineDefinition.standaloneEngineDefinition.setNavigatorContextProvider(
+    () => coveoNavigatorProvider,
+  );
+
+  const [header, customer, buyer, staticState] = await Promise.all([
     storefront.query(HEADER_QUERY, {
       cache: storefront.CacheLong(),
       variables: {
         headerMenuHandle: 'hydrogen-menu',
       },
     }),
-
-    // Add other queries here, so that they are loaded in parallel
+    loggedIn
+      ? context.customerAccount.query<{
+          customer: {
+            firstName: string;
+            imageUrl: string;
+          };
+        }>(GET_CUSTOMER_QUERY)
+      : null,
+    customerAccount.UNSTABLE_getBuyer(),
+    fetchStaticState({
+      context,
+      k: 'searchEngineDefinition',
+      query: '',
+      url: 'https://sports.barca.group',
+      request,
+    }),
   ]);
 
-  engineDefinition.standaloneEngineDefinition.setNavigatorContextProvider(
-    () => new ServerSideNavigatorContextProvider(request),
-  );
+  if (buyer) {
+    await cart.updateBuyerIdentity({
+      customerAccessToken: buyer.customerAccessToken,
+    });
+  }
 
-  const staticState = await fetchStaticState({
-    context,
-    k: 'searchEngineDefinition',
-    query: '',
-    url: 'https://sports.barca.group',
-    request,
-  });
   return {
     header,
     staticState,
-    loggedIn: await customerAccount.isLoggedIn(),
-    customerDisplayName,
-    customerImageUrl,
+    loggedIn,
+    customerDisplayName: customer?.data.customer.firstName,
+    customerImageUrl: customer?.data.customer.imageUrl,
+    coveoVisitorIdHeader,
   };
 }
 
@@ -180,7 +184,6 @@ function loadDeferredData({context}: LoaderFunctionArgs) {
     });
   return {
     cart: cart.get(),
-    isLoggedIn: customerAccount.isLoggedIn(),
     footer,
   };
 }

@@ -1,7 +1,8 @@
 import type {NavigatorContext} from '@coveo/headless/ssr-commerce';
-import {getCookie} from './session';
+import {getCookieFromRequest} from './session';
 export class ServerSideNavigatorContextProvider implements NavigatorContext {
   private request: Request;
+  private generatedId?: string;
   constructor(request: Request) {
     this.request = request;
   }
@@ -18,11 +19,16 @@ export class ServerSideNavigatorContextProvider implements NavigatorContext {
   }
 
   get clientId() {
-    let id = getCookie(this.request, 'coveo_visitorId');
-    if (!id) {
-      id = crypto.randomUUID();
+    const idFromRequest = getCookieFromRequest(this.request, 'coveo_visitorId');
+    if (idFromRequest) {
+      return idFromRequest;
     }
-    return id;
+    if (this.generatedId) {
+      return this.generatedId;
+    }
+    const generated = crypto.randomUUID();
+    this.generatedId = generated;
+    return generated;
   }
 
   get marshal(): NavigatorContext {
@@ -33,9 +39,15 @@ export class ServerSideNavigatorContextProvider implements NavigatorContext {
       userAgent: this.userAgent,
     };
   }
+
+  public getCookieHeader(id = this.clientId) {
+    const oneYear = new Date(
+      new Date().getTime() + 365 * 24 * 60 * 60 * 1000,
+    ).toUTCString();
+    return `coveo_visitorId=${id}; Path=/; Expires=${oneYear}; SameSite=Lax`;
+  }
 }
 
-// TODO
 export class ClientSideNavigatorContextProvider implements NavigatorContext {
   get referrer() {
     return document.referrer;

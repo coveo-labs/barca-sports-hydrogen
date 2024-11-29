@@ -3,7 +3,7 @@ import {Money, useOptimisticCart} from '@shopify/hydrogen';
 import type {CartApiQueryFragment} from 'storefrontapi.generated';
 import {CheckIcon, QuestionMarkCircleIcon} from '@heroicons/react/20/solid';
 import {CartLineRemoveButton} from './CartLineItem';
-import {useCartRecommendations} from '~/lib/coveo.engine';
+import {useCart, useCartRecommendations} from '~/lib/coveo.engine';
 import {useEffect} from 'react';
 import {ProductCard} from '../Products/ProductCard';
 
@@ -18,6 +18,7 @@ export function CartMain({cart: originalCart}: CartMainProps) {
   // so the user immediately sees feedback when they modify the cart.
   const cart = useOptimisticCart(originalCart);
   const recs = useCartRecommendations();
+  const coveoCart = useCart();
 
   useEffect(() => {
     recs.methods?.refresh();
@@ -217,12 +218,18 @@ export function CartMain({cart: originalCart}: CartMainProps) {
           </dl>
 
           <div className="mt-6">
-            <button
-              type="submit"
-              className="w-full rounded-md border border-transparent bg-indigo-600 px-4 py-3 text-base font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-50"
+            <NavLink
+              onClick={() =>
+                coveoCart.methods?.purchase({
+                  id: cart?.id || '',
+                  revenue: Number(cart.cost?.totalAmount?.amount),
+                })
+              }
+              to={cart?.checkoutUrl || ''}
+              className="block w-full rounded-md border border-transparent bg-indigo-600 px-4 py-3 text-base font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-50"
             >
               Checkout
-            </button>
+            </NavLink>
           </div>
         </section>
       </div>
