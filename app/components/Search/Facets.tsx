@@ -19,21 +19,22 @@ import {
   ChevronDownIcon,
   AdjustmentsHorizontalIcon,
 } from '@heroicons/react/20/solid';
-import type {ReactNode} from 'react';
+import {ChevronRightIcon} from '@heroicons/react/24/outline';
+import {type ReactNode} from 'react';
 import {engineDefinition} from '~/lib/coveo.engine';
 
 type FacetGenerator = ReturnType<
   typeof engineDefinition.controllers.useFacetGenerator
 >;
 
-export function Facets() {
+export function Facets({numFacetsInLine}: {numFacetsInLine: number}) {
   const facetGenerator = engineDefinition.controllers.useFacetGenerator();
-  const facetsInline = facetGenerator.state.slice(0, 6);
-  const facetsInPanel = facetGenerator.state.slice(6);
+  const facetsInline = facetGenerator.state.slice(0, numFacetsInLine);
+  const facetsInPanel = facetGenerator.state.slice(numFacetsInLine);
 
   return (
     <>
-      <PopoverGroup className="ml-40 flex items-center divide-x divide-gray-200 flex-wrap justify-end">
+      <PopoverGroup className="ml-40 flex items-center divide-x divide-gray-200 flex-wrap justify-end flex-nowrap">
         <FacetsInline facets={facetsInline} facetGenerator={facetGenerator} />
         <FacetsInPanel facets={facetsInPanel} facetGenerator={facetGenerator} />
       </PopoverGroup>
@@ -150,7 +151,7 @@ function FacetInline<FacetType extends keyof MappedFacetState>({
   facet: MappedFacetState[FacetType];
 }) {
   return (
-    <Popover className="relative inline-block px-4 text-left">
+    <Popover className="relative inline-block px-4 text-left text-nowrap">
       <PopoverButton className="group inline-flex justify-center text-sm font-medium text-gray-700 hover:text-gray-900">
         <span>{facet.displayName}</span>
         {facet.hasActiveValues ? (
@@ -340,35 +341,74 @@ function CategoryFacetContent({
   facet,
   facetController,
   cx,
+  values = facet.values,
 }: {
   facet: CategoryFacetState;
   facetController?: CategoryFacet;
   cx: string;
+  values?: CategoryFacetState['values'];
 }) {
   return (
     <>
-      {facet.values.map((facetValue, optionIdx) => {
+      {values.map((facetValue, optionIdx) => {
+        const hasChildrenSelected =
+          facetValue.children.find((c) => c.state === 'selected') !== undefined;
+        const isSelected = facetValue.state === 'selected';
+        const isLeaf = facetValue.isLeafValue;
+
+        const isStaggered =
+          facetValue.path.length > 1 &&
+          (!isSelected || isLeaf) &&
+          !hasChildrenSelected;
+
+        const marginLeft = isStaggered ? '40px' : '0';
+
+        const hasChevron =
+          (facetValue.children.length > 0 && facetValue.state === 'selected') ||
+          hasChildrenSelected;
+
         return (
-          <div key={facetValue.value} className={cx}>
-            <input
-              defaultValue={facetValue.value}
-              defaultChecked={facetValue.state === 'selected'}
-              id={`filter-${facet.facetId}-${optionIdx}`}
-              name={`${facetValue.value}[]`}
-              type="radio"
-              className="size-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-              onClick={() => {
-                facetValue.state === 'selected'
-                  ? facetController?.deselectAll()
-                  : facetController?.toggleSelect(facetValue);
-              }}
-            />
-            <label
-              htmlFor={`filter-${facet.facetId}-${optionIdx}`}
-              className="ml-3 whitespace-nowrap pr-6 text-sm font-medium text-gray-900"
-            >
-              {facetValue.value} ({facetValue.numberOfResults})
-            </label>
+          <div
+            key={facetValue.value}
+            style={{
+              marginLeft,
+            }}
+            className="mt-4"
+          >
+            <div key={facetValue.value} className={cx}>
+              <input
+                defaultValue={facetValue.value}
+                defaultChecked={facetValue.state === 'selected'}
+                id={`filter-${facet.facetId}-${facetValue.value}-${optionIdx}`}
+                name={`${facetValue.value}[]`}
+                type="radio"
+                className="hidden size-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                onClick={() => {
+                  facetValue.state === 'selected'
+                    ? facetController?.deselectAll()
+                    : facetController?.toggleSelect(facetValue);
+                }}
+              />
+              <label
+                htmlFor={`filter-${facet.facetId}-${facetValue.value}-${optionIdx}`}
+                className={`cursor-pointer ml-3 whitespace-nowrap pr-6 text-sm text-gray-900 ${
+                  facetValue.state === 'selected' ? 'font-bold' : 'font-medium'
+                }`}
+              >
+                {hasChevron && (
+                  <ChevronRightIcon width={20} className="inline" />
+                )}
+                {facetValue.value} ({facetValue.numberOfResults})
+              </label>
+            </div>
+            {facetValue.children.length > 0 && (
+              <CategoryFacetContent
+                values={facetValue.children}
+                cx={cx}
+                facet={facet}
+                facetController={facetController}
+              />
+            )}
           </div>
         );
       })}

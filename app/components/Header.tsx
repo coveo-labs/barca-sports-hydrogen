@@ -31,7 +31,6 @@ import {NavLinkWithLocale, relativeLink} from './NavLinkWithLocale';
 interface HeaderProps {
   header: HeaderQuery;
   cart: Promise<CartApiQueryFragment | null>;
-  isLoggedIn: Promise<boolean>;
   publicStoreDomain: string;
 }
 export function Header({header, cart}: HeaderProps) {

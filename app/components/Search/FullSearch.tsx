@@ -1,19 +1,47 @@
 import {Menu, MenuButton, MenuItems} from '@headlessui/react';
 import {ChevronDownIcon} from '@heroicons/react/20/solid';
-import {useState} from 'react';
 import {Facets} from './Facets';
 import {PaginationFooter} from './Pagination';
 import {ProductList} from './ProductList';
 import {Sorts} from './Sorts';
 import {Breadcrumbs} from './Breadcrumbs';
+import {useEffect, useRef, useState} from 'react';
 
 interface SearchPageProps {
   headline: string;
   tagline: string;
 }
 
+function useWindowSize() {
+  const [size, setSize] = useState([0, 0]);
+  useEffect(() => {
+    function updateSize() {
+      setSize([window.innerWidth, window.innerHeight]);
+    }
+    window.addEventListener('resize', updateSize);
+    updateSize();
+    return () => window.removeEventListener('resize', updateSize);
+  }, []);
+  return size;
+}
+
+function useNumFacetsInline() {
+  const [windowWidth] = useWindowSize();
+  if (windowWidth === 0) {
+    return 6;
+  }
+  if (windowWidth < 450) {
+    return 0;
+  }
+  if (windowWidth < 1000) {
+    return Math.floor(windowWidth / 250);
+  }
+  return 6;
+}
+
 export function FullSearch({headline, tagline}: SearchPageProps) {
-  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const facetsContainer = useRef<HTMLDivElement>(null);
+  const numFacetsInline = useNumFacetsInline();
 
   return (
     <main className="bg-gray-50">
@@ -55,18 +83,8 @@ export function FullSearch({headline, tagline}: SearchPageProps) {
               </MenuItems>
             </Menu>
 
-            <button
-              type="button"
-              onClick={() => setMobileFiltersOpen(true)}
-              className="inline-block text-sm font-medium text-gray-700 hover:text-gray-900 sm:hidden"
-            >
-              Filters
-            </button>
-
-            <div className="hidden sm:block">
-              <div className="flow-root">
-                <Facets />
-              </div>
+            <div className="flow-root" ref={facetsContainer}>
+              <Facets numFacetsInLine={numFacetsInline} />
             </div>
           </div>
         </div>
