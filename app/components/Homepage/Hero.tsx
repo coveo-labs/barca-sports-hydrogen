@@ -26,6 +26,9 @@ export function Hero() {
                   <div className="grid shrink-0 grid-cols-1 gap-y-6 lg:gap-y-8">
                     <div className="h-64 w-44 overflow-hidden rounded-lg sm:opacity-0 lg:opacity-100">
                       <img
+                        width={176}
+                        height={256}
+                        loading="lazy"
                         alt=""
                         src="https://images.barca.group/Barca-Sports-Assets/girl-kayaking-in-a-lake-2022-03-30-01-20-46-utc 1.png"
                         className="size-full object-cover object-center"
@@ -33,6 +36,9 @@ export function Hero() {
                     </div>
                     <div className="h-64 w-44 overflow-hidden rounded-lg">
                       <img
+                        width={176}
+                        height={256}
+                        loading="lazy"
                         alt=""
                         src="https://images.barca.group/Barca-Sports-Assets/athletic-woman-wakesurfing-on-the-board-on-lake-2022-11-15-19-02-25-utc+1.webp"
                         className="size-full object-cover object-center"
@@ -42,6 +48,9 @@ export function Hero() {
                   <div className="grid shrink-0 grid-cols-1 gap-y-6 lg:gap-y-8">
                     <div className="h-64 w-44 overflow-hidden rounded-lg">
                       <img
+                        width={176}
+                        height={256}
+                        loading="lazy"
                         alt=""
                         src="https://images.barca.group/Barca-Sports-Assets/bottom-banner-static.webp"
                         className="size-full object-cover object-center"
@@ -49,6 +58,9 @@ export function Hero() {
                     </div>
                     <div className="h-64 w-44 overflow-hidden rounded-lg">
                       <img
+                        width={176}
+                        height={256}
+                        loading="lazy"
                         alt=""
                         src="https://images.barca.group/Barca-Sports-Assets/mid-adult-man-surfing-rolling-wave-leucadia-cali-2022-03-07-23-55-55-utc.jpg"
                         className="size-full object-cover object-center"
@@ -56,6 +68,9 @@ export function Hero() {
                     </div>
                     <div className="h-64 w-44 overflow-hidden rounded-lg">
                       <img
+                        width={176}
+                        height={256}
+                        loading="lazy"
                         alt=""
                         src="https://images.barca.group/Barca-Sports-Assets/healthy-woman-sitting-on-sup-board-and-rowing-with-2022-06-02-06-58-34-utc.jpg"
                         className="size-full object-cover object-center"
@@ -65,6 +80,9 @@ export function Hero() {
                   <div className="grid shrink-0 grid-cols-1 gap-y-6 lg:gap-y-8">
                     <div className="h-64 w-44 overflow-hidden rounded-lg">
                       <img
+                        width={176}
+                        height={256}
+                        loading="lazy"
                         alt=""
                         src="https://images.barca.group/Barca-Sports-Assets/heroBannerImage.webp"
                         className="size-full object-cover object-center"
@@ -72,6 +90,9 @@ export function Hero() {
                     </div>
                     <div className="h-64 w-44 overflow-hidden rounded-lg">
                       <img
+                        width={176}
+                        height={256}
+                        loading="lazy"
                         alt=""
                         src="https://images.barca.group/Barca-Sports-Assets/kayak-explained.webp"
                         className="size-full object-cover object-center"

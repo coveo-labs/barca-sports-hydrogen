@@ -72,8 +72,11 @@ export class AppSession implements HydrogenSession {
 }
 
 export function getCookieFromRequest(request: Request, name: string) {
-  const value = `; ${request.headers.get('Cookie')}`;
-  const parts = value.split(`; ${name}=`);
+  return getCookie(request.headers.get('Cookie') || '', name);
+}
+
+export function getCookie(cookieString: string, name: string) {
+  const parts = `; ${cookieString}`.split(`; ${name}=`);
   if (parts.length === 2) {
     return parts.pop()?.split(';').shift();
   }

@@ -29,6 +29,9 @@ export function CTA() {
                   <div className="flex space-x-6 sm:flex-col sm:space-x-0 sm:space-y-6 lg:space-y-8">
                     <div className="shrink-0">
                       <img
+                        width={288}
+                        height={288}
+                        loading="lazy"
                         alt=""
                         src="https://images.barca.group/Barca-Sports-Assets/mid-adult-man-surfing-rolling-wave-leucadia-cali-2022-03-07-23-55-55-utc.webp"
                         className="size-64 rounded-lg object-cover md:size-72"
@@ -37,6 +40,9 @@ export function CTA() {
 
                     <div className="mt-6 shrink-0 sm:mt-0">
                       <img
+                        width={288}
+                        height={288}
+                        loading="lazy"
                         alt=""
                         src="https://images.barca.group/Barca-Sports-Assets/HomepageBannerStatic1.webp"
                         className="size-64 rounded-lg object-cover md:size-72"
@@ -46,6 +52,9 @@ export function CTA() {
                   <div className="flex space-x-6 sm:-mt-20 sm:flex-col sm:space-x-0 sm:space-y-6 lg:space-y-8">
                     <div className="shrink-0">
                       <img
+                        width={288}
+                        height={288}
+                        loading="lazy"
                         alt=""
                         src="https://images.barca.group/Barca-Sports-Assets/healthy-woman-sitting-on-sup-board-and-rowing-with-2022-06-02-06-58-34-utc.jpg"
                         className="size-64 rounded-lg object-cover md:size-72"
@@ -54,6 +63,9 @@ export function CTA() {
 
                     <div className="mt-6 shrink-0 sm:mt-0">
                       <img
+                        width={288}
+                        height={288}
+                        loading="lazy"
                         alt=""
                         src="https://images.barca.group/Barca-Sports-Assets/athletic-woman-wakesurfing-on-the-board-on-lake-2022-11-15-19-02-25-utc%201.png"
                         className="size-64 rounded-lg object-cover md:size-72"
@@ -63,6 +75,9 @@ export function CTA() {
                   <div className="flex space-x-6 sm:flex-col sm:space-x-0 sm:space-y-6 lg:space-y-8">
                     <div className="shrink-0">
                       <img
+                        width={288}
+                        height={288}
+                        loading="lazy"
                         alt=""
                         src="https://images.barca.group/Barca-Sports-Assets/kayak-explained.png"
                         className="size-64 rounded-lg object-cover md:size-72"
@@ -71,6 +86,9 @@ export function CTA() {
 
                     <div className="mt-6 shrink-0 sm:mt-0">
                       <img
+                        width={288}
+                        height={288}
+                        loading="lazy"
                         alt=""
                         src="https://images.barca.group/Barca-Sports-Assets/girl-kayaking-in-a-lake-2022-03-30-01-20-46-utc%201.png"
                         className="size-64 rounded-lg object-cover md:size-72"

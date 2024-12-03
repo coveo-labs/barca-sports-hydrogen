@@ -19,8 +19,13 @@ import {Colors} from '~/components/Products/Colors';
 import {Sizes} from '~/components/Products/Sizes';
 import {Description} from '~/components/Products/Description';
 import {RootLoader} from '~/root';
-import {engineDefinition, useProductView} from '~/lib/coveo.engine';
+import {
+  engineDefinition,
+  usePdpRecommendations,
+  useProductView,
+} from '~/lib/coveo.engine';
 import {useCallback, useEffect, useRef} from 'react';
+import {ProductCard} from '~/components/Products/ProductCard';
 
 export const meta: MetaFunction<typeof loader> = ({data}) => {
   return [{title: `Hydrogen | ${data?.product.title ?? ''}`}];
@@ -122,6 +127,10 @@ function redirectToFirstVariant({
 export default function Product() {
   const {product, variants} = useLoaderData<typeof loader>();
   const productView = useProductView();
+  const pdpRecommendations = usePdpRecommendations();
+  useEffect(() => {
+    pdpRecommendations.methods?.refresh();
+  }, [pdpRecommendations.methods]);
 
   const selectedVariant = useOptimisticVariant(
     product.selectedVariant,
@@ -189,6 +198,23 @@ export default function Product() {
           </div>
         </div>
       </div>
+      {/* Related products */}
+      <section aria-labelledby="related-heading" className="mt-24">
+        <h2 id="related-heading" className="text-lg font-medium text-gray-900">
+          {pdpRecommendations.state.headline}
+        </h2>
+
+        <div className="mt-6 grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-4 xl:gap-x-8">
+          {pdpRecommendations.state.products
+            .slice(0, 4)
+            .map((relatedProduct) => (
+              <ProductCard
+                product={relatedProduct}
+                key={relatedProduct.permanentid}
+              />
+            ))}
+        </div>
+      </section>
     </main>
   );
 }

@@ -6,6 +6,8 @@ export function LearnMore() {
       <div className="relative bg-gray-800 px-6 py-32 sm:px-12 sm:py-40 lg:px-16">
         <div className="absolute inset-0 overflow-hidden">
           <img
+            loading="lazy"
+            height={566}
             alt=""
             src="https://images.barca.group/Barca-Sports-Assets/kayak-explained.webp"
             className="size-full object-cover object-center"

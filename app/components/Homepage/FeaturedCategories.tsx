@@ -36,7 +36,10 @@ export function FeaturedCategories({header}: FeaturedCategoriesProps) {
                   className="group aspect-h-1 aspect-w-2 overflow-hidden rounded-lg sm:aspect-h-1 sm:aspect-w-1 sm:row-span-2"
                 >
                   <img
-                    alt="Two models wearing women's black cotton crewneck tee and off-white cotton crewneck tee."
+                    height={550}
+                    width={550}
+                    loading="lazy"
+                    alt={collection.node.title}
                     src={collection.node.image?.url}
                     className="object-cover object-center group-hover:opacity-75"
                   />
@@ -68,7 +71,10 @@ export function FeaturedCategories({header}: FeaturedCategoriesProps) {
                 className="group aspect-h-1 aspect-w-2 overflow-hidden rounded-lg sm:aspect-none sm:relative sm:h-full"
               >
                 <img
-                  alt="Wooden shelf with gray and olive drab green baseball caps, next to wooden clothes hanger with sweaters."
+                  height={259}
+                  width={550}
+                  loading="lazy"
+                  alt={collection.node.title}
                   src={collection.node.image?.url}
                   className="object-cover object-center group-hover:opacity-75 sm:absolute sm:inset-0 sm:size-full"
                 />

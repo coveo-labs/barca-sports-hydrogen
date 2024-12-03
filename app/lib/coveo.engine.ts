@@ -63,6 +63,9 @@ export const engineDefinition = defineCommerceEngine({
     cartRecommendations: defineRecommendations({
       options: {slotId: 'd214dc06-2d0e-468f-8df4-59518a788100'},
     }),
+    pdpRecommendations: defineRecommendations({
+      options: {slotId: '7b506e3f-c0c3-411d-b771-161ee3305798'},
+    }),
   },
 });
 
@@ -89,6 +92,7 @@ export const {
   useBreadcrumbManager,
   useHomepageRecommendations,
   useCartRecommendations,
+  usePdpRecommendations,
 } = engineDefinition.controllers;
 
 export type ListingStaticState = InferStaticState<

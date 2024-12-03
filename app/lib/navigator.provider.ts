@@ -1,5 +1,5 @@
 import type {NavigatorContext} from '@coveo/headless/ssr-commerce';
-import {getCookieFromRequest} from './session';
+import {getCookie, getCookieFromRequest} from './session';
 export class ServerSideNavigatorContextProvider implements NavigatorContext {
   private request: Request;
   private generatedId?: string;
@@ -62,8 +62,7 @@ export class ClientSideNavigatorContextProvider implements NavigatorContext {
   }
 
   get clientId() {
-    // TODO
-    return 'asdasd';
+    return getCookie(document.cookie, 'coveo_visitorId') || 'MISSING';
   }
 
   get marshal(): NavigatorContext {
