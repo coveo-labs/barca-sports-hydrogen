@@ -7,25 +7,10 @@ import {
 import type {CartQueryDataReturn} from '@shopify/hydrogen';
 import {CartForm} from '@shopify/hydrogen';
 import type {Cart} from '@shopify/hydrogen/storefront-api-types';
-import {
-  defer,
-  json,
-  type LoaderFunctionArgs,
-  type ActionFunctionArgs,
-} from '@shopify/remix-oxygen';
+import {json, type ActionFunctionArgs} from '@shopify/remix-oxygen';
 import {Suspense} from 'react';
 import {CartEmpty} from '~/components/Cart/CartEmpty';
 import {CartMain} from '~/components/Cart/CartMain';
-import {ListingProvider} from '~/components/Search/Context';
-import {
-  fetchStaticState,
-  listingEngineDefinition,
-  type ListingStaticState,
-} from '~/lib/coveo.engine';
-import {
-  ClientSideNavigatorContextProvider,
-  ServerSideNavigatorContextProvider,
-} from '~/lib/navigator.provider';
 import type {RootLoader} from '~/root';
 
 export const meta: MetaFunction = () => {
@@ -115,47 +100,21 @@ export async function action({request, context}: ActionFunctionArgs) {
   );
 }
 
-export async function loader({context, request}: LoaderFunctionArgs) {
-  listingEngineDefinition.setNavigatorContextProvider(
-    () => new ServerSideNavigatorContextProvider(request),
-  );
-
-  const staticState = fetchStaticState({
-    context,
-    k: 'listingEngineDefinition',
-    query: '',
-    url: 'https://sports.barca.group/plp/accessories',
-    request,
-  });
-
-  return defer({staticState});
-}
-
 export default function Cart() {
   const rootData = useRouteLoaderData<RootLoader>('root');
-  const loaderData = useLoaderData<typeof loader>();
 
   if (!rootData) {
     return null;
   }
 
-  const allData = Promise.all([rootData?.cart, loaderData?.staticState]);
-
   return (
     <Suspense>
-      <Await resolve={allData}>
-        {([cart, staticState]) => {
+      <Await resolve={rootData.cart}>
+        {(cart) => {
           if (cart?.lines.nodes.length === 0) {
             return <CartEmpty />;
           }
-          return (
-            <ListingProvider
-              navigatorContext={new ClientSideNavigatorContextProvider()}
-              staticState={staticState as ListingStaticState}
-            >
-              <CartMain cart={cart} />
-            </ListingProvider>
-          );
+          return <CartMain cart={cart} />;
         }}
       </Await>
     </Suspense>

@@ -68,6 +68,13 @@ export async function loader(args: LoaderFunctionArgs) {
   const {storefront, env} = args.context;
 
   const {country, currency, language} = getLocaleFromRequest(args.request);
+
+  args.context.customerAccount.UNSTABLE_getBuyer().then((buyer) => {
+    args.context.cart.updateBuyerIdentity({
+      customerAccessToken: buyer.customerAccessToken,
+    });
+  });
+
   return defer(
     {
       ...deferredData,
@@ -120,7 +127,7 @@ async function loadCriticalData({context, request}: LoaderFunctionArgs) {
     () => coveoNavigatorProvider,
   );
 
-  const [header, customer, buyer, staticState] = await Promise.all([
+  const [header, customer, staticState] = await Promise.all([
     storefront.query(HEADER_QUERY, {
       cache: storefront.CacheLong(),
       variables: {
@@ -135,7 +142,6 @@ async function loadCriticalData({context, request}: LoaderFunctionArgs) {
           };
         }>(GET_CUSTOMER_QUERY)
       : null,
-    customerAccount.UNSTABLE_getBuyer(),
     fetchStaticState({
       context,
       k: 'searchEngineDefinition',
@@ -144,12 +150,6 @@ async function loadCriticalData({context, request}: LoaderFunctionArgs) {
       request,
     }),
   ]);
-
-  if (buyer) {
-    await cart.updateBuyerIdentity({
-      customerAccessToken: buyer.customerAccessToken,
-    });
-  }
 
   return {
     header,
@@ -167,7 +167,7 @@ async function loadCriticalData({context, request}: LoaderFunctionArgs) {
  * Make sure to not throw any errors here, as it will cause the page to 500.
  */
 function loadDeferredData({context}: LoaderFunctionArgs) {
-  const {storefront, customerAccount, cart} = context;
+  const {storefront, cart} = context;
 
   // defer the footer query (below the fold)
   const footer = storefront
@@ -182,6 +182,7 @@ function loadDeferredData({context}: LoaderFunctionArgs) {
       console.error(error);
       return null;
     });
+
   return {
     cart: cart.get(),
     footer,

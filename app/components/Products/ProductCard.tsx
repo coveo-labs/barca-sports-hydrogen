@@ -26,6 +26,7 @@ export function ProductCard({product}: ProductCardProps) {
       className="group"
     >
       <img
+        loading="lazy"
         width={1024}
         height={1024}
         alt={product.ec_name!}

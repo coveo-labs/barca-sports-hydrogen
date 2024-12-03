@@ -171,6 +171,7 @@ export function Footer({header}: FooterProps) {
             <div className="relative mt-6 flex items-center px-6 py-12 sm:px-10 sm:py-16 lg:mt-0">
               <div className="absolute inset-0 overflow-hidden rounded-lg">
                 <img
+                  loading="lazy"
                   alt=""
                   src="https://tailwindui.com/plus/img/ecommerce-images/footer-02-exclusive-sale.jpg"
                   className="size-full object-cover object-center saturate-0 filter"
