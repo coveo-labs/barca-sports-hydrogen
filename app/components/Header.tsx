@@ -28,6 +28,9 @@ import {StandaloneSearchBox} from './Search/StandaloneSearchBox';
 import {CountrySelector} from './CountrySelector';
 import type {RootLoader} from '~/root';
 import {NavLinkWithLocale, relativeLink} from './NavLinkWithLocale';
+import {SearchProvider, StandaloneProvider} from './Search/Context';
+import {ClientSideNavigatorContextProvider} from '~/lib/navigator.provider';
+import type {SearchLoader} from '~/routes/($locale).search';
 interface HeaderProps {
   header: HeaderQuery;
   cart: Promise<CartApiQueryFragment | null>;
@@ -212,6 +215,7 @@ interface MenuDesktopProps {
 function MenuDesktop({header, setOpen, cart}: MenuDesktopProps) {
   const {shop, menu, collections} = header;
   const rootData = useRouteLoaderData<RootLoader>('root');
+
   return (
     <header className="sticky top-0 z-10 bg-white">
       <nav aria-label="Top" className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">

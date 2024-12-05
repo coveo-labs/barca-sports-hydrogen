@@ -20,9 +20,14 @@ import {
   ClientSideNavigatorContextProvider,
   ServerSideNavigatorContextProvider,
 } from './lib/navigator.provider';
-import {SearchProvider} from './components/Search/Context';
+import {
+  RecommendationProvider,
+  SearchProvider,
+  StandaloneProvider,
+} from './components/Search/Context';
 import {GlobalLoading} from './components/ProgressBar';
 import {getLocaleFromRequest} from './lib/i18n';
+import {getCookie, getCookieFromRequest} from './lib/session';
 export type RootLoader = typeof loader;
 
 /**
@@ -75,6 +80,11 @@ export async function loader(args: LoaderFunctionArgs) {
     });
   });
 
+  const alreadyHasCookie = getCookieFromRequest(
+    args.request,
+    'coveo_visitorId',
+  );
+
   return defer(
     {
       ...deferredData,
@@ -93,15 +103,16 @@ export async function loader(args: LoaderFunctionArgs) {
         checkoutDomain: env.PUBLIC_CHECKOUT_DOMAIN,
         storefrontAccessToken: env.PUBLIC_STOREFRONT_API_TOKEN,
         withPrivacyBanner: false,
-        // localize the privacy banner
         country,
         language,
       },
     },
     {
-      headers: {
-        'Set-Cookie': criticalData.coveoVisitorIdHeader,
-      },
+      headers: alreadyHasCookie
+        ? {}
+        : {
+            'Set-Cookie': criticalData.coveoVisitorIdHeader,
+          },
     },
   );
 }
@@ -127,7 +138,7 @@ async function loadCriticalData({context, request}: LoaderFunctionArgs) {
     () => coveoNavigatorProvider,
   );
 
-  const [header, customer, staticState] = await Promise.all([
+  const [header, customer, staticStateStandalone] = await Promise.all([
     storefront.query(HEADER_QUERY, {
       cache: storefront.CacheLong(),
       variables: {
@@ -144,7 +155,7 @@ async function loadCriticalData({context, request}: LoaderFunctionArgs) {
       : null,
     fetchStaticState({
       context,
-      k: 'searchEngineDefinition',
+      k: 'standaloneEngineDefinition',
       query: '',
       url: 'https://sports.barca.group',
       request,
@@ -153,7 +164,7 @@ async function loadCriticalData({context, request}: LoaderFunctionArgs) {
 
   return {
     header,
-    staticState,
+    staticStateStandalone,
     loggedIn,
     customerDisplayName: customer?.data.customer.firstName,
     customerImageUrl: customer?.data.customer.imageUrl,
@@ -208,10 +219,9 @@ export function Layout({children}: {children?: React.ReactNode}) {
             shop={data.shop}
             consent={data.consent}
           >
-            <SearchProvider
+            <StandaloneProvider
               navigatorContext={new ClientSideNavigatorContextProvider()}
-              staticState={data.staticState as any}
-              q=""
+              staticState={data.staticStateStandalone as any}
             >
               <PageLayout
                 {...data}
@@ -219,7 +229,7 @@ export function Layout({children}: {children?: React.ReactNode}) {
               >
                 {children}
               </PageLayout>
-            </SearchProvider>
+            </StandaloneProvider>
           </Analytics.Provider>
         ) : (
           children

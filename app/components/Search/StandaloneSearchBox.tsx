@@ -6,7 +6,7 @@ import {
   ComboboxOptions,
 } from '@headlessui/react';
 import {useEffect} from 'react';
-import {engineDefinition, useStandaloneSearchBox} from '~/lib/coveo.engine';
+import {useInstantProducts, useStandaloneSearchBox} from '~/lib/coveo.engine';
 import {MagnifyingGlassIcon} from '@heroicons/react/24/outline';
 import {ProductCard} from '../Products/ProductCard';
 import {useNavigate} from '@remix-run/react';
@@ -16,7 +16,7 @@ interface StandaloneSearchBoxProps {
 }
 export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
   const searchBox = useStandaloneSearchBox();
-  const instantProducts = engineDefinition.controllers.useInstantProducts();
+  const instantProducts = useInstantProducts();
   const navigate = useNavigate();
   useEffect(() => {
     if (searchBox.state.suggestions[0]) {

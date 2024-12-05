@@ -76,8 +76,15 @@ export function getCookieFromRequest(request: Request, name: string) {
 }
 
 export function getCookie(cookieString: string, name: string) {
-  const parts = `; ${cookieString}`.split(`; ${name}=`);
-  if (parts.length === 2) {
-    return parts.pop()?.split(';').shift();
+  const cookieName = `${name}=`;
+
+  const cookies = cookieString.split(';');
+  for (let i = 0; i < cookies.length; i++) {
+    const cookie = cookies[i].trim();
+
+    if (cookie.indexOf(cookieName) === 0) {
+      return cookie.substring(cookieName.length, cookie.length);
+    }
   }
+  return null;
 }

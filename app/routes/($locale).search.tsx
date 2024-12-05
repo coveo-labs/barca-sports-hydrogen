@@ -16,6 +16,8 @@ export const meta: MetaFunction = () => {
   return [{title: `Coveo | Search`}];
 };
 
+export type SearchLoader = typeof loader;
+
 export async function loader({request, context}: LoaderFunctionArgs) {
   const url = new URL(request.url);
   const q = url.searchParams.get('q') || '';
@@ -40,7 +42,6 @@ export default function SearchPage() {
   return (
     <SearchProvider
       navigatorContext={new ClientSideNavigatorContextProvider()}
-      q={data.q}
       staticState={data.staticState as SearchStaticState}
     >
       <FullSearch

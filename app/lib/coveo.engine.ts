@@ -56,7 +56,6 @@ export const engineDefinition = defineCommerceEngine({
     didYouMean: defineDidYouMean(),
     facetGenerator: defineFacetGenerator(),
     breadcrumbManager: defineBreadcrumbManager(),
-    searchParameter: defineParameterManager(),
     homepageRecommendations: defineRecommendations({
       options: {slotId: 'af9208ab-3eee-400c-9078-790f4835f785'},
     }),
@@ -66,6 +65,7 @@ export const engineDefinition = defineCommerceEngine({
     pdpRecommendations: defineRecommendations({
       options: {slotId: '7b506e3f-c0c3-411d-b771-161ee3305798'},
     }),
+    parameterManager: defineParameterManager(),
   },
 });
 
@@ -73,6 +73,7 @@ export const {
   listingEngineDefinition,
   searchEngineDefinition,
   standaloneEngineDefinition,
+  recommendationEngineDefinition,
   useEngine,
 } = engineDefinition;
 
@@ -136,7 +137,7 @@ export async function fetchStaticState({
 
   return engineDefinition[k].fetchStaticState({
     controllers: {
-      searchParameter: {initialState: {parameters: {q: query}}},
+      parameterManager: {initialState: {parameters: {q: query}}},
       cart: {
         initialState: {
           items: cart?.lines.nodes.map((node) => {
@@ -160,4 +161,22 @@ export async function fetchStaticState({
       },
     },
   });
+}
+
+export async function fetchRecommendationStaticState({
+  k,
+}: {
+  context: AppLoadContext;
+  request: Request;
+  k: (
+    | 'homepageRecommendations'
+    | 'cartRecommendations'
+    | 'pdpRecommendations'
+  )[];
+}) {
+  // TODO: This should be passed to the initial request: This is missing in Headless recs
+  //const {country, language, currency} = getLocaleFromRequest(request);
+  //const cart = await context.cart.get();
+
+  return engineDefinition.recommendationEngineDefinition.fetchStaticState(k);
 }

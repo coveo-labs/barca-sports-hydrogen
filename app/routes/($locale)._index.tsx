@@ -1,28 +1,43 @@
 import {useLoaderData, type MetaFunction} from '@remix-run/react';
 import type {LoaderFunctionArgs} from '@remix-run/server-runtime';
-import {useEffect} from 'react';
 import {Hero} from '~/components/Homepage/Hero';
 import {FeaturedCategories} from '~/components/Homepage/FeaturedCategories';
-import {useHomepageRecommendations} from '~/lib/coveo.engine';
+import {
+  engineDefinition,
+  fetchRecommendationStaticState,
+} from '~/lib/coveo.engine';
 import {HEADER_QUERY} from '~/lib/fragments';
 import {LearnMore} from '~/components/Homepage/LearnMore';
 import {Recommendations} from '~/components/Homepage/Recommendations';
 import {CTA} from '~/components/Homepage/CTA';
+import {RecommendationProvider} from '~/components/Search/Context';
+import {
+  ClientSideNavigatorContextProvider,
+  ServerSideNavigatorContextProvider,
+} from '~/lib/navigator.provider';
 export const meta: MetaFunction = () => {
   return [{title: 'Hydrogen | Home'}];
 };
 
 export async function loader({request, context}: LoaderFunctionArgs) {
-  const [header] = await Promise.all([
+  engineDefinition.recommendationEngineDefinition.setNavigatorContextProvider(
+    () => new ServerSideNavigatorContextProvider(request),
+  );
+  const [header, recommendationStaticState] = await Promise.all([
     context.storefront.query(HEADER_QUERY, {
       cache: context.storefront.CacheLong(),
       variables: {
         headerMenuHandle: 'hydrogen-menu',
       },
     }),
+    fetchRecommendationStaticState({
+      context,
+      request,
+      k: ['homepageRecommendations'],
+    }),
   ]);
 
-  return {header};
+  return {header, recommendationStaticState};
 }
 
 export default function Homepage() {
@@ -39,7 +54,12 @@ export default function Homepage() {
         <LearnMore />
 
         {/* Favorites section */}
-        <Recommendations />
+        <RecommendationProvider
+          staticState={data.recommendationStaticState}
+          navigatorContext={new ClientSideNavigatorContextProvider()}
+        >
+          <Recommendations />
+        </RecommendationProvider>
 
         {/* CTA section */}
         <CTA />

@@ -1,27 +1,28 @@
-import type {Product} from '@coveo/headless/commerce';
+import type {Product} from '@coveo/headless-react/ssr-commerce';
 import {Money} from '@shopify/hydrogen';
 
 import {StarIcon} from '@heroicons/react/20/solid';
 import {NavLink, useRouteLoaderData} from '@remix-run/react';
 import type {RootLoader} from '~/root';
-import {useProductList} from '~/lib/coveo.engine';
+import {useInstantProducts, useProductList} from '~/lib/coveo.engine';
 interface ProductCardProps {
   product: Product;
+  onSelect?: () => void;
 }
-export function ProductCard({product}: ProductCardProps) {
+export function ProductCard({product, onSelect}: ProductCardProps) {
   const rootData = useRouteLoaderData<RootLoader>('root');
   const hasPromo =
     (product.ec_promo_price && product.ec_promo_price < product.ec_price!) ||
     false;
 
-  const interactiveProduct = useProductList().methods?.interactiveProduct({
+  /*const interactiveProduct = useInstantProducts().methods?.interactiveProduct({
     options: {product},
-  });
+  });*/
 
   return (
     <NavLink
       key={product.permanentid}
-      onClick={interactiveProduct?.select}
+      onClick={onSelect}
       to={`/products/${product.ec_item_group_id?.replace(/0/, '')}`}
       className="group"
     >

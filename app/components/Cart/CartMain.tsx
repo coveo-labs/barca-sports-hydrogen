@@ -17,15 +17,10 @@ export function CartMain({cart: originalCart}: CartMainProps) {
   // The useOptimisticCart hook applies pending actions to the cart
   // so the user immediately sees feedback when they modify the cart.
   const cart = useOptimisticCart(originalCart);
-  const recs = useCartRecommendations();
   const coveoCart = useCart();
 
-  useEffect(() => {
-    recs.methods?.refresh();
-  }, [recs.methods]);
-
   return (
-    <main className="mx-auto max-w-2xl px-4 pb-24 pt-16 sm:px-6 lg:max-w-7xl lg:px-8">
+    <div>
       <h1 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
         Shopping Cart
       </h1>
@@ -233,22 +228,6 @@ export function CartMain({cart: originalCart}: CartMainProps) {
           </div>
         </section>
       </div>
-
-      {/* Related products */}
-      <section aria-labelledby="related-heading" className="mt-24">
-        <h2 id="related-heading" className="text-lg font-medium text-gray-900">
-          {recs.state.headline}
-        </h2>
-
-        <div className="mt-6 grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-4 xl:gap-x-8">
-          {recs.state.products.map((relatedProduct) => (
-            <ProductCard
-              product={relatedProduct}
-              key={relatedProduct.permanentid}
-            />
-          ))}
-        </div>
-      </section>
-    </main>
+    </div>
   );
 }

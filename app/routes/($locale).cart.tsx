@@ -7,10 +7,27 @@ import {
 import type {CartQueryDataReturn} from '@shopify/hydrogen';
 import {CartForm} from '@shopify/hydrogen';
 import type {Cart} from '@shopify/hydrogen/storefront-api-types';
-import {json, type ActionFunctionArgs} from '@shopify/remix-oxygen';
+import {
+  json,
+  LoaderFunctionArgs,
+  type ActionFunctionArgs,
+} from '@shopify/remix-oxygen';
 import {Suspense} from 'react';
 import {CartEmpty} from '~/components/Cart/CartEmpty';
 import {CartMain} from '~/components/Cart/CartMain';
+import {CartRecommendations} from '~/components/Cart/CartRecommendations';
+import {
+  RecommendationProvider,
+  StandaloneProvider,
+} from '~/components/Search/Context';
+import {
+  engineDefinition,
+  fetchRecommendationStaticState,
+} from '~/lib/coveo.engine';
+import {
+  ClientSideNavigatorContextProvider,
+  ServerSideNavigatorContextProvider,
+} from '~/lib/navigator.provider';
 import type {RootLoader} from '~/root';
 
 export const meta: MetaFunction = () => {
@@ -100,8 +117,22 @@ export async function action({request, context}: ActionFunctionArgs) {
   );
 }
 
+export async function loader({request, context}: LoaderFunctionArgs) {
+  engineDefinition.recommendationEngineDefinition.setNavigatorContextProvider(
+    () => new ServerSideNavigatorContextProvider(request),
+  );
+  const recommendationStaticState = await fetchRecommendationStaticState({
+    request,
+    k: ['cartRecommendations'],
+    context,
+  });
+
+  return {recommendationStaticState};
+}
+
 export default function Cart() {
   const rootData = useRouteLoaderData<RootLoader>('root');
+  const loaderData = useLoaderData<typeof loader>();
 
   if (!rootData) {
     return null;
@@ -114,7 +145,17 @@ export default function Cart() {
           if (cart?.lines.nodes.length === 0) {
             return <CartEmpty />;
           }
-          return <CartMain cart={cart} />;
+          return (
+            <main className="mx-auto max-w-2xl px-4 pb-24 pt-16 sm:px-6 lg:max-w-7xl lg:px-8">
+              <CartMain cart={cart} />
+              <RecommendationProvider
+                navigatorContext={new ClientSideNavigatorContextProvider()}
+                staticState={loaderData.recommendationStaticState}
+              >
+                <CartRecommendations />
+              </RecommendationProvider>
+            </main>
+          );
         }}
       </Await>
     </Suspense>

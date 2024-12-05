@@ -1,8 +1,8 @@
 import {redirect, type LoaderFunctionArgs} from '@shopify/remix-oxygen';
 import {
+  data,
   useLoaderData,
   useParams,
-  useRouteLoaderData,
   type MetaFunction,
 } from '@remix-run/react';
 import type {ProductFragment} from 'storefrontapi.generated';
@@ -18,14 +18,18 @@ import {ImageGallery} from '~/components/Products/ImageGallery';
 import {Colors} from '~/components/Products/Colors';
 import {Sizes} from '~/components/Products/Sizes';
 import {Description} from '~/components/Products/Description';
-import {RootLoader} from '~/root';
 import {
   engineDefinition,
-  usePdpRecommendations,
+  fetchRecommendationStaticState,
   useProductView,
 } from '~/lib/coveo.engine';
 import {useCallback, useEffect, useRef} from 'react';
-import {ProductCard} from '~/components/Products/ProductCard';
+import {ProductRecommendations} from '~/components/Products/Recommendations';
+import {RecommendationProvider} from '~/components/Search/Context';
+import {
+  ClientSideNavigatorContextProvider,
+  ServerSideNavigatorContextProvider,
+} from '~/lib/navigator.provider';
 
 export const meta: MetaFunction<typeof loader> = ({data}) => {
   return [{title: `Hydrogen | ${data?.product.title ?? ''}`}];
@@ -37,7 +41,16 @@ export async function loader(args: LoaderFunctionArgs) {
   // Await the critical data required to render initial state of the page
   const criticalData = await loadCriticalData(args);
 
-  return {...criticalData};
+  engineDefinition.recommendationEngineDefinition.setNavigatorContextProvider(
+    () => new ServerSideNavigatorContextProvider(args.request),
+  );
+  const recommendationStaticState = await fetchRecommendationStaticState({
+    request: args.request,
+    k: ['pdpRecommendations'],
+    context: args.context,
+  });
+
+  return {...criticalData, recommendationStaticState};
 }
 
 /**
@@ -125,13 +138,9 @@ function redirectToFirstVariant({
 }
 
 export default function Product() {
-  const {product, variants} = useLoaderData<typeof loader>();
+  const {product, variants, recommendationStaticState} =
+    useLoaderData<typeof loader>();
   const productView = useProductView();
-  const pdpRecommendations = usePdpRecommendations();
-  useEffect(() => {
-    pdpRecommendations.methods?.refresh();
-  }, [pdpRecommendations.methods]);
-
   const selectedVariant = useOptimisticVariant(
     product.selectedVariant,
     variants,
@@ -198,23 +207,12 @@ export default function Product() {
           </div>
         </div>
       </div>
-      {/* Related products */}
-      <section aria-labelledby="related-heading" className="mt-24">
-        <h2 id="related-heading" className="text-lg font-medium text-gray-900">
-          {pdpRecommendations.state.headline}
-        </h2>
-
-        <div className="mt-6 grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-4 xl:gap-x-8">
-          {pdpRecommendations.state.products
-            .slice(0, 4)
-            .map((relatedProduct) => (
-              <ProductCard
-                product={relatedProduct}
-                key={relatedProduct.permanentid}
-              />
-            ))}
-        </div>
-      </section>
+      <RecommendationProvider
+        navigatorContext={new ClientSideNavigatorContextProvider()}
+        staticState={recommendationStaticState}
+      >
+        <ProductRecommendations />
+      </RecommendationProvider>
     </main>
   );
 }
