@@ -15,7 +15,7 @@
   },
   "prettier": "@shopify/prettier-config",
   "dependencies": {
-    "@coveo/headless-react": "^2.2.0-pre.7a1874ad3b",
+    "@coveo/headless-react": "^2.2.1-pre.79433ed6fb",
     "@headlessui/react": "^2.2.0",
     "@heroicons/react": "^2.1.5",
     "@remix-run/react": "^2.13.1",
