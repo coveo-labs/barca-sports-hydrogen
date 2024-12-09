@@ -166,8 +166,8 @@ async function loadCriticalData({context, request}: LoaderFunctionArgs) {
     header,
     staticStateStandalone,
     loggedIn,
-    customerDisplayName: customer?.data.customer.firstName,
-    customerImageUrl: customer?.data.customer.imageUrl,
+    customerDisplayName: customer?.data.customer.firstName || '',
+    customerImageUrl: customer?.data.customer.imageUrl || '',
     coveoVisitorIdHeader,
   };
 }

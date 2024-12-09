@@ -29,11 +29,11 @@ const SET_METAFIELDS_MUTATION = `
 export async function loader({context}: LoaderFunctionArgs) {
   const {data, errors} = await context.customerAccount.query<{
     customer: {
-      firstName: string;
-      lastName: string;
-      displayName: string;
+      firstName?: string;
+      lastName?: string;
+      displayName?: string;
       emailAddress: {emailAddress: string};
-      imageUrl: string;
+      imageUrl?: string;
       id: string;
       defaultAddress?: {
         address1: string;
@@ -45,7 +45,7 @@ export async function loader({context}: LoaderFunctionArgs) {
         province: string;
         zip: string;
       };
-      metafields: {key: string; value: string}[];
+      metafields?: {key: string; value: string}[];
     };
   }>(GET_CUSTOMER_QUERY);
 
@@ -100,9 +100,9 @@ export default function () {
   const {customer} = useLoaderData<typeof loader>();
   const fetcher = useFetcher<typeof action>();
   const customerInterests = JSON.parse(
-    customer.metafields.find((m) => m.key === 'interests')?.value || `[]`,
+    customer.metafields?.find((m) => m.key === 'interests')?.value || `[]`,
   ) as string[];
-  const customerNotes = customer.metafields.find(
+  const customerNotes = customer.metafields?.find(
     (m) => m.key === 'notes',
   )?.value;
   return customer ? (
