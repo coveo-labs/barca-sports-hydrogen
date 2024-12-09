@@ -23,7 +23,7 @@ export function ProductCard({product, onSelect}: ProductCardProps) {
     <NavLink
       key={product.permanentid}
       onClick={onSelect}
-      to={`/products/${product.ec_item_group_id?.replace(/0/, '')}`}
+      to={`/products/${product.ec_name?.toLowerCase().replaceAll(/ /g, '-')}`}
       className="group"
     >
       <img
