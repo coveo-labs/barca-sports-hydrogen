@@ -99,9 +99,10 @@ export async function action({request, context}: ActionFunctionArgs) {
 export default function () {
   const {customer} = useLoaderData<typeof loader>();
   const fetcher = useFetcher<typeof action>();
-  const customerInterests = JSON.parse(
-    customer.metafields?.find((m) => m.key === 'interests')?.value || `[]`,
-  ) as string[];
+  const customerInterests =
+    (JSON.parse(
+      customer.metafields?.find((m) => m.key === 'interests')?.value || `[]`,
+    ) as string[]) || [];
   const customerNotes = customer.metafields?.find(
     (m) => m.key === 'notes',
   )?.value;
