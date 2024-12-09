@@ -29,7 +29,7 @@ export async function loader({request, context}: LoaderFunctionArgs) {
     context,
     k: 'searchEngineDefinition',
     query: q,
-    url: `https://sports.barca.group`,
+    url: `https://shop.barca.group`,
     request,
   });
 

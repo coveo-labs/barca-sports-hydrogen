@@ -27,14 +27,14 @@ export const engineDefinition = defineCommerceEngine({
     organizationId: 'barcagroupproductionkwvdy6lp',
     analytics: {
       enabled: true,
-      trackingId: 'sports',
+      trackingId: 'shop_en_us',
     },
     context: {
       language: 'en',
       country: 'US',
       currency: 'USD',
       view: {
-        url: 'https://sports.barca.group',
+        url: 'https://shop.barca.group',
       },
     },
   },

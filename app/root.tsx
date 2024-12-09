@@ -157,7 +157,7 @@ async function loadCriticalData({context, request}: LoaderFunctionArgs) {
       context,
       k: 'standaloneEngineDefinition',
       query: '',
-      url: 'https://sports.barca.group',
+      url: 'https://shop.barca.group',
       request,
     }),
   ]);
