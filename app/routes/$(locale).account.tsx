@@ -45,7 +45,7 @@ export async function loader({context}: LoaderFunctionArgs) {
         province: string;
         zip: string;
       };
-      metafields?: {key: string; value: string}[];
+      metafields?: {key?: string; value?: string}[];
     };
   }>(GET_CUSTOMER_QUERY);
 
@@ -99,13 +99,15 @@ export async function action({request, context}: ActionFunctionArgs) {
 export default function () {
   const {customer} = useLoaderData<typeof loader>();
   const fetcher = useFetcher<typeof action>();
-  const customerInterests =
-    (JSON.parse(
-      customer.metafields?.find((m) => m.key === 'interests')?.value || `[]`,
-    ) as string[]) || [];
-  const customerNotes = customer.metafields?.find(
-    (m) => m.key === 'notes',
-  )?.value;
+  const customerInterests = customer.metafields
+    ? JSON.parse(
+        customer.metafields.find((m) => m?.key === 'interests')?.value || '[]',
+      )
+    : [];
+
+  const customerNotes = customer.metafields
+    ? customer.metafields?.find((m) => m?.key === 'notes')?.value
+    : '';
   return customer ? (
     <main className="space-y-10 divide-y divide-gray-900/10 mx-auto max-w-2xl px-4 pb-24 pt-16 sm:px-6 lg:max-w-7xl lg:px-8">
       <div className="grid grid-cols-1 gap-x-8 gap-y-8 pt-10 md:grid-cols-3">
