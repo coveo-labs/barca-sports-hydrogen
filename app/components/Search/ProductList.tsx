@@ -14,7 +14,14 @@ export function ProductList() {
 
       <div className="grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 xl:gap-x-8">
         {productList.state.products.map((product) => (
-          <ProductCard key={product.permanentid} product={product} />
+          <ProductCard
+            key={product.permanentid}
+            product={product}
+            onSelect={
+              productList.methods?.interactiveProduct({options: {product}})
+                .select
+            }
+          />
         ))}
       </div>
     </section>

@@ -4,7 +4,7 @@ import {Money} from '@shopify/hydrogen';
 import {StarIcon} from '@heroicons/react/20/solid';
 import {NavLink, useRouteLoaderData} from '@remix-run/react';
 import type {RootLoader} from '~/root';
-import {useInstantProducts, useProductList} from '~/lib/coveo.engine';
+
 interface ProductCardProps {
   product: Product;
   onSelect?: () => void;
@@ -14,10 +14,6 @@ export function ProductCard({product, onSelect}: ProductCardProps) {
   const hasPromo =
     (product.ec_promo_price && product.ec_promo_price < product.ec_price!) ||
     false;
-
-  /*const interactiveProduct = useInstantProducts().methods?.interactiveProduct({
-    options: {product},
-  });*/
 
   return (
     <NavLink

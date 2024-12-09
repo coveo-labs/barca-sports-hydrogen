@@ -107,6 +107,11 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
                       <ProductCard
                         key={product.permanentid}
                         product={product}
+                        onSelect={
+                          instantProducts.methods?.interactiveProduct({
+                            options: {product},
+                          }).select
+                        }
                       />
                     );
                   })}

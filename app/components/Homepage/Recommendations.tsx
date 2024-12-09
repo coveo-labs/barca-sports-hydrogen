@@ -1,6 +1,5 @@
 import {useHomepageRecommendations} from '~/lib/coveo.engine';
 import {ProductCard} from '../Products/ProductCard';
-import {useEffect} from 'react';
 
 export function Recommendations() {
   const homepageRecommendations = useHomepageRecommendations();
@@ -19,7 +18,14 @@ export function Recommendations() {
         <div className="mt-6 grid grid-cols-1 gap-y-10 sm:grid-cols-3 sm:gap-x-6 sm:gap-y-0 lg:gap-x-8">
           {homepageRecommendations.state.products.map((recommendation) => (
             <div key={recommendation.permanentid} className="group relative">
-              <ProductCard product={recommendation} />
+              <ProductCard
+                product={recommendation}
+                onSelect={
+                  homepageRecommendations.methods?.interactiveProduct({
+                    options: {product: recommendation},
+                  }).select
+                }
+              />
             </div>
           ))}
         </div>

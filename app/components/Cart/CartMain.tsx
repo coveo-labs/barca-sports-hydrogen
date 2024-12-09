@@ -3,9 +3,7 @@ import {Money, useOptimisticCart} from '@shopify/hydrogen';
 import type {CartApiQueryFragment} from 'storefrontapi.generated';
 import {CheckIcon, QuestionMarkCircleIcon} from '@heroicons/react/20/solid';
 import {CartLineRemoveButton} from './CartLineItem';
-import {useCart, useCartRecommendations} from '~/lib/coveo.engine';
-import {useEffect} from 'react';
-import {ProductCard} from '../Products/ProductCard';
+import {useCart} from '~/lib/coveo.engine';
 
 export type CartLayout = 'page' | 'aside';
 
