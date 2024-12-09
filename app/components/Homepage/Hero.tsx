@@ -2,7 +2,7 @@ import {NavLink} from '@remix-run/react';
 
 export function Hero() {
   return (
-    <div className="pb-80 pt-20">
+    <div className="pb-96 mb-32 pt-20 relative">
       <div className="relative mx-auto max-w-7xl px-4 sm:static sm:px-6 lg:px-8">
         <div className="sm:max-w-lg">
           <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-6xl">
@@ -15,7 +15,7 @@ export function Hero() {
           </p>
         </div>
         <div>
-          <div className="pt-20 md:pt-80">
+          <div className="pt-16">
             {/* Decorative image grid */}
             <div
               aria-hidden="true"
