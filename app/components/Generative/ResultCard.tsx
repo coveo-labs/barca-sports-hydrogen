@@ -48,7 +48,7 @@ export function ResultCard({result}: ResultCardProps) {
             to={result.clickUri}
             className="mt-2 block underline text-xs/6 text-gray-500"
           >
-            {result.clickUri}
+            {decodeURIComponent(result.clickUri)}
           </NavLink>
         </div>
       </div>
