@@ -35,24 +35,30 @@ export default function GenerativeAnswering() {
             {q}
           </h1>
 
-          <AnswerSection>
+          <AnswerSection className="min-h-48">
             {genAnswerState?.answer ? (
               <p className="text-xl/8 text-gray-700">
                 {genAnswerState?.answer}
               </p>
             ) : (
-              <Skeleton numLines={5} tick={200} />
+              <Skeleton numLines={10} tick={200} />
             )}
           </AnswerSection>
         </div>
       </div>
       <div className="border-b border-gray-200">
-        <AnswerSection className={cx(center, 'mb-4 min-h-48 mt-4')}>
-          <h2 className="text-xl/8 font-semibold text-gray-900 flex mb-4">
+        <AnswerSection
+          className={cx(
+            center,
+            'm-8',
+            genAnswerState?.citations.length ? '' : 'min-h-36',
+          )}
+        >
+          <h2 className="text-xl/8 font-semibold text-gray-900 mb-4">
             Sources
           </h2>
           {genAnswerState?.citations.length ? (
-            <div className="mx-auto grid max-w-2xl grid-cols-1 gap-6 lg:mx-0 lg:max-w-none lg:grid-cols-3 lg:gap-8 mt-2">
+            <div className="flex gap-x-8">
               {genAnswerState.citations.map((citation) => (
                 <div
                   key={citation.uri}
@@ -63,7 +69,9 @@ export default function GenerativeAnswering() {
                     className="h-7 w-5 flex-none text-indigo-400"
                   />
                   <NavLink to={citation.clickUri!} className="text-base/7">
-                    <h3 className="font-semibold">{citation.title}</h3>
+                    <h3 className="font-semibold text-nowrap">
+                      {citation.title}
+                    </h3>
                     <p className="mt-2 text-gray-500">{citation.source}</p>
                   </NavLink>
                 </div>
