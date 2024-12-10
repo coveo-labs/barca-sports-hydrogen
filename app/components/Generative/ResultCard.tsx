@@ -8,7 +8,6 @@ interface ResultCardProps {
   result: Result;
 }
 export function ResultCard({result}: ResultCardProps) {
-  console.log(result);
   const timeToRead = Math.ceil((result.raw.wordcount as number) / 200);
   const tags = (result.raw['articletags'] || []) as string[];
   return (
