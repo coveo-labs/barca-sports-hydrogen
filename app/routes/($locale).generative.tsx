@@ -26,6 +26,7 @@ export default function GenerativeAnswering() {
   const genAnswerState = useGenAIAnswer(q);
   const relatedArticles = useRelatedArticles(q, genAnswerState);
   const center = 'mx-auto max-w-7xl px-4 sm:px-6 lg:px-8';
+  const hasNoAnswerAfterADelay = useHasNoAnswerAfterADelay(q, genAnswerState);
 
   return (
     <div className="bg-gray-50">
@@ -35,73 +36,84 @@ export default function GenerativeAnswering() {
             {q}
           </h1>
 
-          <AnswerSection className="min-h-48">
-            {genAnswerState?.answer ? (
-              <p className="text-xl/8 text-gray-700">
-                {genAnswerState?.answer}
-              </p>
-            ) : (
-              <Skeleton numLines={10} tick={200} />
-            )}
-          </AnswerSection>
-        </div>
-      </div>
-      <div className="border-b border-gray-200">
-        <AnswerSection
-          className={cx(
-            center,
-            'm-8',
-            genAnswerState?.citations.length ? '' : 'min-h-36',
-          )}
-        >
-          <h2 className="text-xl/8 font-semibold text-gray-900 mb-4">
-            Sources
-          </h2>
-          {genAnswerState?.citations.length ? (
-            <div className="flex gap-x-8">
-              {genAnswerState.citations.map((citation) => (
-                <div
-                  key={citation.uri}
-                  className="flex gap-x-4 rounded-xl bg-white/5 ring-1 ring-inset ring-white/10"
-                >
-                  <BookOpenIcon
-                    aria-hidden="true"
-                    className="h-7 w-5 flex-none text-indigo-400"
-                  />
-                  <NavLink to={citation.clickUri!} className="text-base/7">
-                    <h3 className="font-semibold text-nowrap">
-                      {citation.title}
-                    </h3>
-                    <p className="mt-2 text-gray-500">{citation.source}</p>
-                  </NavLink>
-                </div>
-              ))}
-            </div>
+          {hasNoAnswerAfterADelay ? (
+            <p className="text-xl/8 text-gray-500 min-h-72">
+              Unfortunately, we couldn&apos;t find an answer to your question.
+              Please try again later or consider rephrasing your question.
+            </p>
           ) : (
-            <div className="mt-8">
-              <Skeleton numLines={5} tick={600} />
-            </div>
+            <AnswerSection className="min-h-48">
+              {genAnswerState?.answer ? (
+                <p className="text-xl/8 text-gray-500">
+                  {genAnswerState?.answer}
+                </p>
+              ) : (
+                <Skeleton numLines={10} tick={200} />
+              )}
+            </AnswerSection>
           )}
-        </AnswerSection>
-      </div>
-      <div className="bg-white">
-        <div className={cx(center)}>
-          <AnswerSection className={cx(' mt-0 pt-8 min-h-48')}>
-            <h2 className="text-xl/8 font-semibold text-gray-900 flex mb-4">
-              Related articles
-            </h2>
-            {relatedArticles.length > 0 ? (
-              <ul className="divide-y divide-gray-300">
-                {relatedArticles.map((r) => (
-                  <ResultCard key={r.uniqueId} result={r} />
-                ))}
-              </ul>
-            ) : (
-              <Skeleton numLines={10} tick={400} />
-            )}
-          </AnswerSection>
         </div>
       </div>
+      {hasNoAnswerAfterADelay ? null : (
+        <>
+          <div className="border-b border-gray-200">
+            <AnswerSection
+              className={cx(
+                center,
+                'm-8',
+                genAnswerState?.citations.length ? '' : 'min-h-36',
+              )}
+            >
+              <h2 className="text-xl/8 font-semibold text-gray-900 mb-4">
+                Sources
+              </h2>
+              {genAnswerState?.citations.length ? (
+                <div className="flex gap-x-8">
+                  {genAnswerState.citations.map((citation) => (
+                    <div
+                      key={citation.uri}
+                      className="flex gap-x-4 rounded-xl bg-white/5 ring-1 ring-inset ring-white/10"
+                    >
+                      <BookOpenIcon
+                        aria-hidden="true"
+                        className="h-7 w-5 flex-none text-indigo-400"
+                      />
+                      <NavLink to={citation.clickUri!} className="text-base/7">
+                        <h3 className="font-semibold text-nowrap">
+                          {citation.title}
+                        </h3>
+                        <p className="mt-2 text-gray-500">{citation.source}</p>
+                      </NavLink>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="mt-8">
+                  <Skeleton numLines={5} tick={600} />
+                </div>
+              )}
+            </AnswerSection>
+          </div>
+          <div className="bg-white">
+            <div className={cx(center)}>
+              <AnswerSection className={cx(' mt-0 pt-8 min-h-48')}>
+                <h2 className="text-xl/8 font-semibold text-gray-900 flex mb-4">
+                  Related articles
+                </h2>
+                {relatedArticles.length > 0 ? (
+                  <ul className="divide-y divide-gray-300">
+                    {relatedArticles.map((r) => (
+                      <ResultCard key={r.uniqueId} result={r} />
+                    ))}
+                  </ul>
+                ) : (
+                  <Skeleton numLines={10} tick={400} />
+                )}
+              </AnswerSection>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -168,4 +180,26 @@ function useRelatedArticles(q: string, genAnswerState?: GeneratedAnswerState) {
   }, [genAnswerState]);
 
   return relatedArticles;
+}
+
+function useHasNoAnswerAfterADelay(
+  q: string,
+  genAnswerState?: GeneratedAnswerState,
+) {
+  const [hasNoAnswerAfterADelay, setHasNoAnswerAfterADelay] = useState(false);
+  const delay = 5000;
+
+  useEffect(() => {
+    setHasNoAnswerAfterADelay(false);
+
+    const timer = setTimeout(() => {
+      if (!genAnswerState?.answer) {
+        setHasNoAnswerAfterADelay(true);
+      }
+    }, delay);
+
+    return () => clearTimeout(timer);
+  }, [q, genAnswerState?.answer]);
+
+  return hasNoAnswerAfterADelay;
 }
