@@ -7,7 +7,10 @@ import {
 } from '@headlessui/react';
 import {useEffect} from 'react';
 import {useInstantProducts, useStandaloneSearchBox} from '~/lib/coveo.engine';
-import {MagnifyingGlassIcon} from '@heroicons/react/24/outline';
+import {
+  MagnifyingGlassIcon,
+  ChatBubbleBottomCenterIcon,
+} from '@heroicons/react/24/outline';
 import {ProductCard} from '../Products/ProductCard';
 import {useNavigate} from '@remix-run/react';
 
@@ -27,14 +30,25 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
   }, [searchBox.state.suggestions, instantProducts.methods]);
   useEffect(() => {
     if (searchBox.state.redirectTo === '/search') {
-      const url = `${searchBox.state.redirectTo}?q=${encodeURIComponent(
-        searchBox.state.value,
-      )}`;
+      const url = `${
+        searchBox.state.value.length < 10
+          ? searchBox.state.redirectTo
+          : '/generative'
+      }?q=${encodeURIComponent(searchBox.state.value)}`;
 
       navigate(url);
       close?.();
     }
   }, [searchBox.state.redirectTo, searchBox.state.value, navigate, close]);
+
+  const onSubmit = () => {
+    if (searchBox.state.value.length < 10) {
+      searchBox.methods?.submit();
+    } else {
+      navigate('/generative?q=' + encodeURIComponent(searchBox.state.value));
+      close?.();
+    }
+  };
   return (
     <>
       <Combobox
@@ -46,7 +60,7 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
           }
           if (val !== 'products') {
             searchBox.methods?.updateText(val);
-            searchBox.methods?.submit();
+            onSubmit();
           }
           if (val === 'products') {
             close?.();
@@ -67,9 +81,13 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
           />
           <ComboboxButton
             className="group absolute inset-y-0 right-0 px-2.5"
-            onClick={() => searchBox.methods?.submit()}
+            onClick={searchBox.methods?.submit}
           >
-            <MagnifyingGlassIcon className="size-6" />
+            {searchBox.state.value.length > 10 ? (
+              <ChatBubbleBottomCenterIcon className="size-6" />
+            ) : (
+              <MagnifyingGlassIcon className="size-6" />
+            )}
           </ComboboxButton>
         </div>
 
