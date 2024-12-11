@@ -14,6 +14,19 @@ import {
 import {ProductCard} from '../Products/ProductCard';
 import {useNavigate} from '@remix-run/react';
 
+const redirectToGenerative = [
+  'what',
+  'which',
+  'when',
+  'where',
+  'who',
+  'whom',
+  'whose',
+  'why',
+  'whether',
+  'how',
+];
+
 interface StandaloneSearchBoxProps {
   close?: () => void;
 }
@@ -42,7 +55,11 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
   }, [searchBox.state.redirectTo, searchBox.state.value, navigate, close]);
 
   const onSubmit = () => {
-    if (searchBox.state.value.length < 10) {
+    if (
+      redirectToGenerative.some((keyword) =>
+        searchBox.state.value.startsWith(keyword),
+      )
+    ) {
       searchBox.methods?.submit();
     } else {
       navigate('/generative?q=' + encodeURIComponent(searchBox.state.value));
