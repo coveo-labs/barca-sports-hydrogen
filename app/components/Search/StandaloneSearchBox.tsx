@@ -28,7 +28,9 @@ const redirectToGenerative = [
 ];
 
 const shouldRedirectToGenerative = (query: string) => {
-  return redirectToGenerative.some((keyword) => query.startsWith(keyword));
+  return redirectToGenerative.some((keyword) =>
+    query.toLowerCase().startsWith(keyword),
+  );
 };
 
 interface StandaloneSearchBoxProps {
