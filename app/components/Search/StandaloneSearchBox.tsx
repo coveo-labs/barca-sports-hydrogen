@@ -27,6 +27,10 @@ const redirectToGenerative = [
   'how',
 ];
 
+const shouldRedirectToGenerative = (query: string) => {
+  return redirectToGenerative.some((keyword) => query.startsWith(keyword));
+};
+
 interface StandaloneSearchBoxProps {
   close?: () => void;
 }
@@ -44,9 +48,9 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
   useEffect(() => {
     if (searchBox.state.redirectTo === '/search') {
       const url = `${
-        searchBox.state.value.length < 10
-          ? searchBox.state.redirectTo
-          : '/generative'
+        shouldRedirectToGenerative(searchBox.state.value)
+          ? '/generative'
+          : searchBox.state.redirectTo
       }?q=${encodeURIComponent(searchBox.state.value)}`;
 
       navigate(url);
@@ -55,15 +59,11 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
   }, [searchBox.state.redirectTo, searchBox.state.value, navigate, close]);
 
   const onSubmit = () => {
-    if (
-      redirectToGenerative.some((keyword) =>
-        searchBox.state.value.startsWith(keyword),
-      )
-    ) {
-      searchBox.methods?.submit();
-    } else {
+    if (shouldRedirectToGenerative(searchBox.state.value)) {
       navigate('/generative?q=' + encodeURIComponent(searchBox.state.value));
       close?.();
+    } else {
+      searchBox.methods?.submit();
     }
   };
   return (
