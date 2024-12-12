@@ -22,6 +22,7 @@ import {
 import {ChevronRightIcon} from '@heroicons/react/24/outline';
 import {type ReactNode} from 'react';
 import {engineDefinition} from '~/lib/coveo.engine';
+import cx from '~/lib/cx';
 
 type FacetGenerator = ReturnType<
   typeof engineDefinition.controllers.useFacetGenerator
@@ -121,7 +122,7 @@ function FacetsInPanel({
         className="absolute z-10 mt-2 rounded-md bg-white p-4 shadow-2xl ring-1 ring-black/5 transition focus:outline-none data-[closed]:scale-95 data-[closed]:transform data-[closed]:opacity-0 data-[enter]:duration-100 data-[leave]:duration-75 data-[enter]:ease-out data-[leave]:ease-in w-max"
       >
         <form
-          style={{gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))'}}
+          style={{gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))'}}
           className="mx-auto grid max-w-7xl gap-10 p-4"
         >
           {facets.map((facet) => {
@@ -182,7 +183,7 @@ function FacetInPanel<FacetType extends keyof MappedFacetState>({
   children: ReactNode;
 }) {
   return (
-    <fieldset>
+    <fieldset className="min-w-0">
       <legend className="block font-medium">{facet.displayName}</legend>
       {children}
     </fieldset>
@@ -247,7 +248,7 @@ function getFacetContent({
 function RegularFacetContent({
   facet,
   facetController,
-  cx,
+  cx: classes,
 }: {
   facet: RegularFacetState;
   facetController?: RegularFacet;
@@ -256,7 +257,7 @@ function RegularFacetContent({
   return (
     <>
       {facet.values.map((facetValue, optionIdx) => (
-        <div key={facetValue.value} className={cx}>
+        <div key={facetValue.value} className={cx(classes, 'truncate')}>
           <input
             defaultValue={facetValue.value}
             defaultChecked={facetValue.state === 'selected'}
@@ -270,7 +271,7 @@ function RegularFacetContent({
           />
           <label
             htmlFor={`filter-${facet.facetId}-${optionIdx}`}
-            className="ml-3 whitespace-nowrap pr-6 text-sm font-medium text-gray-900"
+            className="ml-3 pr-6 text-sm font-medium text-gray-900 truncate"
           >
             {facetValue.value} ({facetValue.numberOfResults})
           </label>
@@ -326,7 +327,7 @@ function NumericFacetContent({
             />
             <label
               htmlFor={`filter-${facet.facetId}-${optionIdx}`}
-              className="ml-3 whitespace-nowrap pr-6 text-sm font-medium text-gray-900"
+              className="ml-3 pr-6 text-sm font-medium text-gray-900"
             >
               {`${formattedValue(facetValue)}`} ({facetValue.numberOfResults})
             </label>
@@ -391,7 +392,7 @@ function CategoryFacetContent({
               />
               <label
                 htmlFor={`filter-${facet.facetId}-${facetValue.value}-${optionIdx}`}
-                className={`cursor-pointer ml-3 whitespace-nowrap pr-6 text-sm text-gray-900 ${
+                className={`cursor-pointer ml-3 pr-6 text-sm text-gray-900 text-ellipsis ${
                   facetValue.state === 'selected' ? 'font-bold' : 'font-medium'
                 }`}
               >
