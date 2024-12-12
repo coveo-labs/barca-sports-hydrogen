@@ -15,6 +15,9 @@ import {ResultCard} from '~/components/Generative/ResultCard';
 import {AnswerSection} from '~/components/Generative/Section';
 import {Skeleton} from '~/components/Generative/Skeleton';
 import {Answer} from '~/components/Generative/Answer';
+import type {AnswerToProductsData} from './answer-to-products';
+import {ProductCard} from '~/components/Products/ProductCard';
+import type {Product} from '@coveo/headless/ssr-commerce';
 
 export async function loader({request}: LoaderFunctionArgs) {
   const url = new URL(request.url);
@@ -25,7 +28,11 @@ export async function loader({request}: LoaderFunctionArgs) {
 export default function GenerativeAnswering() {
   const {q} = useLoaderData<typeof loader>();
   const genAnswerState = useGenAIAnswer(q);
-  const relatedArticles = useRelatedArticles(q, genAnswerState);
+  const {relatedArticles, basicExpression} = useRelatedArticles(
+    q,
+    genAnswerState,
+  );
+  const relatedProducts = useRelatedProducts(basicExpression);
   const center = 'mx-auto max-w-7xl px-4 sm:px-6 lg:px-8';
   const hasNoAnswerAfterADelay = useHasNoAnswerAfterADelay(q, genAnswerState);
 
@@ -45,7 +52,40 @@ export default function GenerativeAnswering() {
           ) : (
             <AnswerSection className="min-h-48">
               {genAnswerState?.answer ? (
-                <Answer text={genAnswerState?.answer} />
+                <>
+                  <Answer text={genAnswerState?.answer} />
+                  {genAnswerState.citations.length > 0 && (
+                    <>
+                      <h2 className="text-xl/8 font-semibold text-gray-900 mb-4">
+                        Sources
+                      </h2>
+                      <div className="flex gap-x-8">
+                        {genAnswerState.citations.map((citation) => (
+                          <div
+                            key={citation.uri}
+                            className="flex gap-x-4 rounded-xl bg-white/5 ring-1 ring-inset ring-white/10"
+                          >
+                            <BookOpenIcon
+                              aria-hidden="true"
+                              className="h-7 w-5 flex-none text-indigo-400"
+                            />
+                            <NavLink
+                              to={citation.clickUri!}
+                              className="text-base/7"
+                            >
+                              <h3 className="font-semibold text-nowrap">
+                                {citation.title}
+                              </h3>
+                              <p className="mt-2 text-gray-500">
+                                {citation.source}
+                              </p>
+                            </NavLink>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </>
               ) : (
                 <Skeleton numLines={10} tick={200} />
               )}
@@ -55,47 +95,34 @@ export default function GenerativeAnswering() {
       </div>
       {hasNoAnswerAfterADelay ? null : (
         <>
-          <div className="border-b border-gray-200">
-            <AnswerSection
-              className={cx(
-                center,
-                'm-8',
-                genAnswerState?.citations.length ? '' : 'min-h-36',
-              )}
-            >
-              <h2 className="text-xl/8 font-semibold text-gray-900 mb-4">
-                Sources
-              </h2>
-              {genAnswerState?.citations.length ? (
-                <div className="flex gap-x-8">
-                  {genAnswerState.citations.map((citation) => (
-                    <div
-                      key={citation.uri}
-                      className="flex gap-x-4 rounded-xl bg-white/5 ring-1 ring-inset ring-white/10"
-                    >
-                      <BookOpenIcon
-                        aria-hidden="true"
-                        className="h-7 w-5 flex-none text-indigo-400"
+          <div className="bg-gray-50 border-b border-gray-200 pb-8">
+            <div className={cx(center)}>
+              <AnswerSection className={cx(' mt-0 pt-8 min-h-64')}>
+                <h2 className="text-xl/8 font-semibold text-gray-900 flex mb-4">
+                  These products might interest you
+                </h2>
+
+                {relatedProducts.length > 0 ? (
+                  <div className="grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 xl:gap-x-8">
+                    {relatedProducts.map((product) => (
+                      <ProductCard
+                        key={product.uniqueId}
+                        product={
+                          {...product, ...product.raw} as unknown as Product
+                        }
                       />
-                      <NavLink to={citation.clickUri!} className="text-base/7">
-                        <h3 className="font-semibold text-nowrap">
-                          {citation.title}
-                        </h3>
-                        <p className="mt-2 text-gray-500">{citation.source}</p>
-                      </NavLink>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="mt-8">
-                  <Skeleton numLines={5} tick={600} />
-                </div>
-              )}
-            </AnswerSection>
+                    ))}
+                  </div>
+                ) : (
+                  <Skeleton numLines={10} tick={400} />
+                )}
+              </AnswerSection>
+            </div>
           </div>
+
           <div className="bg-white">
             <div className={cx(center)}>
-              <AnswerSection className={cx(' mt-0 pt-8 min-h-48')}>
+              <AnswerSection className={cx(' mt-0 pt-8 min-h-64')}>
                 <h2 className="text-xl/8 font-semibold text-gray-900 flex mb-4">
                   Related articles
                 </h2>
@@ -159,9 +186,12 @@ function useRelatedArticles(q: string, genAnswerState?: GeneratedAnswerState) {
   const [relatedArticles, setRelatedArticles] = useState<Result[]>(
     answerToProduct.data?.results || [],
   );
+  const [basicExpression, setBasicExpression] = useState('');
+
   useEffect(() => {
     setRelatedArticles(answerToProduct.data?.results || []);
-  }, [answerToProduct.data?.results]);
+    setBasicExpression(answerToProduct.data?.basicExpression || '');
+  }, [answerToProduct.data?.results, answerToProduct.data?.basicExpression]);
   useEffect(() => {
     setRelatedArticles([]);
   }, [q]);
@@ -178,7 +208,7 @@ function useRelatedArticles(q: string, genAnswerState?: GeneratedAnswerState) {
     }
   }, [genAnswerState]);
 
-  return relatedArticles;
+  return {relatedArticles, basicExpression};
 }
 
 function useHasNoAnswerAfterADelay(
@@ -204,28 +234,27 @@ function useHasNoAnswerAfterADelay(
 }
 
 function useRelatedProducts(basicExpression: string) {
-  const answerToProduct = useFetcher<AnswerToArticlesData>();
-  const [relatedArticles, setRelatedArticles] = useState<Result[]>(
+  const answerToProduct = useFetcher<AnswerToProductsData>();
+  const [relatedProducts, setRelatedProducts] = useState<Result[]>(
     answerToProduct.data?.results || [],
   );
   useEffect(() => {
-    setRelatedArticles(answerToProduct.data?.results || []);
+    setRelatedProducts(answerToProduct.data?.results || []);
   }, [answerToProduct.data?.results]);
   useEffect(() => {
-    setRelatedArticles([]);
-  }, [q]);
+    setRelatedProducts([]);
+  }, [basicExpression]);
 
   useEffect(() => {
-    if (genAnswerState?.isAnswerGenerated) {
-      const formData = new FormData();
+    if (!basicExpression) return;
+    const formData = new FormData();
 
-      formData.append('answer', genAnswerState?.answer || '');
-      answerToProduct.submit(formData, {
-        method: 'POST',
-        action: '/answer-to-articles',
-      });
-    }
-  }, [genAnswerState]);
+    formData.append('basicExpression', basicExpression);
+    answerToProduct.submit(formData, {
+      method: 'POST',
+      action: '/answer-to-products',
+    });
+  }, [basicExpression]);
 
-  return relatedArticles;
+  return relatedProducts;
 }
