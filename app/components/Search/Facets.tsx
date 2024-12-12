@@ -31,7 +31,9 @@ type FacetGenerator = ReturnType<
 export function Facets({numFacetsInLine}: {numFacetsInLine: number}) {
   const facetGenerator = engineDefinition.controllers.useFacetGenerator();
   const facetsInline = facetGenerator.state.slice(0, numFacetsInLine);
-  const facetsInPanel = facetGenerator.state.slice(numFacetsInLine);
+  const facetsInPanel = facetGenerator.state
+    .slice(numFacetsInLine)
+    .slice(0, 12);
 
   return (
     <>
@@ -128,7 +130,12 @@ function FacetsInPanel({
               border = 'border-l border-t rounded-tl-lg rounded-tr-none';
             }
             if (facetIdx === facets.length - 1) {
-              border = `rounded-br-lg col-span-${6 - (facets.length % 6) + 1}`;
+              const fullRowFacet = facets.length % 6;
+              let fillUpRow = '';
+              if (fullRowFacet !== 0) {
+                fillUpRow = `col-span-${6 - fullRowFacet + 1}`;
+              }
+              border = `rounded-br-lg ${fillUpRow}`;
             }
 
             return (
