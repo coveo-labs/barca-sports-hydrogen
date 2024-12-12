@@ -5,7 +5,7 @@ import {
   ComboboxOption,
   ComboboxOptions,
 } from '@headlessui/react';
-import {ForwardedRef, useEffect, useRef} from 'react';
+import {type RefObject, useEffect, useRef} from 'react';
 import {useInstantProducts, useStandaloneSearchBox} from '~/lib/coveo.engine';
 import {
   MagnifyingGlassIcon,
@@ -40,30 +40,10 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
   const searchBox = useStandaloneSearchBox();
   const instantProducts = useInstantProducts();
   const navigate = useNavigate();
-  useEffect(() => {
-    if (searchBox.state.suggestions[0]) {
-      instantProducts.methods?.updateQuery(
-        searchBox.state.suggestions[0]?.rawValue,
-      );
-    }
-  }, [searchBox.state.suggestions, instantProducts.methods]);
-  useEffect(() => {
-    if (searchBox.state.redirectTo === '/search') {
-      const url = `${
-        shouldRedirectToGenerative(searchBox.state.value)
-          ? '/generative'
-          : searchBox.state.redirectTo
-      }?q=${encodeURIComponent(searchBox.state.value)}`;
-
-      navigate(url);
-      close?.();
-    }
-  }, [searchBox.state.redirectTo, searchBox.state.value, navigate, close]);
   const input = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    input.current?.focus();
-  }, [input.current]);
+  useAutofocus(input);
+  useRedirect(searchBox, close);
+  useUpdateInstantProducts(searchBox, instantProducts);
 
   const onSubmit = () => {
     if (shouldRedirectToGenerative(searchBox.state.value)) {
@@ -166,4 +146,43 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
       </Combobox>
     </>
   );
+}
+
+function useAutofocus(ref: RefObject<HTMLInputElement>) {
+  useEffect(() => {
+    ref.current?.focus();
+  }, [ref]);
+}
+
+function useRedirect(
+  searchBox: ReturnType<typeof useStandaloneSearchBox>,
+  close?: () => void,
+) {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (searchBox.state.redirectTo === '/search') {
+      const url = `${
+        shouldRedirectToGenerative(searchBox.state.value)
+          ? '/generative'
+          : searchBox.state.redirectTo
+      }?q=${encodeURIComponent(searchBox.state.value)}`;
+
+      navigate(url);
+      close?.();
+    }
+  }, [searchBox.state.redirectTo, searchBox.state.value, navigate, close]);
+}
+
+function useUpdateInstantProducts(
+  searchBox: ReturnType<typeof useStandaloneSearchBox>,
+  instantProducts: ReturnType<typeof useInstantProducts>,
+) {
+  useEffect(() => {
+    if (searchBox.state.suggestions[0]) {
+      instantProducts.methods?.updateQuery(
+        searchBox.state.suggestions[0]?.rawValue,
+      );
+    }
+  }, [searchBox.state.suggestions, instantProducts.methods]);
 }

@@ -11,7 +11,7 @@ export function Skeleton({numLines, tick}: {numLines: number; tick: number}) {
     }, tick);
 
     return () => clearInterval(timer);
-  }, [timeLeft]);
+  }, [timeLeft, tick]);
 
   return (
     <div className="h-2 animate-pulse">

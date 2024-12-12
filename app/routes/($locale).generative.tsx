@@ -10,10 +10,11 @@ import {useEffect, useState} from 'react';
 import {type LoaderFunctionArgs} from '@shopify/remix-oxygen';
 import {BookOpenIcon} from '@heroicons/react/24/outline';
 import cx from '~/lib/cx';
-import type {AnswerToProductData} from './answer-to-products';
+import type {AnswerToArticlesData} from './answer-to-articles';
 import {ResultCard} from '~/components/Generative/ResultCard';
 import {AnswerSection} from '~/components/Generative/Section';
 import {Skeleton} from '~/components/Generative/Skeleton';
+import {Answer} from '~/components/Generative/Answer';
 
 export async function loader({request}: LoaderFunctionArgs) {
   const url = new URL(request.url);
@@ -44,9 +45,7 @@ export default function GenerativeAnswering() {
           ) : (
             <AnswerSection className="min-h-48">
               {genAnswerState?.answer ? (
-                <p className="text-xl/8 text-gray-500">
-                  {genAnswerState?.answer}
-                </p>
+                <Answer text={genAnswerState?.answer} />
               ) : (
                 <Skeleton numLines={10} tick={200} />
               )}
@@ -156,7 +155,7 @@ function initGenAI() {
 }
 
 function useRelatedArticles(q: string, genAnswerState?: GeneratedAnswerState) {
-  const answerToProduct = useFetcher<AnswerToProductData>();
+  const answerToProduct = useFetcher<AnswerToArticlesData>();
   const [relatedArticles, setRelatedArticles] = useState<Result[]>(
     answerToProduct.data?.results || [],
   );
@@ -174,7 +173,7 @@ function useRelatedArticles(q: string, genAnswerState?: GeneratedAnswerState) {
       formData.append('answer', genAnswerState?.answer || '');
       answerToProduct.submit(formData, {
         method: 'POST',
-        action: '/answer-to-products',
+        action: '/answer-to-articles',
       });
     }
   }, [genAnswerState]);
@@ -202,4 +201,31 @@ function useHasNoAnswerAfterADelay(
   }, [q, genAnswerState?.answer]);
 
   return hasNoAnswerAfterADelay;
+}
+
+function useRelatedProducts(basicExpression: string) {
+  const answerToProduct = useFetcher<AnswerToArticlesData>();
+  const [relatedArticles, setRelatedArticles] = useState<Result[]>(
+    answerToProduct.data?.results || [],
+  );
+  useEffect(() => {
+    setRelatedArticles(answerToProduct.data?.results || []);
+  }, [answerToProduct.data?.results]);
+  useEffect(() => {
+    setRelatedArticles([]);
+  }, [q]);
+
+  useEffect(() => {
+    if (genAnswerState?.isAnswerGenerated) {
+      const formData = new FormData();
+
+      formData.append('answer', genAnswerState?.answer || '');
+      answerToProduct.submit(formData, {
+        method: 'POST',
+        action: '/answer-to-articles',
+      });
+    }
+  }, [genAnswerState]);
+
+  return relatedArticles;
 }

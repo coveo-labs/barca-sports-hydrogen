@@ -1,4 +1,4 @@
-import {Await, NavLink, useRouteLoaderData} from '@remix-run/react';
+import {Await, useRouteLoaderData} from '@remix-run/react';
 import type {HeaderQuery, CartApiQueryFragment} from 'storefrontapi.generated';
 
 import {
@@ -28,9 +28,6 @@ import {StandaloneSearchBox} from './Search/StandaloneSearchBox';
 import {CountrySelector} from './CountrySelector';
 import type {RootLoader} from '~/root';
 import {NavLinkWithLocale, relativeLink} from './NavLinkWithLocale';
-import {SearchProvider, StandaloneProvider} from './Search/Context';
-import {ClientSideNavigatorContextProvider} from '~/lib/navigator.provider';
-import type {SearchLoader} from '~/routes/($locale).search';
 interface HeaderProps {
   header: HeaderQuery;
   cart: Promise<CartApiQueryFragment | null>;
