@@ -149,7 +149,7 @@ export default function Product() {
   const logProductView = useCallback(() => {
     productView.methods?.view({
       name: product.title,
-      productId: product.id,
+      productId: product.handle.toUpperCase(),
       price: Number(selectedVariant.price.amount),
     });
   }, [product.title, product.id, selectedVariant.price.amount]);
