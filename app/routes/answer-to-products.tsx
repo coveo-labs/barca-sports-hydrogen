@@ -20,6 +20,7 @@ export async function action({request}: ActionFunctionArgs) {
       body: JSON.stringify({
         q: basicExpression,
         cq: '@ec_category',
+        filterField: '@ec_category',
       }),
     });
     return await res.json();
