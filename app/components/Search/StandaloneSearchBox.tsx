@@ -5,7 +5,7 @@ import {
   ComboboxOption,
   ComboboxOptions,
 } from '@headlessui/react';
-import {useEffect} from 'react';
+import {ForwardedRef, useEffect, useRef} from 'react';
 import {useInstantProducts, useStandaloneSearchBox} from '~/lib/coveo.engine';
 import {
   MagnifyingGlassIcon,
@@ -59,6 +59,11 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
       close?.();
     }
   }, [searchBox.state.redirectTo, searchBox.state.value, navigate, close]);
+  const input = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    input.current?.focus();
+  }, [input.current]);
 
   const onSubmit = () => {
     if (shouldRedirectToGenerative(searchBox.state.value)) {
@@ -88,6 +93,7 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
       >
         <div className="relative">
           <ComboboxInput
+            ref={input}
             onFocus={() => {
               searchBox.methods?.showSuggestions();
             }}
