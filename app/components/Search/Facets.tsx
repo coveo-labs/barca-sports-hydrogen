@@ -119,15 +119,24 @@ function FacetsInPanel({
       <PopoverPanel
         transition
         anchor="top end"
-        className="absolute z-10 mt-2 rounded-md bg-white p-4 shadow-2xl ring-1 ring-black/5 transition focus:outline-none data-[closed]:scale-95 data-[closed]:transform data-[closed]:opacity-0 data-[enter]:duration-100 data-[leave]:duration-75 data-[enter]:ease-out data-[leave]:ease-in w-max"
+        className="absolute z-10 mt-2 rounded-md bg-gray-50 p-4 shadow-2xl ring-1 ring-black/5 transition focus:outline-none data-[closed]:scale-95 data-[closed]:transform data-[closed]:opacity-0 data-[enter]:duration-100 data-[leave]:duration-75 data-[enter]:ease-out data-[leave]:ease-in w-screen h-screen"
       >
-        <form
-          style={{gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))'}}
-          className="mx-auto grid max-w-7xl gap-10 p-4"
-        >
-          {facets.map((facet) => {
+        <form className="bg-white divide-y divide-x divide-gray-200 overflow-hidden rounded-lg shadow grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-6 mx-24 mt-4">
+          {facets.map((facet, facetIdx) => {
+            let border = '';
+            if (facetIdx === 0) {
+              border = 'border-l border-t rounded-tl-lg rounded-tr-none';
+            }
+            if (facetIdx === facets.length - 1) {
+              border = `rounded-br-lg col-span-${6 - (facets.length % 6) + 1}`;
+            }
+
             return (
-              <FacetInPanel facet={facet} key={facet.facetId}>
+              <FacetInPanel
+                facet={facet}
+                key={facet.facetId}
+                cx={`group relative bg-white p-6 min-w-0 ${border}`}
+              >
                 {getFacetContent({
                   facet,
                   facetGenerator,
@@ -177,16 +186,18 @@ function FacetInline<FacetType extends keyof MappedFacetState>({
 
 function FacetInPanel<FacetType extends keyof MappedFacetState>({
   facet,
+  cx,
   children,
 }: {
+  cx: string;
   facet: MappedFacetState[FacetType];
   children: ReactNode;
 }) {
   return (
-    <fieldset className="min-w-0">
-      <legend className="block font-medium">{facet.displayName}</legend>
+    <div className={cx}>
+      <div className="block font-medium">{facet.displayName}</div>
       {children}
-    </fieldset>
+    </div>
   );
 }
 
@@ -264,7 +275,7 @@ function RegularFacetContent({
             id={`filter-${facet.facetId}-${optionIdx}`}
             name={`${facetValue.value}[]`}
             type="checkbox"
-            className="size-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+            className="size-4 rounded border-gray-300 text-indigo-600 focus:ring-0"
             onChange={() => {
               facetController?.toggleSelect(facetValue);
             }}
@@ -320,7 +331,7 @@ function NumericFacetContent({
               id={`filter-${facet.facetId}-${optionIdx}`}
               name={`${facetValue.start}--${facetValue.end}[]`}
               type="checkbox"
-              className="size-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+              className="size-4 rounded border-gray-300 text-indigo-600 focus:ring-0"
               onChange={() => {
                 facetController?.toggleSelect(facetValue);
               }}
@@ -383,7 +394,7 @@ function CategoryFacetContent({
                 id={`filter-${facet.facetId}-${facetValue.value}-${optionIdx}`}
                 name={`${facetValue.value}[]`}
                 type="radio"
-                className="hidden size-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                className="hidden size-4 rounded border-gray-300 text-indigo-600 focus:ring-0"
                 onClick={() => {
                   facetValue.state === 'selected'
                     ? facetController?.deselectAll()

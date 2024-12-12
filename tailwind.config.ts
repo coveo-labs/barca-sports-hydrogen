@@ -22,5 +22,8 @@ export default {
     {
       pattern: /ring-/,
     },
+    {
+      pattern: /col-span-/,
+    },
   ],
 } satisfies Config;
