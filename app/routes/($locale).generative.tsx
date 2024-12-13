@@ -19,6 +19,15 @@ import type {AnswerToProductsData} from './answer-to-products';
 import {ProductCard} from '~/components/Products/ProductCard';
 import type {Product} from '@coveo/headless/ssr-commerce';
 
+/**
+What to look for when buying a kayak?
+What accessories do I need for a kayak adventure?
+How do I transport and store a kayak?
+Which kayaks are best for whitewater?
+Which kayak materials offer the best balance for advanced use?
+
+ */
+
 export async function loader({request}: LoaderFunctionArgs) {
   const url = new URL(request.url);
   const q = url.searchParams.get('q') || '';
@@ -35,6 +44,9 @@ export default function GenerativeAnswering() {
   const relatedProducts = useRelatedProducts(basicExpression);
   const center = 'mx-auto max-w-7xl px-4 sm:px-6 lg:px-8';
   const hasNoAnswerAfterADelay = useHasNoAnswerAfterADelay(q, genAnswerState);
+
+  const hasCitations =
+    genAnswerState?.citations && genAnswerState.citations.length > 0;
 
   return (
     <div className="bg-gray-50">
@@ -54,7 +66,7 @@ export default function GenerativeAnswering() {
               {genAnswerState?.answer ? (
                 <>
                   <Answer text={genAnswerState?.answer} />
-                  {genAnswerState.citations.length > 0 && (
+                  {hasCitations && (
                     <>
                       <h2 className="text-xl/8 font-semibold text-gray-900 mb-4">
                         Sources
@@ -104,14 +116,16 @@ export default function GenerativeAnswering() {
 
                 {relatedProducts.length > 0 ? (
                   <div className="grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 xl:gap-x-8">
-                    {relatedProducts.map((product) => (
-                      <ProductCard
-                        key={product.uniqueId}
-                        product={
-                          {...product, ...product.raw} as unknown as Product
-                        }
-                      />
-                    ))}
+                    {relatedProducts.map((product) => {
+                      return (
+                        <ProductCard
+                          key={product.uniqueId}
+                          product={
+                            {...product, ...product.raw} as unknown as Product
+                          }
+                        />
+                      );
+                    })}
                   </div>
                 ) : (
                   <Skeleton numLines={10} tick={400} />
@@ -133,7 +147,7 @@ export default function GenerativeAnswering() {
                     ))}
                   </ul>
                 ) : (
-                  <Skeleton numLines={10} tick={400} />
+                  <Skeleton numLines={10} tick={800} />
                 )}
               </AnswerSection>
             </div>
@@ -194,6 +208,7 @@ function useRelatedArticles(q: string, genAnswerState?: GeneratedAnswerState) {
   }, [answerToProduct.data?.results, answerToProduct.data?.basicExpression]);
   useEffect(() => {
     setRelatedArticles([]);
+    setBasicExpression('');
   }, [q]);
 
   useEffect(() => {

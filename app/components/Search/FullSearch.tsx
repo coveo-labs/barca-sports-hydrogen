@@ -54,7 +54,6 @@ export function FullSearch({headline, tagline}: SearchPageProps) {
         </div>
       </div>
 
-      {/* Filters */}
       <section aria-labelledby="filter-heading">
         <h2 id="filter-heading" className="sr-only">
           Filters
@@ -89,11 +88,9 @@ export function FullSearch({headline, tagline}: SearchPageProps) {
           </div>
         </div>
 
-        {/* Active filters */}
         <Breadcrumbs />
       </section>
 
-      {/* Product grid */}
       <section
         aria-labelledby="products-heading"
         className="mx-auto max-w-screen-xl px-4 pb-16 pt-12 sm:px-6 sm:pb-24 sm:pt-16 lg:px-8"
