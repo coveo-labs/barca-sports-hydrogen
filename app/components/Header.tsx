@@ -418,11 +418,11 @@ function MenuDesktop({header, setOpen, cart}: MenuDesktopProps) {
               <div className="ml-4 flow-root lg:ml-6">
                 <NavLinkWithLocale
                   to="/cart"
-                  className="group -m-2 flex items-center p-2"
+                  className="cart-cta group -m-2 flex items-center p-2"
                 >
                   <ShoppingBagIcon
                     aria-hidden="true"
-                    className="cart-icon h-6 w-6 shrink-0 text-gray-400 group-hover:text-gray-500"
+                    className="h-6 w-6 shrink-0 text-gray-400 group-hover:text-gray-500"
                   />
                   <Suspense>
                     <Await resolve={cart}>
