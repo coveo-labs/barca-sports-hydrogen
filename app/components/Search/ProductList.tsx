@@ -1,6 +1,6 @@
 import {engineDefinition} from '~/lib/coveo.engine';
 import {ProductCard} from '../Products/ProductCard';
-import {SearchSummaryState} from '@coveo/headless/ssr-commerce';
+import type {SearchSummaryState} from '@coveo/headless/ssr-commerce';
 
 export function ProductList() {
   const productList = engineDefinition.controllers.useProductList();
