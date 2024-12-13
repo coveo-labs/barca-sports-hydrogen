@@ -56,6 +56,7 @@ export function Colors({
                 <span
                   aria-hidden="true"
                   className={cx(
+                    'color-swatch',
                     `bg-${mapColor(color)}-700`,
                     'size-8 rounded-full border border-black/10',
                   )}
