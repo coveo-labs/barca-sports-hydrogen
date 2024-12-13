@@ -1,8 +1,10 @@
 import {engineDefinition} from '~/lib/coveo.engine';
 import {ProductCard} from '../Products/ProductCard';
+import {SearchSummaryState} from '@coveo/headless/ssr-commerce';
 
 export function ProductList() {
   const productList = engineDefinition.controllers.useProductList();
+  const summary = engineDefinition.controllers.useSummary();
   const noResultClass = !productList.state.products.length
     ? ' no-results '
     : ' ';
@@ -10,6 +12,9 @@ export function ProductList() {
   return (
     <section
       aria-labelledby="products-heading"
+      data-bam-search-uid={productList.state.responseId}
+      data-bam-search-query={(summary.state as SearchSummaryState).query}
+      data-bam-result-count={summary.state.totalNumberOfProducts}
       className={
         'result-list' +
         noResultClass +
