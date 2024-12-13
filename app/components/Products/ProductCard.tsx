@@ -35,7 +35,9 @@ export function ProductCard({
         src={product.ec_images[0]}
         className="aspect-square w-full rounded-lg bg-gray-200 object-cover group-hover:opacity-75"
       />
-      <h3 className="mt-4 text-sm text-gray-700">{product.ec_name}</h3>
+      <h3 className="result-title mt-4 text-sm text-gray-700">
+        {product.ec_name}
+      </h3>
       <div className="flex">
         {Array.from(Array(5).keys()).map((i) => {
           return (
