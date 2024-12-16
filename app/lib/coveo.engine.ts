@@ -21,6 +21,10 @@ import {
 import type {AppLoadContext} from '@shopify/remix-oxygen';
 import {getLocaleFromRequest} from './i18n';
 import type {CartReturn} from '@shopify/hydrogen';
+import type {
+  CartLine,
+  ComponentizableCartLine,
+} from '@shopify/hydrogen/storefront-api-types';
 
 export const engineDefinition = defineCommerceEngine({
   configuration: {
@@ -189,14 +193,20 @@ export async function fetchRecommendationStaticState({
 
 function mapShopifyCartToCoveoCart(cart: CartReturn | null) {
   return {
-    items: cart?.lines.nodes.map((node: any) => {
-      const {merchandise} = node;
-      return {
-        productId: merchandise.product.id,
-        name: merchandise.product.title,
-        price: Number(merchandise.price.amount),
-        quantity: node.quantity,
-      };
+    items: cart?.lines.nodes.map((node) => {
+      return mapShopifyMerchandiseToCoveoCartItem(node);
     }),
+  };
+}
+
+export function mapShopifyMerchandiseToCoveoCartItem(
+  node: CartLine | ComponentizableCartLine,
+) {
+  const {merchandise} = node;
+  return {
+    productId: merchandise.product.handle.toUpperCase(),
+    name: merchandise.product.title,
+    price: Number(merchandise.price.amount),
+    quantity: node.quantity,
   };
 }

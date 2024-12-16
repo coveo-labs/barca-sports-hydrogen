@@ -9,7 +9,7 @@ import {CartForm} from '@shopify/hydrogen';
 import type {Cart} from '@shopify/hydrogen/storefront-api-types';
 import {
   json,
-  LoaderFunctionArgs,
+  type LoaderFunctionArgs,
   type ActionFunctionArgs,
 } from '@shopify/remix-oxygen';
 import {Suspense} from 'react';

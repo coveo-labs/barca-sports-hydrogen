@@ -3,8 +3,12 @@ import {Money, useOptimisticCart} from '@shopify/hydrogen';
 import type {CartApiQueryFragment} from 'storefrontapi.generated';
 import {CheckIcon, QuestionMarkCircleIcon} from '@heroicons/react/20/solid';
 import {CartLineRemoveButton} from './CartLineItem';
-import {useCart} from '~/lib/coveo.engine';
+import {
+  mapShopifyMerchandiseToCoveoCartItem,
+  useCart,
+} from '~/lib/coveo.engine';
 import cx from '~/lib/cx';
+import type {CartLine} from '@shopify/hydrogen/storefront-api-types';
 
 export type CartLayout = 'page' | 'aside';
 
@@ -51,7 +55,7 @@ export function CartMain({cart: originalCart}: CartMainProps) {
                             to={`/products/${cartLine.merchandise.product.handle}`}
                             className="font-medium text-gray-700 hover:text-gray-800"
                           >
-                            {cartLine.merchandise.title}
+                            {cartLine.merchandise.product.title}
                           </NavLink>
                         </h3>
                       </div>
@@ -100,6 +104,12 @@ export function CartMain({cart: originalCart}: CartMainProps) {
                         <CartLineRemoveButton
                           disabled={false}
                           lineIds={[cartLine.id]}
+                          cartItem={{
+                            ...mapShopifyMerchandiseToCoveoCartItem(
+                              cartLine as CartLine,
+                            ),
+                            quantity: 0,
+                          }}
                         />
                       </div>
                     </div>

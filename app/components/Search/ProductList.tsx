@@ -26,17 +26,27 @@ export function ProductList() {
       </h2>
 
       <div className="grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 xl:gap-x-8">
-        {productList.state.products.map((product) => (
-          <ProductCard
-            className="result-card"
-            key={product.permanentid}
-            product={product}
-            onSelect={
-              productList.methods?.interactiveProduct({options: {product}})
-                .select
-            }
-          />
-        ))}
+        {productList.state.products.map((product) => {
+          return (
+            <ProductCard
+              className="result-card"
+              key={product.permanentid}
+              product={product}
+              onSelect={() =>
+                productList.methods
+                  ?.interactiveProduct({
+                    options: {
+                      product: {
+                        ...product,
+                        ec_product_id: product.ec_item_group_id,
+                      },
+                    },
+                  })
+                  .select()
+              }
+            />
+          );
+        })}
       </div>
     </section>
   );
