@@ -20,6 +20,7 @@ import {
 } from '@coveo/headless-react/ssr-commerce';
 import type {AppLoadContext} from '@shopify/remix-oxygen';
 import {getLocaleFromRequest} from './i18n';
+import type {CartReturn} from '@shopify/hydrogen';
 
 export const engineDefinition = defineCommerceEngine({
   configuration: {
@@ -139,17 +140,7 @@ export async function fetchStaticState({
     controllers: {
       parameterManager: {initialState: {parameters: {q: query}}},
       cart: {
-        initialState: {
-          items: cart?.lines.nodes.map((node) => {
-            const {merchandise} = node;
-            return {
-              productId: merchandise.product.id,
-              name: merchandise.product.title,
-              price: Number(merchandise.price.amount),
-              quantity: node.quantity,
-            };
-          }),
-        },
+        initialState: mapShopifyCartToCoveoCart(cart),
       },
       context: {
         language: language.toLowerCase(),
@@ -165,6 +156,8 @@ export async function fetchStaticState({
 
 export async function fetchRecommendationStaticState({
   k,
+  context,
+  request,
 }: {
   context: AppLoadContext;
   request: Request;
@@ -174,9 +167,36 @@ export async function fetchRecommendationStaticState({
     | 'pdpRecommendations'
   )[];
 }) {
-  // TODO: This should be passed to the initial request: This is missing in Headless recs
-  //const {country, language, currency} = getLocaleFromRequest(request);
-  //const cart = await context.cart.get();
+  const cart = await context.cart.get();
+  const {country, language, currency} = getLocaleFromRequest(request);
 
-  return engineDefinition.recommendationEngineDefinition.fetchStaticState(k);
+  return engineDefinition.recommendationEngineDefinition.fetchStaticState({
+    controllers: {
+      cart: {
+        initialState: mapShopifyCartToCoveoCart(cart),
+      },
+      context: {
+        language: language.toLowerCase(),
+        country,
+        currency: currency as any,
+        view: {
+          url: 'https://shop.barca.group',
+        },
+      },
+    },
+  });
+}
+
+function mapShopifyCartToCoveoCart(cart: CartReturn | null) {
+  return {
+    items: cart?.lines.nodes.map((node: any) => {
+      const {merchandise} = node;
+      return {
+        productId: merchandise.product.id,
+        name: merchandise.product.title,
+        price: Number(merchandise.price.amount),
+        quantity: node.quantity,
+      };
+    }),
+  };
 }

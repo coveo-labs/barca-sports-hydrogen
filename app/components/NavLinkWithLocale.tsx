@@ -10,7 +10,11 @@ export function NavLinkWithLocale(props: NavLinkWithLocaleProps) {
   }
 
   return (
-    <NavLink className={props.className} to={redirectURL}>
+    <NavLink
+      className={props.className}
+      to={redirectURL}
+      onClick={props.onClick}
+    >
       {props.children}
     </NavLink>
   );

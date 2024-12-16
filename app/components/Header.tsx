@@ -15,6 +15,7 @@ import {
   TabList,
   TabPanel,
   TabPanels,
+  CloseButton,
 } from '@headlessui/react';
 import {
   Bars3Icon,
@@ -250,13 +251,14 @@ function MenuDesktop({header, setOpen, cart}: MenuDesktopProps) {
                   );
                   if (menuItem.items.length === 0) {
                     return (
-                      <NavLinkWithLocale
+                      <CloseButton
                         className="relative z-10 -mb-px flex items-center border-b-2 border-transparent pt-px text-sm font-medium text-gray-700 transition-colors duration-200 ease-out hover:text-gray-800 data-[open]:border-indigo-600 data-[open]:text-indigo-600 focus:outline-none"
                         key={menuItem.id}
                         to={relativeLink(menuItem.url!)}
+                        as={NavLinkWithLocale}
                       >
                         {menuItem.title}
-                      </NavLinkWithLocale>
+                      </CloseButton>
                     );
                   }
                   return (
@@ -271,84 +273,84 @@ function MenuDesktop({header, setOpen, cart}: MenuDesktopProps) {
                         transition
                         className="absolute inset-x-0 top-full text-sm text-gray-500 transition data-[closed]:opacity-0 data-[enter]:duration-200 data-[leave]:duration-150 data-[enter]:ease-out data-[leave]:ease-in"
                       >
-                        <div
-                          aria-hidden="true"
-                          className="absolute inset-0 top-1/2 bg-white shadow"
-                        />
+                        {({close}) => (
+                          <>
+                            <div
+                              aria-hidden="true"
+                              className="absolute inset-0 top-1/2 bg-white shadow"
+                            />
 
-                        <div className="relative bg-white">
-                          <div className="mx-auto max-w-7xl px-8">
-                            <div className="grid grid-cols-1 gap-x-8 gap-y-10 py-16">
-                              <div className="col-start-2 grid grid-cols-2 gap-x-8">
-                                <div
-                                  key={menuItem.id}
-                                  className="group relative text-base sm:text-sm"
-                                >
-                                  <PopoverButton
-                                    as={NavLinkWithLocale}
-                                    to={relativeLink(menuItem.url!)}
-                                    className="mt-6 block font-medium text-gray-900 hover:underline"
-                                  >
-                                    <div className="aspect-h-1 aspect-w-1 overflow-hidden rounded-lg bg-gray-100 group-hover:opacity-75">
-                                      <img
-                                        alt={'replace'}
-                                        src={
-                                          currentCollection?.node.image?.url! ||
-                                          'replace'
-                                        }
-                                        className="object-cover object-center"
-                                      />
+                            <div className="relative bg-white">
+                              <div className="mx-auto max-w-7xl px-8">
+                                <div className="grid grid-cols-1 gap-x-8 gap-y-10 py-16">
+                                  <div className="col-start-2 grid grid-cols-2 gap-x-8">
+                                    <div
+                                      key={menuItem.id}
+                                      className="group relative text-base sm:text-sm"
+                                    >
+                                      <NavLinkWithLocale
+                                        onClick={() => close()}
+                                        to={relativeLink(menuItem.url!)}
+                                        className="mt-6 block font-medium text-gray-900 hover:underline"
+                                      >
+                                        <div className="aspect-h-1 aspect-w-1 overflow-hidden rounded-lg bg-gray-100 group-hover:opacity-75">
+                                          <img
+                                            alt={'replace'}
+                                            src={
+                                              currentCollection?.node.image
+                                                ?.url! || 'replace'
+                                            }
+                                            className="object-cover object-center"
+                                          />
+                                        </div>
+                                        Shop all {menuItem.title}
+                                      </NavLinkWithLocale>
                                     </div>
-                                    <span
-                                      aria-hidden="true"
-                                      className="absolute inset-0 z-10"
-                                    />
-                                    Shop all {menuItem.title}
-                                  </PopoverButton>
+                                  </div>
+                                  <div className="row-start-1 grid grid-cols-3 gap-x-8 gap-y-10 text-sm">
+                                    {menuItem.items.map((subMenuItem) => {
+                                      return (
+                                        <div key={subMenuItem.id}>
+                                          <NavLinkWithLocale
+                                            onClick={() => close()}
+                                            key={subMenuItem.id}
+                                            to={relativeLink(subMenuItem.url!)}
+                                            className="font-medium text-gray-900 hover:underline"
+                                          >
+                                            {subMenuItem.title}
+                                          </NavLinkWithLocale>
+                                          <ul
+                                            aria-labelledby={`${subMenuItem.id}-heading`}
+                                            className="mt-6 space-y-6 sm:mt-4 sm:space-y-4"
+                                          >
+                                            {subMenuItem.items.map(
+                                              (leafMenuItem) => (
+                                                <li
+                                                  key={leafMenuItem.id}
+                                                  className="flow-root"
+                                                >
+                                                  <NavLinkWithLocale
+                                                    onClick={() => close()}
+                                                    to={relativeLink(
+                                                      leafMenuItem.url!,
+                                                    )}
+                                                    className="-m-2 block p-2 text-gray-500 hover:text-gray-800 hover:underline"
+                                                  >
+                                                    {leafMenuItem.title}
+                                                  </NavLinkWithLocale>
+                                                </li>
+                                              ),
+                                            )}
+                                          </ul>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
                                 </div>
                               </div>
-                              <div className="row-start-1 grid grid-cols-3 gap-x-8 gap-y-10 text-sm">
-                                {menuItem.items.map((subMenuItem) => {
-                                  return (
-                                    <div key={subMenuItem.id}>
-                                      <PopoverButton
-                                        as={NavLinkWithLocale}
-                                        key={subMenuItem.id}
-                                        to={relativeLink(subMenuItem.url!)}
-                                        className="font-medium text-gray-900 hover:underline"
-                                      >
-                                        {subMenuItem.title}
-                                      </PopoverButton>
-                                      <ul
-                                        aria-labelledby={`${subMenuItem.id}-heading`}
-                                        className="mt-6 space-y-6 sm:mt-4 sm:space-y-4"
-                                      >
-                                        {subMenuItem.items.map(
-                                          (leafMenuItem) => (
-                                            <li
-                                              key={leafMenuItem.id}
-                                              className="flow-root"
-                                            >
-                                              <PopoverButton
-                                                as={NavLinkWithLocale}
-                                                to={relativeLink(
-                                                  leafMenuItem.url!,
-                                                )}
-                                                className="-m-2 block p-2 text-gray-500 hover:text-gray-800 hover:underline"
-                                              >
-                                                {leafMenuItem.title}
-                                              </PopoverButton>
-                                            </li>
-                                          ),
-                                        )}
-                                      </ul>
-                                    </div>
-                                  );
-                                })}
-                              </div>
                             </div>
-                          </div>
-                        </div>
+                          </>
+                        )}
                       </PopoverPanel>
                     </Popover>
                   );
