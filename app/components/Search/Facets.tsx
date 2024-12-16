@@ -37,7 +37,7 @@ export function Facets({numFacetsInLine}: {numFacetsInLine: number}) {
 
   return (
     <>
-      <PopoverGroup className="ml-40 flex items-center divide-x divide-gray-200 flex-wrap justify-end flex-nowrap">
+      <PopoverGroup className="facet-container ml-40 flex items-center divide-x divide-gray-200 flex-wrap justify-end flex-nowrap">
         <FacetsInline facets={facetsInline} facetGenerator={facetGenerator} />
         <FacetsInPanel facets={facetsInPanel} facetGenerator={facetGenerator} />
       </PopoverGroup>
@@ -169,7 +169,7 @@ function FacetInline<FacetType extends keyof MappedFacetState>({
 }) {
   return (
     <Popover className="relative inline-block px-4 text-left text-nowrap">
-      <PopoverButton className="group inline-flex justify-center text-sm font-medium text-gray-700 hover:text-gray-900">
+      <PopoverButton className="facet group inline-flex justify-center text-sm font-medium text-gray-700 hover:text-gray-900">
         <span>{facet.displayName}</span>
         {facet.hasActiveValues ? (
           <span className="ml-1.5 rounded bg-gray-200 px-1.5 py-0.5 text-xs font-semibold tabular-nums text-gray-700">
@@ -289,7 +289,7 @@ function RegularFacetContent({
           />
           <label
             htmlFor={`filter-${facet.facetId}-${optionIdx}`}
-            className="ml-3 pr-6 text-sm font-medium text-gray-900 truncate"
+            className="facet-value ml-3 pr-6 text-sm font-medium text-gray-900 truncate"
           >
             {facetValue.value} ({facetValue.numberOfResults})
           </label>

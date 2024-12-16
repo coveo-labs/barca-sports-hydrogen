@@ -77,7 +77,7 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
             onFocus={() => {
               searchBox.methods?.showSuggestions();
             }}
-            className="w-full h-12 border p-4"
+            className="search-box w-full h-12 border p-4"
             aria-label="Search"
             placeholder="Search"
             onChange={(event) => {
@@ -111,7 +111,7 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
               <ComboboxOption
                 key={suggestion.rawValue}
                 value={suggestion.rawValue}
-                className="data-[focus]:text-indigo-600 cursor-pointer p-2 z-20"
+                className="query-suggestion data-[focus]:text-indigo-600 cursor-pointer p-2 z-20"
                 dangerouslySetInnerHTML={{
                   __html: suggestion.highlightedValue,
                 }}
@@ -130,6 +130,7 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
                       <ProductCard
                         key={product.permanentid}
                         product={product}
+                        className="product-suggestion"
                         onSelect={
                           instantProducts.methods?.interactiveProduct({
                             options: {product},

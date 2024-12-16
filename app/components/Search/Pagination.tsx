@@ -4,7 +4,7 @@ export function PaginationFooter() {
   const summary = engineDefinition.controllers.useSummary();
   const pagination = engineDefinition.controllers.usePagination();
   return (
-    <div className="flex justify-between">
+    <div className="pagination-container flex justify-between">
       <div className="text-sm text-gray-700 self-center mr-auto">
         Showing{' '}
         <span className="font-medium">{summary.state.firstProduct}</span> to{' '}
@@ -21,7 +21,7 @@ export function PaginationFooter() {
               pagination.methods?.previousPage();
               scrollTo({top: 0, behavior: 'smooth'});
             }}
-            className="relative inline-flex items-center rounded-md border border-gray-300  px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            className="previous-page relative inline-flex items-center rounded-md border border-gray-300  px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
           >
             Previous
           </button>
@@ -30,7 +30,7 @@ export function PaginationFooter() {
               pagination.methods?.nextPage();
               scrollTo({top: 0, behavior: 'smooth'});
             }}
-            className="relative ml-3 inline-flex items-center rounded-md border border-gray-300  px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            className="next-page relative ml-3 inline-flex items-center rounded-md border border-gray-300  px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
           >
             Next
           </button>

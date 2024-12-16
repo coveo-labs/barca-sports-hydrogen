@@ -8,8 +8,13 @@ import type {RootLoader} from '~/root';
 interface ProductCardProps {
   product: Product;
   onSelect?: () => void;
+  className?: string;
 }
-export function ProductCard({product, onSelect}: ProductCardProps) {
+export function ProductCard({
+  product,
+  onSelect,
+  className = '',
+}: ProductCardProps) {
   const rootData = useRouteLoaderData<RootLoader>('root');
   const hasPromo =
     (product.ec_promo_price && product.ec_promo_price < product.ec_price!) ||
@@ -20,7 +25,7 @@ export function ProductCard({product, onSelect}: ProductCardProps) {
       key={product.permanentid}
       onClick={onSelect}
       to={`/products/${product.ec_item_group_id}`}
-      className="group"
+      className={`${className} group`}
     >
       <img
         loading="lazy"
@@ -30,7 +35,9 @@ export function ProductCard({product, onSelect}: ProductCardProps) {
         src={product.ec_images[0]}
         className="aspect-square w-full rounded-lg bg-gray-200 object-cover group-hover:opacity-75"
       />
-      <h3 className="mt-4 text-sm text-gray-700">{product.ec_name}</h3>
+      <h3 className="result-title mt-4 text-sm text-gray-700">
+        {product.ec_name}
+      </h3>
       <div className="flex">
         {Array.from(Array(5).keys()).map((i) => {
           return (
