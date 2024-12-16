@@ -4,6 +4,7 @@ import type {CartApiQueryFragment} from 'storefrontapi.generated';
 import {CheckIcon, QuestionMarkCircleIcon} from '@heroicons/react/20/solid';
 import {CartLineRemoveButton} from './CartLineItem';
 import {useCart} from '~/lib/coveo.engine';
+import cx from '~/lib/cx';
 
 export type CartLayout = 'page' | 'aside';
 
@@ -16,6 +17,7 @@ export function CartMain({cart: originalCart}: CartMainProps) {
   // so the user immediately sees feedback when they modify the cart.
   const cart = useOptimisticCart(originalCart);
   const coveoCart = useCart();
+  const hasCartItems = coveoCart.state.totalQuantity > 0;
 
   return (
     <div>
@@ -212,14 +214,23 @@ export function CartMain({cart: originalCart}: CartMainProps) {
 
           <div className="mt-6">
             <NavLink
-              onClick={() =>
-                coveoCart.methods?.purchase({
-                  id: cart?.id || '',
-                  revenue: Number(cart.cost?.totalAmount?.amount),
-                })
+              onClick={(e) =>
+                hasCartItems
+                  ? coveoCart.methods?.purchase({
+                      id: cart?.id || '',
+                      revenue: Number(cart?.cost?.totalAmount?.amount),
+                    })
+                  : e.preventDefault()
               }
               to={cart?.checkoutUrl || ''}
-              className="block w-full rounded-md border border-transparent bg-indigo-600 px-4 py-3 text-base font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-50"
+              className={cx(
+                'checkout block w-full rounded-md border border-transparent bg-indigo-600 px-4 py-3',
+                'text-base font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none',
+                'focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-50',
+                !hasCartItems
+                  ? 'pointer-events-none opacity-10 checkout-disabled'
+                  : '',
+              )}
             >
               Checkout
             </NavLink>

@@ -1,5 +1,5 @@
 import {Await, useRouteLoaderData} from '@remix-run/react';
-import type {HeaderQuery, CartApiQueryFragment} from 'storefrontapi.generated';
+import type {CartApiQueryFragment, HeaderQuery} from 'storefrontapi.generated';
 
 import {
   Dialog,
@@ -22,12 +22,12 @@ import {
   ShoppingBagIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline';
-import BarcaLogo from '~/assets/barca-logo.svg';
 import {Fragment, Suspense, useState} from 'react';
-import {StandaloneSearchBox} from './Search/StandaloneSearchBox';
-import {CountrySelector} from './CountrySelector';
+import BarcaLogo from '~/assets/barca-logo.svg';
 import type {RootLoader} from '~/root';
+import {CountrySelector} from './CountrySelector';
 import {NavLinkWithLocale, relativeLink} from './NavLinkWithLocale';
+import {StandaloneSearchBox} from './Search/StandaloneSearchBox';
 interface HeaderProps {
   header: HeaderQuery;
   cart: Promise<CartApiQueryFragment | null>;
@@ -215,7 +215,10 @@ function MenuDesktop({header, setOpen, cart}: MenuDesktopProps) {
 
   return (
     <header className="sticky top-0 z-10 bg-white">
-      <nav aria-label="Top" className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <nav
+        aria-label="Top"
+        className="main-navigation mx-auto max-w-7xl px-4 sm:px-6 lg:px-8"
+      >
         <div className="">
           <div className="flex h-16 items-center">
             <button
@@ -230,7 +233,7 @@ function MenuDesktop({header, setOpen, cart}: MenuDesktopProps) {
 
             {/* Logo */}
             <div className="ml-4 flex lg:ml-0">
-              <NavLinkWithLocale to="/">
+              <NavLinkWithLocale className="barca-logo" to="/">
                 <span className="sr-only">{shop.name}</span>
                 <img
                   src={BarcaLogo}
@@ -262,7 +265,7 @@ function MenuDesktop({header, setOpen, cart}: MenuDesktopProps) {
                   return (
                     <Popover key={menuItem.id} className="flex">
                       <div className="relative flex">
-                        <PopoverButton className="relative z-10 -mb-px flex items-center border-b-2 border-transparent pt-px text-sm font-medium text-gray-700 transition-colors duration-200 ease-out hover:text-gray-800 data-[open]:border-indigo-600 data-[open]:text-indigo-600 focus:outline-none">
+                        <PopoverButton className="parent-menu-link relative z-10 -mb-px flex items-center border-b-2 border-transparent pt-px text-sm font-medium text-gray-700 transition-colors duration-200 ease-out hover:text-gray-800 data-[open]:border-indigo-600 data-[open]:text-indigo-600 focus:outline-none">
                           {menuItem.title}
                         </PopoverButton>
                       </div>
@@ -287,7 +290,7 @@ function MenuDesktop({header, setOpen, cart}: MenuDesktopProps) {
                                   <PopoverButton
                                     as={NavLinkWithLocale}
                                     to={relativeLink(menuItem.url!)}
-                                    className="mt-6 block font-medium text-gray-900 hover:underline"
+                                    className="menu-link mt-6 block font-medium text-gray-900 hover:underline"
                                   >
                                     <div className="aspect-h-1 aspect-w-1 overflow-hidden rounded-lg bg-gray-100 group-hover:opacity-75">
                                       <img
@@ -315,7 +318,7 @@ function MenuDesktop({header, setOpen, cart}: MenuDesktopProps) {
                                         as={NavLinkWithLocale}
                                         key={subMenuItem.id}
                                         to={relativeLink(subMenuItem.url!)}
-                                        className="font-medium text-gray-900 hover:underline"
+                                        className="menu-link font-medium text-gray-900 hover:underline"
                                       >
                                         {subMenuItem.title}
                                       </PopoverButton>
@@ -334,7 +337,7 @@ function MenuDesktop({header, setOpen, cart}: MenuDesktopProps) {
                                                 to={relativeLink(
                                                   leafMenuItem.url!,
                                                 )}
-                                                className="-m-2 block p-2 text-gray-500 hover:text-gray-800 hover:underline"
+                                                className="menu-link -m-2 block p-2 text-gray-500 hover:text-gray-800 hover:underline"
                                               >
                                                 {leafMenuItem.title}
                                               </PopoverButton>
@@ -359,7 +362,7 @@ function MenuDesktop({header, setOpen, cart}: MenuDesktopProps) {
             <div className="ml-auto flex items-center">
               <div className="hidden lg:flex lg:flex-1 lg:items-center lg:justify-end lg:space-x-6">
                 <NavLinkWithLocale
-                  className="text-sm font-medium text-gray-700 hover:text-gray-800 flex items-center gap-x-4"
+                  className="login-cta text-sm font-medium text-gray-700 hover:text-gray-800 flex items-center gap-x-4"
                   to="/account"
                 >
                   <div>
@@ -388,7 +391,7 @@ function MenuDesktop({header, setOpen, cart}: MenuDesktopProps) {
 
               <Popover className="flex lg:ml-6">
                 <PopoverBackdrop className="fixed inset-0 bg-black/30 backdrop-blur-sm z-20" />
-                <PopoverButton className="rp-2 text-gray-400 hover:text-gray-500 data-[open]:border-indigo-600 data-[open]:text-indigo-600 focus:outline-none">
+                <PopoverButton className="search-cta rp-2 text-gray-400 hover:text-gray-500 data-[open]:border-indigo-600 data-[open]:text-indigo-600 focus:outline-none">
                   <span className="sr-only">Search</span>
                   <MagnifyingGlassIcon aria-hidden="true" className="h-6 w-6" />
                 </PopoverButton>
@@ -415,7 +418,7 @@ function MenuDesktop({header, setOpen, cart}: MenuDesktopProps) {
               <div className="ml-4 flow-root lg:ml-6">
                 <NavLinkWithLocale
                   to="/cart"
-                  className="group -m-2 flex items-center p-2"
+                  className="cart-cta group -m-2 flex items-center p-2"
                 >
                   <ShoppingBagIcon
                     aria-hidden="true"
