@@ -23,7 +23,7 @@ export function ProductCard({
     false;
   const [selectedColor, setSelectedColor] = useState(product.ec_color);
   const mainImg =
-    product.children.find((c) => c.ec_color === selectedColor)?.ec_images[0] ||
+    product.children?.find((c) => c.ec_color === selectedColor)?.ec_images[0] ||
     product.ec_images[0];
 
   return (
@@ -86,7 +86,7 @@ export function ProductCard({
       <Colors
         headline=""
         currentColor={product.ec_color || ''}
-        availableColors={product.children.map((c) => c.ec_color || '')}
+        availableColors={product.children?.map((c) => c.ec_color || '') || []}
         onSelect={setSelectedColor}
       />
     </div>
