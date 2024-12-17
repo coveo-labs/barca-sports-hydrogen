@@ -62,13 +62,16 @@ export const engineDefinition = defineCommerceEngine({
     facetGenerator: defineFacetGenerator(),
     breadcrumbManager: defineBreadcrumbManager(),
     homepageRecommendations: defineRecommendations({
-      options: {slotId: 'af9208ab-3eee-400c-9078-790f4835f785'},
+      options: {slotId: '9a75d3ba-c053-40bf-b881-6d2d3f8472db'},
     }),
     cartRecommendations: defineRecommendations({
-      options: {slotId: 'd214dc06-2d0e-468f-8df4-59518a788100'},
+      options: {slotId: '5a93e231-3b58-4dd2-a00b-667e4fd62c55'},
     }),
-    pdpRecommendations: defineRecommendations({
-      options: {slotId: '7b506e3f-c0c3-411d-b771-161ee3305798'},
+    pdpRecommendationsLowerCarousel: defineRecommendations({
+      options: {slotId: 'a24b0e9c-a8d2-4d4f-be76-5962160504e2'},
+    }),
+    pdpRecommendationsUpperCarousel: defineRecommendations({
+      options: {slotId: '05848244-5c01-4846-b280-ff63f5530733'},
     }),
     parameterManager: defineParameterManager(),
   },
@@ -98,7 +101,8 @@ export const {
   useBreadcrumbManager,
   useHomepageRecommendations,
   useCartRecommendations,
-  usePdpRecommendations,
+  usePdpRecommendationsLowerCarousel,
+  usePdpRecommendationsUpperCarousel,
 } = engineDefinition.controllers;
 
 export type ListingStaticState = InferStaticState<
@@ -168,7 +172,8 @@ export async function fetchRecommendationStaticState({
   k: (
     | 'homepageRecommendations'
     | 'cartRecommendations'
-    | 'pdpRecommendations'
+    | 'pdpRecommendationsLowerCarousel'
+    | 'pdpRecommendationsUpperCarousel'
   )[];
 }) {
   const cart = await context.cart.get();
@@ -176,6 +181,14 @@ export async function fetchRecommendationStaticState({
 
   return engineDefinition.recommendationEngineDefinition.fetchStaticState({
     controllers: {
+      homepageRecommendations: {enabled: k.includes('homepageRecommendations')},
+      cartRecommendations: {enabled: k.includes('cartRecommendations')},
+      pdpRecommendationsLowerCarousel: {
+        enabled: k.includes('pdpRecommendationsLowerCarousel'),
+      },
+      pdpRecommendationsUpperCarousel: {
+        enabled: k.includes('pdpRecommendationsUpperCarousel'),
+      },
       cart: {
         initialState: mapShopifyCartToCoveoCart(cart),
       },

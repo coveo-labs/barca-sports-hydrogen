@@ -16,10 +16,7 @@ import {Suspense} from 'react';
 import {CartEmpty} from '~/components/Cart/CartEmpty';
 import {CartMain} from '~/components/Cart/CartMain';
 import {CartRecommendations} from '~/components/Cart/CartRecommendations';
-import {
-  RecommendationProvider,
-  StandaloneProvider,
-} from '~/components/Search/Context';
+import {RecommendationProvider} from '~/components/Search/Context';
 import {
   engineDefinition,
   fetchRecommendationStaticState,

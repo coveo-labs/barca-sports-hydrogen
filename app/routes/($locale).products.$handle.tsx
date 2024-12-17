@@ -46,7 +46,7 @@ export async function loader(args: LoaderFunctionArgs) {
   );
   const recommendationStaticState = await fetchRecommendationStaticState({
     request: args.request,
-    k: ['pdpRecommendations'],
+    k: ['pdpRecommendationsUpperCarousel', 'pdpRecommendationsLowerCarousel'],
     context: args.context,
   });
 
