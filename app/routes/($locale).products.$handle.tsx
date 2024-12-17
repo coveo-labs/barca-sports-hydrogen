@@ -168,7 +168,18 @@ export default function Product() {
             <Description product={product} />
 
             <div className="mt-6">
-              <Colors product={product} selectedVariant={selectedVariant} />
+              <Colors
+                currentColor={
+                  selectedVariant?.selectedOptions.find(
+                    (option) => option.name === 'Color',
+                  )?.value || 'Black'
+                }
+                availableColors={
+                  product.options
+                    .find((opt) => opt.name === 'Color')
+                    ?.optionValues.map(({name: color}) => color) || []
+                }
+              />
 
               <Sizes product={product} selectedVariant={selectedVariant} />
 

@@ -1,68 +1,70 @@
 import {Radio, RadioGroup} from '@headlessui/react';
 import {useState} from 'react';
-import type {
-  ProductFragment,
-  ProductVariantFragment,
-} from 'storefrontapi.generated';
 import cx from '~/lib/cx';
 
 const mapColor = (color: string) => {
   switch (color.toLowerCase()) {
     case 'black':
-      return 'zinc';
+      return 'zinc-950';
     case 'brown':
-      return 'stone';
+      return 'stone-700';
     case 'khaki':
-      return 'yellow';
+      return 'yellow-600';
+    case 'silver':
+      return 'zinc-100';
+    case 'white':
+      return 'slate-200';
     default:
-      return color.toLowerCase();
+      return `${color.toLowerCase()}-700`;
   }
 };
 
 export function Colors({
-  selectedVariant,
-  product,
+  currentColor,
+  availableColors,
+  headline = 'Color',
+  onSelect,
 }: {
-  product: ProductFragment;
-  selectedVariant: ProductVariantFragment;
+  currentColor: string;
+  availableColors: string[];
+  headline?: string;
+  onSelect?: (color: string) => void;
 }) {
-  const [selectedColor, setSelectedColor] = useState(
-    selectedVariant?.selectedOptions.find((option) => option.name === 'Color')
-      ?.value || 'Black',
-  );
+  const [selectedColor, setSelectedColor] = useState(currentColor);
 
   return (
     <div>
-      <h3 className="text-sm text-gray-600">Color</h3>
+      <h3 className="text-sm text-gray-600">{headline}</h3>
 
       <fieldset aria-label="Choose a color" className="mt-2">
         <RadioGroup
           value={selectedColor}
-          onChange={setSelectedColor}
+          onChange={(color) => {
+            setSelectedColor(color);
+            onSelect?.(color);
+          }}
           className="flex items-center space-x-3"
         >
-          {product.options
-            .find((opt) => opt.name === 'Color')
-            ?.optionValues.map(({name: color}) => (
-              <Radio
-                key={color}
-                value={color}
-                aria-label={color}
+          {availableColors.map((color) => (
+            <Radio
+              key={color}
+              value={color}
+              aria-label={color}
+              className={cx(
+                `ring-${mapColor(color)}`,
+                'relative -m-0.5 flex cursor-pointer items-center justify-center rounded-full p-0.5 focus:outline-none data-[checked]:ring-2 data-[focus]:data-[checked]:ring data-[focus]:data-[checked]:ring-offset-1',
+              )}
+            >
+              <span
+                aria-hidden="true"
                 className={cx(
-                  `ring-${mapColor(color)}-700`,
-                  'relative -m-0.5 flex cursor-pointer items-center justify-center rounded-full p-0.5 focus:outline-none data-[checked]:ring-2 data-[focus]:data-[checked]:ring data-[focus]:data-[checked]:ring-offset-1',
+                  'color-swatch',
+                  `bg-${mapColor(color)}`,
+                  'size-8 rounded-full border border-black/10',
                 )}
-              >
-                <span
-                  aria-hidden="true"
-                  className={cx(
-                    'color-swatch',
-                    `bg-${mapColor(color)}-700`,
-                    'size-8 rounded-full border border-black/10',
-                  )}
-                />
-              </Radio>
-            ))}
+              />
+            </Radio>
+          ))}
         </RadioGroup>
       </fieldset>
     </div>
