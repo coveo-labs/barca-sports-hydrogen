@@ -36,10 +36,7 @@ export function ProductList() {
                 productList.methods
                   ?.interactiveProduct({
                     options: {
-                      product: {
-                        ...product,
-                        ec_product_id: product.ec_item_group_id,
-                      },
+                      product,
                     },
                   })
                   .select()

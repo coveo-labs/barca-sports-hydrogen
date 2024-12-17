@@ -22,7 +22,6 @@ export function CartMain({cart: originalCart}: CartMainProps) {
   const cart = useOptimisticCart(originalCart);
   const coveoCart = useCart();
   const hasCartItems = coveoCart.state.totalQuantity > 0;
-
   return (
     <div>
       <h1 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">

@@ -1,4 +1,4 @@
-import {type FetcherWithComponents} from '@remix-run/react';
+import {useParams, type FetcherWithComponents} from '@remix-run/react';
 import {CartForm, type OptimisticCartLineInput} from '@shopify/hydrogen';
 import {useCart} from '~/lib/coveo.engine';
 import type {CartReturn} from '~/routes/($locale).cart';
@@ -20,13 +20,13 @@ export function AddToCartButton({
   product: Awaited<ReturnType<ProductHandleData>>['product'];
 }) {
   const coveoCart = useCart();
-
   const currentQuantity =
     coveoCart.state.items.find((item) => item.productId === product.id)
       ?.quantity || 0;
 
   const quantityToAdd = lines[0].quantity!;
   const newQuantity = currentQuantity + quantityToAdd;
+  const coveoProductId = useParams().handle;
 
   return (
     <CartForm
@@ -49,7 +49,7 @@ export function AddToCartButton({
                 coveoCart.methods?.updateItemQuantity({
                   name: product.title,
                   price: Number(product.selectedVariant?.price.amount),
-                  productId: product.handle.toUpperCase(),
+                  productId: coveoProductId!,
                   quantity: newQuantity,
                 });
               }}

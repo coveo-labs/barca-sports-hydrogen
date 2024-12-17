@@ -28,13 +28,16 @@ export function ProductCard({
   const productImage =
     product.children?.find((c) => c.ec_color === selectedColor)?.ec_images[0] ||
     product.ec_images[0];
+  const productId =
+    product.children?.find((c) => c.ec_color === selectedColor)
+      ?.ec_product_id || product.ec_product_id;
 
   return (
     <div>
       <NavLink
         key={product.permanentid}
         onClick={onSelect}
-        to={`/products/${product.ec_item_group_id}?Color=${selectedColor}`}
+        to={`/products/${productId}?Color=${selectedColor}`}
         className={`${className} group`}
       >
         <img

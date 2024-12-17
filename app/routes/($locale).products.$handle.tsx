@@ -1,6 +1,5 @@
 import {redirect, type LoaderFunctionArgs} from '@shopify/remix-oxygen';
 import {
-  data,
   useLoaderData,
   useParams,
   useSearchParams,
@@ -24,7 +23,7 @@ import {
   fetchRecommendationStaticState,
   useProductView,
 } from '~/lib/coveo.engine';
-import {useCallback, useEffect, useRef, useState} from 'react';
+import {useCallback, useEffect, useState} from 'react';
 import {ProductRecommendations} from '~/components/Products/Recommendations';
 import {RecommendationProvider} from '~/components/Search/Context';
 import {
@@ -66,13 +65,20 @@ async function loadCriticalData({
   const {handle} = params;
   const {storefront} = context;
 
-  if (!handle) {
+  const handleShort = handle?.match(
+    /([a-zA-Z0-9]+_[a-zA-Z0-9]+)[_]?([a-zA-Z0-9]?)/,
+  )?.[1];
+
+  if (!handle || !handleShort) {
     throw new Error('Expected product handle to be defined');
   }
 
   const [{product}] = await Promise.all([
     storefront.query(PRODUCT_QUERY, {
-      variables: {handle, selectedOptions: getSelectedProductOptions(request)},
+      variables: {
+        handle: handleShort,
+        selectedOptions: getSelectedProductOptions(request),
+      },
     }),
     // Add other queries here, so that they are loaded in parallel
   ]);
@@ -160,7 +166,7 @@ export default function Product() {
     variants,
   );
   const [searchParams, setSearchParams] = useSearchParams();
-
+  const {handle} = useParams();
   const currentColor = searchParams.get('Color') || 'Black';
   const [defaultImageIdx, setDefaultImageIdx] = useState(
     getColorOptionIdx(product, currentColor),
@@ -173,19 +179,20 @@ export default function Product() {
   const logProductView = useCallback(() => {
     productView.methods?.view({
       name: product.title,
-      productId: product.handle.toUpperCase(),
+      productId: handle!,
       price: Number(selectedVariant.price.amount),
     });
-  }, [product.title, product.id, selectedVariant.price.amount]);
+  }, [product.title, selectedVariant.price.amount, handle]);
 
   useEffect(() => {
     logProductView();
   }, [logProductView]);
 
   const setColorParam = (color: string) => {
-    const params = new URLSearchParams();
-    params.set('Color', color);
-    setSearchParams(params);
+    setSearchParams((prev) => {
+      prev.set('Color', color);
+      return prev;
+    });
   };
 
   return (
@@ -215,7 +222,9 @@ export default function Product() {
                     .find((opt) => opt.name === 'Color')
                     ?.optionValues.map(({name: color}) => color) || []
                 }
-                onSelect={setColorParam}
+                onSelect={(color) => {
+                  setColorParam(color);
+                }}
               />
 
               <Sizes product={product} selectedVariant={selectedVariant} />

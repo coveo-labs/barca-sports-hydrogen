@@ -216,8 +216,13 @@ export function mapShopifyMerchandiseToCoveoCartItem(
   node: CartLine | ComponentizableCartLine,
 ) {
   const {merchandise} = node;
+  const selectedColor = merchandise.selectedOptions.find(
+    (opt) => opt.name === 'Color',
+  );
   return {
-    productId: merchandise.product.handle.toUpperCase(),
+    productId: `${merchandise.product.handle.toUpperCase()}_${
+      selectedColor?.value.toUpperCase().slice(0, 2) || 'BL'
+    }`,
     name: merchandise.product.title,
     price: Number(merchandise.price.amount),
     quantity: node.quantity,
