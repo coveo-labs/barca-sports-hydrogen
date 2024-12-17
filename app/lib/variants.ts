@@ -42,5 +42,7 @@ export function getVariantUrl({
 
   const searchString = searchParams.toString();
 
-  return path + (searchString ? '?' + searchParams.toString() : '');
+  return (
+    path.toUpperCase() + (searchString ? '?' + searchParams.toString() : '')
+  );
 }

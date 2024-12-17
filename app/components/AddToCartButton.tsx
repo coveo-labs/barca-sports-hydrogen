@@ -1,6 +1,10 @@
-import {useParams, type FetcherWithComponents} from '@remix-run/react';
+import {
+  useParams,
+  useSearchParams,
+  type FetcherWithComponents,
+} from '@remix-run/react';
 import {CartForm, type OptimisticCartLineInput} from '@shopify/hydrogen';
-import {useCart} from '~/lib/coveo.engine';
+import {colorToShorthand, useCart} from '~/lib/coveo.engine';
 import type {CartReturn} from '~/routes/($locale).cart';
 import type {ProductHandleData} from '~/routes/($locale).products.$handle';
 
@@ -26,7 +30,10 @@ export function AddToCartButton({
 
   const quantityToAdd = lines[0].quantity!;
   const newQuantity = currentQuantity + quantityToAdd;
-  const coveoProductId = useParams().handle;
+  const [searchParams, _] = useSearchParams();
+  const coveoProductId = `${useParams().handle}_${colorToShorthand(
+    searchParams.get('Color') || '',
+  )}`;
 
   return (
     <CartForm

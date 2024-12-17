@@ -19,6 +19,7 @@ import {Colors} from '~/components/Products/Colors';
 import {Sizes} from '~/components/Products/Sizes';
 import {Description} from '~/components/Products/Description';
 import {
+  colorToShorthand,
   engineDefinition,
   fetchRecommendationStaticState,
   useProductView,
@@ -65,18 +66,14 @@ async function loadCriticalData({
   const {handle} = params;
   const {storefront} = context;
 
-  const handleShort = handle?.match(
-    /([a-zA-Z0-9]+_[a-zA-Z0-9]+)[_]?([a-zA-Z0-9]?)/,
-  )?.[1];
-
-  if (!handle || !handleShort) {
+  if (!handle) {
     throw new Error('Expected product handle to be defined');
   }
 
   const [{product}] = await Promise.all([
     storefront.query(PRODUCT_QUERY, {
       variables: {
-        handle: handleShort,
+        handle,
         selectedOptions: getSelectedProductOptions(request),
       },
     }),
@@ -179,10 +176,10 @@ export default function Product() {
   const logProductView = useCallback(() => {
     productView.methods?.view({
       name: product.title,
-      productId: handle!,
+      productId: `${handle?.toUpperCase()!}_${colorToShorthand(currentColor)}`,
       price: Number(selectedVariant.price.amount),
     });
-  }, [product.title, selectedVariant.price.amount, handle]);
+  }, [product.title, selectedVariant.price.amount, handle, currentColor]);
 
   useEffect(() => {
     logProductView();
