@@ -1,9 +1,22 @@
 import {Tab, TabGroup, TabList, TabPanel, TabPanels} from '@headlessui/react';
 import type {ProductFragment} from 'storefrontapi.generated';
 
-export function ImageGallery({product}: {product: ProductFragment}) {
+export function ImageGallery({
+  product,
+  defaultImgIdx,
+  onImgSelect,
+}: {
+  product: ProductFragment;
+  defaultImgIdx: number;
+  onImgSelect?: (index: number) => void;
+}) {
   return (
-    <TabGroup className="flex flex-col-reverse">
+    <TabGroup
+      className="flex flex-col-reverse"
+      defaultIndex={defaultImgIdx}
+      selectedIndex={defaultImgIdx}
+      onChange={onImgSelect}
+    >
       {/* Image selector */}
       <div className="mx-auto mt-6 hidden w-full max-w-2xl sm:block lg:max-w-none">
         <TabList className="grid grid-cols-4 gap-6">

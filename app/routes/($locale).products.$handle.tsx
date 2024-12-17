@@ -3,6 +3,7 @@ import {
   data,
   useLoaderData,
   useParams,
+  useSearchParams,
   type MetaFunction,
 } from '@remix-run/react';
 import type {ProductFragment} from 'storefrontapi.generated';
@@ -23,7 +24,7 @@ import {
   fetchRecommendationStaticState,
   useProductView,
 } from '~/lib/coveo.engine';
-import {useCallback, useEffect, useRef} from 'react';
+import {useCallback, useEffect, useRef, useState} from 'react';
 import {ProductRecommendations} from '~/components/Products/Recommendations';
 import {RecommendationProvider} from '~/components/Search/Context';
 import {
@@ -137,6 +138,19 @@ function redirectToFirstVariant({
   );
 }
 
+function getProductColors(product: ProductFragment) {
+  return (
+    product.options.find((option) => option.name === 'Color')?.optionValues ||
+    []
+  );
+}
+
+function getColorOptionIdx(product: ProductFragment, color: string) {
+  return (
+    getProductColors(product).findIndex((option) => option.name === color) || 0
+  );
+}
+
 export default function Product() {
   const {product, variants, recommendationStaticState} =
     useLoaderData<typeof loader>();
@@ -145,6 +159,16 @@ export default function Product() {
     product.selectedVariant,
     variants,
   );
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const currentColor = searchParams.get('Color') || 'Black';
+  const [defaultImageIdx, setDefaultImageIdx] = useState(
+    getColorOptionIdx(product, currentColor),
+  );
+
+  useEffect(() => {
+    setDefaultImageIdx(getColorOptionIdx(product, currentColor));
+  }, [product, currentColor]);
 
   const logProductView = useCallback(() => {
     productView.methods?.view({
@@ -158,27 +182,40 @@ export default function Product() {
     logProductView();
   }, [logProductView]);
 
+  const setColorParam = (color: string) => {
+    const params = new URLSearchParams();
+    params.set('Color', color);
+    setSearchParams(params);
+  };
+
   return (
     <main className="pdp-container mx-auto max-w-7xl sm:px-6 sm:pt-16 lg:px-8">
       <div className="mx-auto max-w-2xl lg:max-w-none">
         <div className="lg:grid lg:grid-cols-2 lg:items-start lg:gap-x-8">
-          <ImageGallery product={product} />
+          <ImageGallery
+            product={product}
+            defaultImgIdx={defaultImageIdx}
+            onImgSelect={(idx) => {
+              setDefaultImageIdx(idx);
+              setColorParam(
+                product.options.find((opt) => opt.name === 'Color')
+                  ?.optionValues[idx].name || '',
+              );
+            }}
+          />
 
           <div className="mt-10 px-4 sm:mt-16 sm:px-0 lg:mt-0">
             <Description product={product} />
 
             <div className="mt-6">
               <Colors
-                currentColor={
-                  selectedVariant?.selectedOptions.find(
-                    (option) => option.name === 'Color',
-                  )?.value || 'Black'
-                }
+                currentColor={currentColor}
                 availableColors={
                   product.options
                     .find((opt) => opt.name === 'Color')
                     ?.optionValues.map(({name: color}) => color) || []
                 }
+                onSelect={setColorParam}
               />
 
               <Sizes product={product} selectedVariant={selectedVariant} />

@@ -21,8 +21,11 @@ export function ProductCard({
   const hasPromo =
     (product.ec_promo_price && product.ec_promo_price < product.ec_price!) ||
     false;
-  const [selectedColor, setSelectedColor] = useState(product.ec_color);
-  const mainImg =
+  const [selectedColor, setSelectedColor] = useState(
+    product.ec_color || 'Black',
+  );
+  const availableColors = product.children?.map((c) => c.ec_color || '') || [];
+  const productImage =
     product.children?.find((c) => c.ec_color === selectedColor)?.ec_images[0] ||
     product.ec_images[0];
 
@@ -31,7 +34,7 @@ export function ProductCard({
       <NavLink
         key={product.permanentid}
         onClick={onSelect}
-        to={`/products/${product.ec_item_group_id}`}
+        to={`/products/${product.ec_item_group_id}?Color=${selectedColor}`}
         className={`${className} group`}
       >
         <img
@@ -39,7 +42,7 @@ export function ProductCard({
           width={1024}
           height={1024}
           alt={product.ec_name!}
-          src={mainImg}
+          src={productImage}
           className="aspect-square w-full rounded-lg bg-gray-200 object-cover group-hover:opacity-75"
         />
         <h3 className="result-title mt-4 text-sm text-gray-700">
@@ -85,8 +88,8 @@ export function ProductCard({
       </NavLink>
       <Colors
         headline=""
-        currentColor={product.ec_color || ''}
-        availableColors={product.children?.map((c) => c.ec_color || '') || []}
+        currentColor={selectedColor}
+        availableColors={availableColors}
         onSelect={setSelectedColor}
       />
     </div>

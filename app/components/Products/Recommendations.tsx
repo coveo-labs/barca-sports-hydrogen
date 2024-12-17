@@ -3,6 +3,7 @@ import {
   usePdpRecommendationsUpperCarousel,
 } from '~/lib/coveo.engine';
 import {ProductCard} from './ProductCard';
+import {Fragment} from 'react';
 
 export function ProductRecommendations() {
   const pdpRecommendationsUpperCarousel = usePdpRecommendationsUpperCarousel();
@@ -14,9 +15,9 @@ export function ProductRecommendations() {
       className="recommendation-list mt-24"
     >
       {[pdpRecommendationsUpperCarousel, pdpRecommendationsLowerCarousel].map(
-        (recommendationCarousel) => {
+        (recommendationCarousel, i) => {
           return (
-            <>
+            <Fragment key={`product-recs-${i}`}>
               <h2
                 id="related-heading"
                 className="text-lg font-medium text-gray-900"
@@ -40,7 +41,7 @@ export function ProductRecommendations() {
                     />
                   ))}
               </div>
-            </>
+            </Fragment>
           );
         },
       )}

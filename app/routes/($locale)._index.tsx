@@ -15,6 +15,7 @@ import {
   ClientSideNavigatorContextProvider,
   ServerSideNavigatorContextProvider,
 } from '~/lib/navigator.provider';
+
 export const meta: MetaFunction = () => {
   return [{title: 'Hydrogen | Home'}];
 };

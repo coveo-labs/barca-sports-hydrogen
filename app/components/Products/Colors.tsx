@@ -32,17 +32,14 @@ export function Colors({
   headline?: string;
   onSelect?: (color: string) => void;
 }) {
-  const [selectedColor, setSelectedColor] = useState(currentColor);
-
   return (
     <div>
       <h3 className="text-sm text-gray-600">{headline}</h3>
 
       <fieldset aria-label="Choose a color" className="mt-2">
         <RadioGroup
-          value={selectedColor}
+          value={currentColor}
           onChange={(color) => {
-            setSelectedColor(color);
             onSelect?.(color);
           }}
           className="flex items-center space-x-3"
