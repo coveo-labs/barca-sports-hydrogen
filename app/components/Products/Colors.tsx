@@ -14,6 +14,8 @@ const mapColor = (color: string) => {
       return 'zinc-100';
     case 'white':
       return 'slate-200';
+    case 'yellow':
+      return 'yellow-300';
     default:
       return `${color.toLowerCase()}-700`;
   }
