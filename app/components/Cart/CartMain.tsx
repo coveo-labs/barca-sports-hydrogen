@@ -3,12 +3,10 @@ import {Money, useOptimisticCart} from '@shopify/hydrogen';
 import type {CartApiQueryFragment} from 'storefrontapi.generated';
 import {CheckIcon, QuestionMarkCircleIcon} from '@heroicons/react/20/solid';
 import {CartLineRemoveButton} from './CartLineItem';
-import {
-  mapShopifyMerchandiseToCoveoCartItem,
-  useCart,
-} from '~/lib/coveo.engine';
+import {useCart} from '~/lib/coveo.engine';
 import cx from '~/lib/cx';
 import type {CartLine} from '@shopify/hydrogen/storefront-api-types';
+import {mapShopifyMerchandiseToCoveoCartItem} from '~/lib/map.coveo.shopify';
 
 export type CartLayout = 'page' | 'aside';
 

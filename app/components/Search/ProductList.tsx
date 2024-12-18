@@ -1,6 +1,6 @@
 import {engineDefinition} from '~/lib/coveo.engine';
 import {ProductCard} from '../Products/ProductCard';
-import type {SearchSummaryState} from '@coveo/headless/ssr-commerce';
+import type {SearchSummaryState, Product} from '@coveo/headless/ssr-commerce';
 
 export function ProductList() {
   const productList = engineDefinition.controllers.useProductList();
@@ -8,6 +8,15 @@ export function ProductList() {
   const noResultClass = !productList.state.products.length
     ? ' no-results '
     : ' ';
+
+  const onSwapColor = (product: Product, color: string) => {
+    const child = product.children?.find((c) => c.ec_color === color);
+    if (child) {
+      // TODO: https://coveord.atlassian.net/browse/KIT-3810
+      // workaround to promote child to parent
+      (productList.methods as any)?.['promoteChildToParent'](child);
+    }
+  };
 
   return (
     <section
@@ -41,6 +50,7 @@ export function ProductList() {
                   })
                   .select()
               }
+              onSwapColor={(color) => onSwapColor(product, color)}
             />
           );
         })}

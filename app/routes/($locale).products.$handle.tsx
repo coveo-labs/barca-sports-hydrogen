@@ -19,7 +19,6 @@ import {Colors} from '~/components/Products/Colors';
 import {Sizes} from '~/components/Products/Sizes';
 import {Description} from '~/components/Products/Description';
 import {
-  colorToShorthand,
   engineDefinition,
   fetchRecommendationStaticState,
   useProductView,
@@ -31,6 +30,7 @@ import {
   ClientSideNavigatorContextProvider,
   ServerSideNavigatorContextProvider,
 } from '~/lib/navigator.provider';
+import {colorToShorthand} from '~/lib/map.coveo.shopify';
 
 export const meta: MetaFunction<typeof loader> = ({data}) => {
   return [{title: `Hydrogen | ${data?.product.title ?? ''}`}];
