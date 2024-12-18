@@ -15,13 +15,6 @@ export function FeaturedCategories({header}: FeaturedCategoriesProps) {
           >
             Shop by Category
           </h2>
-          <NavLink
-            to="/categories"
-            className="hidden text-sm font-semibold text-indigo-600 hover:text-indigo-500 sm:block"
-          >
-            Browse all categories
-            <span aria-hidden="true"> &rarr;</span>
-          </NavLink>
         </div>
 
         <div className="mt-6 grid grid-cols-1 gap-y-6 sm:grid-cols-2 sm:grid-rows-2 sm:gap-x-6 lg:gap-8">
@@ -29,7 +22,7 @@ export function FeaturedCategories({header}: FeaturedCategoriesProps) {
             if (collection.node.title === 'Home page') {
               return null;
             }
-            if (collection.node.title === 'Accessories') {
+            if (collection.node.title === 'Gear & Essentials') {
               return (
                 <div
                   key={collection.node.id}
@@ -51,7 +44,9 @@ export function FeaturedCategories({header}: FeaturedCategoriesProps) {
                     <div>
                       <h3 className="font-semibold text-white">
                         <NavLink
-                          to={`/plp/${collection.node.title.toLowerCase()}`}
+                          to={`/plp/${collection.node.title
+                            .toLowerCase()
+                            .replace(/ & /g, '-')}`}
                         >
                           <span className="absolute inset-0" />
                           {collection.node.title}
@@ -104,16 +99,6 @@ export function FeaturedCategories({header}: FeaturedCategoriesProps) {
               </div>
             );
           })}
-        </div>
-
-        <div className="mt-6 sm:hidden">
-          <NavLink
-            to="#"
-            className="block text-sm font-semibold text-indigo-600 hover:text-indigo-500"
-          >
-            Browse all categories
-            <span aria-hidden="true"> &rarr;</span>
-          </NavLink>
         </div>
       </div>
     </section>
