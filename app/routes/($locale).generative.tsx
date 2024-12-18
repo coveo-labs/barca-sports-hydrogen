@@ -16,8 +16,6 @@ import {AnswerSection} from '~/components/Generative/Section';
 import {Skeleton} from '~/components/Generative/Skeleton';
 import {Answer} from '~/components/Generative/Answer';
 import type {AnswerToProductsData} from './answer-to-products';
-import {ProductCard} from '~/components/Products/ProductCard';
-import type {Product} from '@coveo/headless/ssr-commerce';
 
 /**
 What to look for when buying a kayak?
@@ -113,21 +111,34 @@ export default function GenerativeAnswering() {
                 <h2 className="text-xl/8 font-semibold text-gray-900 flex mb-4">
                   These products might interest you
                 </h2>
+                <div className="grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 xl:gap-x-8">
+                  {Object.entries(relatedProducts).map(([slug, products]) => {
+                    return (
+                      <div key={slug}>
+                        <NavLink
+                          to={`/plp/${slug}`}
+                          className="text-lg font-bold tracking-tight text-indigo-gray-600 capitalize"
+                        >
+                          {slug.split('/').pop()?.replaceAll('-', ' ')}
 
-                {relatedProducts.length > 0 ? (
-                  <div className="grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 xl:gap-x-8">
-                    {relatedProducts.map((product) => {
-                      return (
-                        <ProductCard
-                          key={product.uniqueId}
-                          product={
-                            {...product, ...product.raw} as unknown as Product
-                          }
-                        />
-                      );
-                    })}
-                  </div>
-                ) : (
+                          {products.map((product) => (
+                            <img
+                              key={product.uniqueId}
+                              loading="lazy"
+                              width={1024}
+                              height={1024}
+                              alt={product.title}
+                              src={(product.raw['ec_images'] as string[])[0]}
+                              className="aspect-square w-full rounded-lg bg-gray-200 object-cover group-hover:opacity-75"
+                            />
+                          ))}
+                        </NavLink>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {Object.keys(relatedProducts).length == 0 && (
                   <Skeleton numLines={10} tick={400} />
                 )}
               </AnswerSection>
@@ -249,15 +260,36 @@ function useHasNoAnswerAfterADelay(
 }
 
 function useRelatedProducts(basicExpression: string) {
+  const mapRelatedProductsToCategory = (products?: Result[]) => {
+    if (!products) {
+      return {};
+    }
+    return products?.reduce((acc, product) => {
+      const slug = (product.raw['ec_category_slug'] as string)
+        .split(';')
+        .pop() as string;
+      if (acc[slug]) {
+        acc[slug].push(product);
+      } else {
+        acc[slug] = [product];
+      }
+      return acc;
+    }, {} as Record<string, Result[]>);
+  };
+
   const answerToProduct = useFetcher<AnswerToProductsData>();
-  const [relatedProducts, setRelatedProducts] = useState<Result[]>(
-    answerToProduct.data?.results || [],
-  );
+  const [relatedProducts, setRelatedProducts] = useState<
+    ReturnType<typeof mapRelatedProductsToCategory>
+  >(mapRelatedProductsToCategory(answerToProduct.data?.results));
+
   useEffect(() => {
-    setRelatedProducts(answerToProduct.data?.results || []);
+    setRelatedProducts(
+      mapRelatedProductsToCategory(answerToProduct.data?.results),
+    );
   }, [answerToProduct.data?.results]);
+
   useEffect(() => {
-    setRelatedProducts([]);
+    setRelatedProducts({});
   }, [basicExpression]);
 
   useEffect(() => {
