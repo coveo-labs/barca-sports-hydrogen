@@ -6,6 +6,7 @@ import {NavLink, useRouteLoaderData} from '@remix-run/react';
 import type {RootLoader} from '~/root';
 import {Colors} from './Colors';
 import {useState} from 'react';
+import {useProductList} from '~/lib/coveo.engine';
 
 interface ProductCardProps {
   product: Product;
@@ -29,6 +30,17 @@ export function ProductCard({
     product.children?.find((c) => c.ec_color === selectedColor)?.ec_images[0] ||
     product.ec_images[0];
   const productId = product.ec_item_group_id;
+  const productList = useProductList();
+
+  const onColorChange = (color: string) => {
+    setSelectedColor(color);
+    const child = product.children?.find((c) => c.ec_color === color);
+    if (child) {
+      // TODO: https://coveord.atlassian.net/browse/KIT-3810
+      // workaround to promote child to parent
+      (productList.methods as any)?.['promoteChildToParent'](child);
+    }
+  };
 
   return (
     <div>
@@ -91,7 +103,7 @@ export function ProductCard({
         headline=""
         currentColor={selectedColor}
         availableColors={availableColors}
-        onSelect={setSelectedColor}
+        onSelect={onColorChange}
       />
     </div>
   );
