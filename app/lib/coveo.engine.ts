@@ -167,6 +167,7 @@ export async function fetchRecommendationStaticState({
   k,
   context,
   request,
+  productId,
 }: {
   context: AppLoadContext;
   request: Request;
@@ -176,19 +177,28 @@ export async function fetchRecommendationStaticState({
     | 'pdpRecommendationsLowerCarousel'
     | 'pdpRecommendationsUpperCarousel'
   )[];
+  productId?: string;
 }) {
   const cart = await context.cart.get();
   const {country, language, currency} = getLocaleFromRequest(request);
 
   return engineDefinition.recommendationEngineDefinition.fetchStaticState({
     controllers: {
-      homepageRecommendations: {enabled: k.includes('homepageRecommendations')},
-      cartRecommendations: {enabled: k.includes('cartRecommendations')},
+      homepageRecommendations: {
+        enabled: k.includes('homepageRecommendations'),
+        productId,
+      },
+      cartRecommendations: {
+        enabled: k.includes('cartRecommendations'),
+        productId,
+      },
       pdpRecommendationsLowerCarousel: {
         enabled: k.includes('pdpRecommendationsLowerCarousel'),
+        productId,
       },
       pdpRecommendationsUpperCarousel: {
         enabled: k.includes('pdpRecommendationsUpperCarousel'),
+        productId,
       },
       cart: {
         initialState: mapShopifyCartToCoveoCart(cart),

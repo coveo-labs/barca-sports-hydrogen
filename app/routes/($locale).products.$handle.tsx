@@ -41,6 +41,12 @@ export type ProductHandleData = typeof loader;
 export async function loader(args: LoaderFunctionArgs) {
   // Await the critical data required to render initial state of the page
   const criticalData = await loadCriticalData(args);
+  const {product} = criticalData;
+  const url = new URL(args.request.url);
+  const selectedColor = url.searchParams.get('Color') || 'Black';
+  const coveoProductId = `${product.handle.toUpperCase()}_${colorToShorthand(
+    selectedColor,
+  )}`;
 
   engineDefinition.recommendationEngineDefinition.setNavigatorContextProvider(
     () => new ServerSideNavigatorContextProvider(args.request),
@@ -49,6 +55,7 @@ export async function loader(args: LoaderFunctionArgs) {
     request: args.request,
     k: ['pdpRecommendationsUpperCarousel', 'pdpRecommendationsLowerCarousel'],
     context: args.context,
+    productId: coveoProductId,
   });
 
   return {...criticalData, recommendationStaticState};
