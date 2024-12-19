@@ -16,6 +16,9 @@ export function ProductRecommendations() {
     >
       {[pdpRecommendationsUpperCarousel, pdpRecommendationsLowerCarousel].map(
         (recommendationCarousel, i) => {
+          if (recommendationCarousel.state.products.length === 0) {
+            return null;
+          }
           return (
             <Fragment key={`product-recs-${i}`}>
               <h2
