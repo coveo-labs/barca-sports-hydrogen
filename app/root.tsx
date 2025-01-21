@@ -20,14 +20,10 @@ import {
   ClientSideNavigatorContextProvider,
   ServerSideNavigatorContextProvider,
 } from './lib/navigator.provider';
-import {
-  RecommendationProvider,
-  SearchProvider,
-  StandaloneProvider,
-} from './components/Search/Context';
+import {StandaloneProvider} from './components/Search/Context';
 import {GlobalLoading} from './components/ProgressBar';
 import {getLocaleFromRequest} from './lib/i18n';
-import {getCookie, getCookieFromRequest} from './lib/session';
+import {getCookieFromRequest} from './lib/session';
 export type RootLoader = typeof loader;
 
 /**

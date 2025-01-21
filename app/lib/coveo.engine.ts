@@ -21,10 +21,6 @@ import {
 import type {AppLoadContext} from '@shopify/remix-oxygen';
 import {getLocaleFromRequest} from './i18n';
 import type {CartReturn} from '@shopify/hydrogen';
-import type {
-  CartLine,
-  ComponentizableCartLine,
-} from '@shopify/hydrogen/storefront-api-types';
 import {mapShopifyMerchandiseToCoveoCartItem} from './map.coveo.shopify';
 
 export const engineDefinition = defineCommerceEngine({

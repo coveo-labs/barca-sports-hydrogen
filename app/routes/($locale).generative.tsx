@@ -115,12 +115,14 @@ export default function GenerativeAnswering() {
                   {Object.entries(relatedProducts).map(([slug, products]) => {
                     return (
                       <div key={slug}>
-                        <NavLink
-                          to={`/plp/${slug}`}
-                          className="text-lg font-bold tracking-tight text-indigo-gray-600 capitalize"
-                        >
-                          {slug.split('/').pop()?.replaceAll('-', ' ')}
-
+                        <NavLink to={`/plp/${slug}`}>
+                          <div className="text-md font-bold tracking-tight text-indigo-gray-600 capitalize text-ellipsis overflow-hidden text-nowrap mb-2">
+                            {slug
+                              .split('/')
+                              .slice(-2)
+                              .join(' > ')
+                              .replaceAll('-', ' ')}
+                          </div>
                           {products.map((product) => (
                             <img
                               key={product.uniqueId}
