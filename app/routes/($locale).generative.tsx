@@ -113,27 +113,34 @@ export default function GenerativeAnswering() {
                 </h2>
                 <div className="grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 xl:gap-x-8">
                   {Object.entries(relatedProducts).map(([slug, products]) => {
+                    const slugSplit = slug.split('/');
+                    const lastLevel = slugSplit.pop()?.replaceAll('-', ' ');
+                    const parents = slugSplit.join(' / ').replaceAll('-', ' ');
                     return (
                       <div key={slug}>
-                        <NavLink to={`/plp/${slug}`}>
-                          <div className="text-md font-bold tracking-tight text-indigo-gray-600 capitalize text-ellipsis overflow-hidden text-nowrap mb-2">
-                            {slug
-                              .split('/')
-                              .slice(-2)
-                              .join(' > ')
-                              .replaceAll('-', ' ')}
-                          </div>
-                          {products.map((product) => (
-                            <img
-                              key={product.uniqueId}
-                              loading="lazy"
-                              width={1024}
-                              height={1024}
-                              alt={product.title}
-                              src={(product.raw['ec_images'] as string[])[0]}
-                              className="aspect-square w-full rounded-lg bg-gray-200 object-cover group-hover:opacity-75"
-                            />
-                          ))}
+                        <NavLink
+                          to={`/plp/${slug}`}
+                          className="capitalize tracking-tight text-ellipsis overflow-hidden text-nowrap"
+                        >
+                          <>
+                            <div className="text-sm text-gray-500 mb-2">
+                              {parents}
+                            </div>
+                            <div className="text-lg font-bold text-indigo-gray-600 mb-2">
+                              {lastLevel}
+                            </div>
+                            {products.map((product) => (
+                              <img
+                                key={product.uniqueId}
+                                loading="lazy"
+                                width={1024}
+                                height={1024}
+                                alt={product.title}
+                                src={(product.raw['ec_images'] as string[])[0]}
+                                className="aspect-square w-full rounded-lg bg-gray-200 object-cover group-hover:opacity-75"
+                              />
+                            ))}
+                          </>
                         </NavLink>
                       </div>
                     );
