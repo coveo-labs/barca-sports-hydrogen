@@ -1,4 +1,5 @@
 import {
+  type CommerceSearchParameters,
   defineCommerceEngine,
   defineFacetGenerator,
   definePagination,
@@ -98,6 +99,7 @@ export const {
   useBreadcrumbManager,
   useHomepageRecommendations,
   useCartRecommendations,
+  useParameterManager,
   usePdpRecommendationsLowerCarousel,
   usePdpRecommendationsUpperCarousel,
 } = engineDefinition.controllers;
@@ -123,7 +125,7 @@ export type StandaloneHydratedState = InferHydratedState<
 
 export async function fetchStaticState({
   k,
-  query,
+  parameters,
   url,
   context,
   request,
@@ -132,7 +134,7 @@ export async function fetchStaticState({
     | 'listingEngineDefinition'
     | 'searchEngineDefinition'
     | 'standaloneEngineDefinition';
-  query: string;
+  parameters: CommerceSearchParameters;
   url: string;
   context: AppLoadContext;
   request: Request;
@@ -143,7 +145,11 @@ export async function fetchStaticState({
 
   return engineDefinition[k].fetchStaticState({
     controllers: {
-      parameterManager: {initialState: {parameters: {q: query}}},
+      parameterManager: {
+        initialState: {
+          parameters,
+        },
+      },
       cart: {
         initialState: mapShopifyCartToCoveoCart(cart),
       },

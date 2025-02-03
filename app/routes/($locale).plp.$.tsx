@@ -11,6 +11,9 @@ import {
 } from '~/lib/coveo.engine';
 import {ListingProvider} from '~/components/Search/Context';
 import {FullSearch} from '~/components/Search/FullSearch';
+import {buildParameterSerializer} from '@coveo/headless-react/ssr-commerce';
+import {useEffect, useState} from 'react';
+import ParameterManager from '~/components/ParameterManager';
 
 export const meta: MetaFunction<typeof loader> = ({data}) => {
   return [{title: `Coveo ProductListingPage Work in progress`}];
@@ -18,6 +21,9 @@ export const meta: MetaFunction<typeof loader> = ({data}) => {
 
 export async function loader({context, params, request}: LoaderFunctionArgs) {
   const {listingEngineDefinition} = engineDefinition;
+  const url = new URL(request.url);
+  const {deserialize} = buildParameterSerializer();
+  const parameters = deserialize(url.searchParams);
   listingEngineDefinition.setNavigatorContextProvider(
     () => new ServerSideNavigatorContextProvider(request),
   );
@@ -25,16 +31,22 @@ export async function loader({context, params, request}: LoaderFunctionArgs) {
   const staticState = await fetchStaticState({
     url: `https://shop.barca.group/plp/${params['*']}`,
     context,
-    query: '',
+    parameters,
     k: 'listingEngineDefinition',
     request,
   });
 
-  return {staticState};
+  return {staticState, url};
 }
 
 export default function PLP() {
-  const {staticState} = useLoaderData<typeof loader>();
+  const {staticState, url} = useLoaderData<typeof loader>();
+  const [currentUrl, setCurrentUrl] = useState(url);
+
+  useEffect(() => {
+    setCurrentUrl(window.location.href);
+  }, []);
+
   const headline = useParams()['*']!.toUpperCase().replaceAll('/', ' / ');
   const tagline = `Make Waves, Embrace Adventure! Gear up with the latest ${headline
     .split('/')
@@ -46,6 +58,7 @@ export default function PLP() {
       navigatorContext={new ClientSideNavigatorContextProvider()}
       staticState={staticState as ListingStaticState}
     >
+      <ParameterManager url={currentUrl} />
       <FullSearch headline={headline} tagline={tagline} />
     </ListingProvider>
   );
