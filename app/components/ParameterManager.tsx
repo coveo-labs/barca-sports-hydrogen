@@ -12,10 +12,6 @@ export default function ParameterManager({url}: {url: string | null}) {
   const previousUrl = useRef(initialUrl.href);
   const [searchParams] = useSearchParams();
 
-  /**
-   * When the URL fragment changes, this effect deserializes it and synchronizes it into the
-   * ParameterManager controller's state.
-   */
   useEffect(() => {
     if (methods === undefined) {
       return;
