@@ -60,7 +60,7 @@ async function fetchNewToken(): Promise<string> {
       ],
     }),
     headers: {
-      Authorization: `Bearer <API_KEY_WITH_IMPERSONATE_PRIVILEGE_STORED_IN_ENV_VAR>'`,
+      Authorization: `Bearer <API_KEY_WITH_IMPERSONATE_PRIVILEGE_STORED_IN_ENV_VAR>`,
       'Content-Type': 'application/json',
     },
   });
