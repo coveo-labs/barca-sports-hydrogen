@@ -22,6 +22,7 @@ export default defineConfig({
     // Allow a strict Content-Security-Policy
     // withtout inlining assets as base64:
     assetsInlineLimit: 0,
+    target: 'esnext',
   },
   ssr: {
     optimizeDeps: {
@@ -35,7 +36,7 @@ export default defineConfig({
        * Include 'example-dep' in the array below.
        * @see https://vitejs.dev/config/dep-optimization-options
        */
-      include: [],
+      include: ['cookie'],
     },
   },
 });

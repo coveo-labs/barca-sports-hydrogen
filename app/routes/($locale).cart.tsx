@@ -26,6 +26,8 @@ import {
   ServerSideNavigatorContextProvider,
 } from '~/lib/navigator.provider';
 import type {RootLoader} from '~/root';
+import {fetchToken} from '~/lib/fetch-token';
+import { isTokenExpired, extractAccessTokenFromCookie } from '~/lib/token-utils';
 
 export const meta: MetaFunction = () => {
   return [{title: `Hydrogen | Cart`}];
@@ -118,6 +120,16 @@ export async function loader({request, context}: LoaderFunctionArgs) {
   engineDefinition.recommendationEngineDefinition.setNavigatorContextProvider(
     () => new ServerSideNavigatorContextProvider(request),
   );
+
+  if (isTokenExpired(engineDefinition.recommendationEngineDefinition.getAccessToken())) {
+    const accessTokenCookie = extractAccessTokenFromCookie(request)
+    const accessToken =  accessTokenCookie && !isTokenExpired(accessTokenCookie)
+      ? accessTokenCookie
+      : await fetchToken();
+
+      engineDefinition.recommendationEngineDefinition.setAccessToken(accessToken);
+  }
+
   const recommendationStaticState = await fetchRecommendationStaticState({
     request,
     k: ['cartRecommendations'],

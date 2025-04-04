@@ -14,6 +14,8 @@ import {FullSearch} from '~/components/Search/FullSearch';
 import {buildParameterSerializer} from '@coveo/headless-react/ssr-commerce';
 import {useEffect, useState} from 'react';
 import ParameterManager from '~/components/ParameterManager';
+import {fetchToken} from '~/lib/fetch-token';
+import { isTokenExpired, extractAccessTokenFromCookie } from '~/lib/token-utils';
 
 export const meta: MetaFunction<typeof loader> = ({data}) => {
   return [{title: `Coveo ProductListingPage Work in progress`}];
@@ -27,6 +29,15 @@ export async function loader({context, params, request}: LoaderFunctionArgs) {
   listingEngineDefinition.setNavigatorContextProvider(
     () => new ServerSideNavigatorContextProvider(request),
   );
+
+  if (isTokenExpired(listingEngineDefinition.getAccessToken())) {
+    const accessTokenCookie = extractAccessTokenFromCookie(request)
+    const accessToken =  accessTokenCookie && !isTokenExpired(accessTokenCookie)
+      ? accessTokenCookie
+      : await fetchToken();
+
+      listingEngineDefinition.setAccessToken(accessToken);
+  }
 
   const staticState = await fetchStaticState({
     url: `https://shop.barca.group/plp/${params['*']}`,

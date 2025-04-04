@@ -75,21 +75,21 @@ export function ProductCard({
               hasPromo ? 'text-gray-400 line-through' : 'text-gray-900'
             }
           >
-            <Money
+            {/* <Money
               data={{
                 amount: product.ec_price?.toString(),
                 currencyCode: rootData?.locale.currency || 'USD',
               }}
-            />
+            /> */}
           </div>
           {hasPromo && (
             <div className={`text-gray-900`}>
-              <Money
+              {/* <Money
                 data={{
                   amount: product.ec_promo_price?.toString(),
                   currencyCode: 'USD',
                 }}
-              />
+              /> */}
             </div>
           )}
         </div>

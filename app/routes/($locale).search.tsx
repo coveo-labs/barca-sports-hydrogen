@@ -14,6 +14,8 @@ import {FullSearch} from '~/components/Search/FullSearch';
 import ParameterManager from '~/components/ParameterManager';
 import {buildParameterSerializer} from '@coveo/headless-react/ssr-commerce';
 import {useEffect, useState} from 'react';
+import {fetchToken} from '~/lib/fetch-token';
+import { isTokenExpired, extractAccessTokenFromCookie } from '~/lib/token-utils';
 
 export const meta: MetaFunction = () => {
   return [{title: `Coveo | Search`}];
@@ -30,6 +32,16 @@ export async function loader({request, context}: LoaderFunctionArgs) {
   searchEngineDefinition.setNavigatorContextProvider(
     () => new ServerSideNavigatorContextProvider(request),
   );
+
+  if (isTokenExpired(searchEngineDefinition.getAccessToken())) {
+    console.log('Token expired, fetching new token');
+    const accessTokenCookie = extractAccessTokenFromCookie(request)
+    const accessToken =  accessTokenCookie && !isTokenExpired(accessTokenCookie)
+      ? accessTokenCookie
+      : await fetchToken();
+
+    searchEngineDefinition.setAccessToken(accessToken);
+  }
 
   const staticState = await fetchStaticState({
     context,

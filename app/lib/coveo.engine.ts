@@ -18,15 +18,23 @@ import {
   defineBreadcrumbManager,
   defineParameterManager,
   defineRecommendations,
+  CommerceEngineDefinitionOptions,
 } from '@coveo/headless-react/ssr-commerce';
 import type {AppLoadContext} from '@shopify/remix-oxygen';
 import {getLocaleFromRequest} from './i18n';
 import type {CartReturn} from '@shopify/hydrogen';
 import {mapShopifyMerchandiseToCoveoCartItem} from './map.coveo.shopify';
+import {fetchToken} from './fetch-token';
 
-export const engineDefinition = defineCommerceEngine({
+const getAccessToken = async (usePublicApiKey: boolean) => {
+  return usePublicApiKey || typeof window !== 'undefined'
+    ? await fetchToken(usePublicApiKey)
+    : '';
+};
+
+export const engineConfig: CommerceEngineDefinitionOptions = {
   configuration: {
-    accessToken: 'xx697404a7-6cfd-48c6-93d1-30d73d17e07a',
+    accessToken: await getAccessToken(true),
     organizationId: 'barcagroupproductionkwvdy6lp',
     analytics: {
       enabled: true,
@@ -73,7 +81,9 @@ export const engineDefinition = defineCommerceEngine({
     }),
     parameterManager: defineParameterManager(),
   },
-});
+};
+
+export const engineDefinition = defineCommerceEngine(engineConfig);
 
 export const {
   listingEngineDefinition,

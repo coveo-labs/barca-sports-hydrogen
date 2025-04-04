@@ -31,6 +31,8 @@ import {
   ServerSideNavigatorContextProvider,
 } from '~/lib/navigator.provider';
 import {colorToShorthand} from '~/lib/map.coveo.shopify';
+import {fetchToken} from '~/lib/fetch-token';
+import { isTokenExpired, extractAccessTokenFromCookie } from '~/lib/token-utils';
 
 export const meta: MetaFunction<typeof loader> = ({data}) => {
   return [{title: `Hydrogen | ${data?.product.title ?? ''}`}];
@@ -47,6 +49,15 @@ export async function loader(args: LoaderFunctionArgs) {
   const coveoProductId = `${product.handle.toUpperCase()}_${colorToShorthand(
     selectedColor,
   )}`;
+
+  if (isTokenExpired(engineDefinition.recommendationEngineDefinition.getAccessToken())) {
+    const accessTokenCookie = extractAccessTokenFromCookie(args.request)
+    const accessToken =  accessTokenCookie && !isTokenExpired(accessTokenCookie)
+      ? accessTokenCookie
+      : await fetchToken();
+
+      engineDefinition.recommendationEngineDefinition.setAccessToken(accessToken);
+  }
 
   engineDefinition.recommendationEngineDefinition.setNavigatorContextProvider(
     () => new ServerSideNavigatorContextProvider(args.request),
