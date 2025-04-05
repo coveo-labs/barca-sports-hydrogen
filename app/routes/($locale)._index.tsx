@@ -15,8 +15,7 @@ import {
   ClientSideNavigatorContextProvider,
   ServerSideNavigatorContextProvider,
 } from '~/lib/navigator.provider';
-import {fetchToken} from '~/lib/fetch-token';
-import { isTokenExpired, extractAccessTokenFromCookie } from '~/lib/token-utils';
+import { updateTokenIfNeeded } from '~/lib/token-utils';
 
 export const meta: MetaFunction = () => {
   return [{title: 'Hydrogen | Home'}];
@@ -27,14 +26,7 @@ export async function loader({request, context}: LoaderFunctionArgs) {
     () => new ServerSideNavigatorContextProvider(request),
   );
 
-  if (isTokenExpired(engineDefinition.recommendationEngineDefinition.getAccessToken())) {
-    const accessTokenCookie = extractAccessTokenFromCookie(request)
-    const accessToken =  accessTokenCookie && !isTokenExpired(accessTokenCookie)
-      ? accessTokenCookie
-      : await fetchToken();
-
-      engineDefinition.recommendationEngineDefinition.setAccessToken(accessToken);
-  }
+  updateTokenIfNeeded('recommendationEngineDefinition', request)
 
   const [header, recommendationStaticState] = await Promise.all([
     context.storefront.query(HEADER_QUERY, {

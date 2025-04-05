@@ -46,6 +46,10 @@ async function fetchNewToken(): Promise<string> {
   //
   // The specific implementation details for this use case will vary based on the requirements of your application and
   // the way it handles user authentication.
+  //
+  // Lastly, you will most likely want to store then API key used to generate tokens in an environment variable
+  // set through your Hydrogen Storefront settings.
+  // See https://shopify.dev/docs/storefronts/headless/hydrogen/environments#environment-variables
   const response = await fetch(`${organizationEndpoint}/rest/search/v2/token`, {
     method: 'POST',
     body: JSON.stringify({

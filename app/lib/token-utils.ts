@@ -1,5 +1,7 @@
 
 import { parse } from 'cookie';
+import { engineDefinition } from './coveo.engine';
+import {fetchToken} from '~/lib/fetch-token';
 
 function decodeBase64Url(base64Url: string): string {
   const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
@@ -34,3 +36,21 @@ export function extractAccessTokenFromCookie(request: Request): string | null {
   const cookies = parse(request.headers.get('Cookie') ?? '');
   return cookies['coveo_accessToken'];
 }
+
+export async function updateTokenIfNeeded(
+  k:
+    | 'listingEngineDefinition'
+    | 'searchEngineDefinition'
+    | 'standaloneEngineDefinition'
+    |  'recommendationEngineDefinition',
+  request: Request)
+  {
+    if (isTokenExpired(engineDefinition[k].getAccessToken())) {
+      const accessTokenCookie = extractAccessTokenFromCookie(request)
+      const accessToken =  accessTokenCookie && !isTokenExpired(accessTokenCookie)
+        ? accessTokenCookie
+        : await fetchToken();
+
+        engineDefinition[k].setAccessToken(accessToken);
+    }
+  }
