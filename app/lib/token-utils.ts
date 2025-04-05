@@ -42,7 +42,7 @@ export async function updateTokenIfNeeded(
     | 'listingEngineDefinition'
     | 'searchEngineDefinition'
     | 'standaloneEngineDefinition'
-    |  'recommendationEngineDefinition',
+    | 'recommendationEngineDefinition',
   request: Request)
   {
     if (isTokenExpired(engineDefinition[k].getAccessToken())) {

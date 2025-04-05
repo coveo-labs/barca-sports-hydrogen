@@ -29,7 +29,7 @@ import {fetchToken} from './fetch-token';
 const getAccessToken = async (usePublicApiKey: boolean) => {
   return usePublicApiKey || typeof window !== 'undefined'
     ? await fetchToken(usePublicApiKey)
-    : '';
+    : ''; // When server-side, we don't have access to the access token, but Headless requires a value
 };
 
 export const engineConfig: CommerceEngineDefinitionOptions = {
