@@ -1,4 +1,3 @@
-
 import { parse } from 'cookie';
 import { engineDefinition } from './coveo.engine';
 import {fetchToken} from '~/lib/fetch-token';
@@ -22,11 +21,7 @@ export function isTokenExpired(token: string): boolean {
   }
 }
 
-function isApiKey(token?: string) {
-  if (!token) {
-    return false;
-  }
-
+function isApiKey(token: string) {
   return /^xx[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$/.test(
     token
   );
@@ -38,19 +33,19 @@ export function extractAccessTokenFromCookie(request: Request): string | null {
 }
 
 export async function updateTokenIfNeeded(
-  k:
+  engineType:
     | 'listingEngineDefinition'
     | 'searchEngineDefinition'
     | 'standaloneEngineDefinition'
     | 'recommendationEngineDefinition',
   request: Request)
   {
-    if (isTokenExpired(engineDefinition[k].getAccessToken())) {
+    if (isTokenExpired(engineDefinition[engineType].getAccessToken())) {
       const accessTokenCookie = extractAccessTokenFromCookie(request)
       const accessToken =  accessTokenCookie && !isTokenExpired(accessTokenCookie)
         ? accessTokenCookie
         : await fetchToken();
 
-        engineDefinition[k].setAccessToken(accessToken);
+        engineDefinition[engineType].setAccessToken(accessToken);
     }
   }

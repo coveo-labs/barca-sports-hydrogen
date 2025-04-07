@@ -26,15 +26,9 @@ import type {CartReturn} from '@shopify/hydrogen';
 import {mapShopifyMerchandiseToCoveoCartItem} from './map.coveo.shopify';
 import {fetchToken} from './fetch-token';
 
-const getAccessToken = async (usePublicApiKey: boolean) => {
-  return usePublicApiKey || typeof window !== 'undefined'
-    ? await fetchToken(usePublicApiKey)
-    : '';
-};
-
 export const engineConfig: CommerceEngineDefinitionOptions = {
   configuration: {
-    accessToken: await getAccessToken(true),
+    accessToken: await fetchToken(false),
     organizationId: 'barcagroupproductionkwvdy6lp',
     analytics: {
       enabled: true,
