@@ -28,7 +28,7 @@ import {fetchToken} from './fetch-token';
 
 export const engineConfig: CommerceEngineDefinitionOptions = {
   configuration: {
-    accessToken: await fetchToken(false),
+    accessToken: await fetchToken(),
     organizationId: 'barcagroupproductionkwvdy6lp',
     analytics: {
       enabled: true,
