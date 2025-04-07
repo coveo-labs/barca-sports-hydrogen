@@ -47,6 +47,8 @@ async function fetchNewToken(): Promise<string> {
   // The specific implementation details for this use case will vary based on the requirements of your application and
   // the way it handles user authentication.
   //
+  // For the list of possible request body properties, see https://docs.coveo.com/en/56#request-body-properties
+  //
   // Lastly, you will want to store the API key used to generate tokens in an environment variable
   // set through your Hydrogen Storefront settings.
   // See https://shopify.dev/docs/storefronts/headless/hydrogen/environments#environment-variables
