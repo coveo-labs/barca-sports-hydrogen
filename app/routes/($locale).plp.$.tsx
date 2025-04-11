@@ -15,7 +15,6 @@ import {buildParameterSerializer} from '@coveo/headless-react/ssr-commerce';
 import {useEffect, useState} from 'react';
 import ParameterManager from '~/components/ParameterManager';
 
-
 export const meta: MetaFunction<typeof loader> = ({data}) => {
   return [{title: `Coveo ProductListingPage Work in progress`}];
 };
