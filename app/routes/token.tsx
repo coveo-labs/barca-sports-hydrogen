@@ -1,10 +1,18 @@
 import { engineConfig } from '~/lib/coveo.engine';
 import { getOrganizationEndpoint } from '@coveo/headless-react/ssr-commerce';
-import { LoaderFunctionArgs } from '@remix-run/node';
+import { AppLoadContext, LoaderFunctionArgs } from '@remix-run/node';
+
+declare global {
+  interface Env {
+    COVEO_API_KEY: string;
+  }
+}
+
 import { parse, serialize } from 'cookie';
 import { isTokenExpired } from '~/lib/token-utils';
 
-export const loader = async ({ request }: LoaderFunctionArgs) => {
+export const loader = async ({ request, context }: LoaderFunctionArgs) => {
+
   // In an SSR scenario, we recommend storing the search token in a cookie to minimize the number of network requests.
   // This is not mandatory, but it can help improve the performance of your application.
   const cookies = parse(request.headers.get('Cookie') ?? '');
@@ -17,7 +25,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     );
   }
 
-  const newToken = await fetchNewToken();
+  const newToken = await fetchNewToken(context);
 
   const cookie = serialize('coveo_accessToken', newToken, {
     httpOnly: true,
@@ -35,7 +43,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   });
 };
 
-async function fetchNewToken(): Promise<string> {
+async function fetchNewToken(context: AppLoadContext): Promise<string> {
   const organizationEndpoint = getOrganizationEndpoint(engineConfig.configuration.organizationId);
 
   // This example focuses on demonstrating the Coveo search token authentication flow in an SSR scenario. For the sake
@@ -49,8 +57,8 @@ async function fetchNewToken(): Promise<string> {
   //
   // For the list of possible request body properties, see https://docs.coveo.com/en/56#request-body-properties
   //
-  // Lastly, you will want to store the API key used to generate tokens in an environment variable
-  // set through your Hydrogen Storefront settings.
+  // Lastly, you will want to safely store the API key used to generate tokens.
+  // For example, you could set it through your Hydrogen Storefront settings.
   // See https://shopify.dev/docs/storefronts/headless/hydrogen/environments#environment-variables
   const response = await fetch(`${organizationEndpoint}/rest/search/v2/token`, {
     method: 'POST',
@@ -66,7 +74,7 @@ async function fetchNewToken(): Promise<string> {
       ],
     }),
     headers: {
-      Authorization: `Bearer <API_KEY_WITH_IMPERSONATE_PRIVILEGE_STORED_IN_ENV_VAR>`,
+      Authorization: `Bearer ${context.env.COVEO_API_KEY}`,
       'Content-Type': 'application/json',
     },
   });

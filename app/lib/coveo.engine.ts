@@ -25,10 +25,17 @@ import {getLocaleFromRequest} from './i18n';
 import type {CartReturn} from '@shopify/hydrogen';
 import {mapShopifyMerchandiseToCoveoCartItem} from './map.coveo.shopify';
 import {fetchToken} from './fetch-token';
+import {updateTokenIfNeeded} from '~/lib/token-utils';
+
+const getAccessToken = async (usePublicApiKey: boolean) => {
+  return usePublicApiKey || typeof window !== 'undefined'
+    ? await fetchToken(usePublicApiKey)
+    : '';
+};
 
 export const engineConfig: CommerceEngineDefinitionOptions = {
   configuration: {
-    accessToken: await fetchToken(),
+    accessToken: await getAccessToken(true),
     organizationId: 'barcagroupproductionkwvdy6lp',
     analytics: {
       enabled: true,
@@ -147,6 +154,8 @@ export async function fetchStaticState({
 
   const cart = await context.cart.get();
 
+  updateTokenIfNeeded(k, request)
+
   return engineDefinition[k].fetchStaticState({
     controllers: {
       parameterManager: {
@@ -187,6 +196,8 @@ export async function fetchRecommendationStaticState({
 }) {
   const cart = await context.cart.get();
   const {country, language, currency} = getLocaleFromRequest(request);
+
+  updateTokenIfNeeded('recommendationEngineDefinition', request)
 
   return engineDefinition.recommendationEngineDefinition.fetchStaticState({
     controllers: {

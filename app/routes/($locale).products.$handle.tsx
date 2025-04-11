@@ -31,7 +31,6 @@ import {
   ServerSideNavigatorContextProvider,
 } from '~/lib/navigator.provider';
 import {colorToShorthand} from '~/lib/map.coveo.shopify';
-import {updateTokenIfNeeded} from '~/lib/token-utils';
 
 export const meta: MetaFunction<typeof loader> = ({data}) => {
   return [{title: `Hydrogen | ${data?.product.title ?? ''}`}];
@@ -48,8 +47,6 @@ export async function loader(args: LoaderFunctionArgs) {
   const coveoProductId = `${product.handle.toUpperCase()}_${colorToShorthand(
     selectedColor,
   )}`;
-
-  updateTokenIfNeeded('recommendationEngineDefinition', args.request);
 
   engineDefinition.recommendationEngineDefinition.setNavigatorContextProvider(
     () => new ServerSideNavigatorContextProvider(args.request),

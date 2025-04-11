@@ -24,7 +24,6 @@ import {StandaloneProvider} from './components/Search/Context';
 import {GlobalLoading} from './components/ProgressBar';
 import {getLocaleFromRequest} from './lib/i18n';
 import {getCookieFromRequest} from './lib/session';
-import { updateTokenIfNeeded } from '~/lib/token-utils';
 export type RootLoader = typeof loader;
 
 /**
@@ -134,8 +133,6 @@ async function loadCriticalData({context, request}: LoaderFunctionArgs) {
   engineDefinition.standaloneEngineDefinition.setNavigatorContextProvider(
     () => coveoNavigatorProvider,
   );
-
-  updateTokenIfNeeded('standaloneEngineDefinition', request);
 
   const [header, customer, staticStateStandalone] = await Promise.all([
     storefront.query(HEADER_QUERY, {

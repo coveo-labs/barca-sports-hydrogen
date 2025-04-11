@@ -15,7 +15,6 @@ import {
   ClientSideNavigatorContextProvider,
   ServerSideNavigatorContextProvider,
 } from '~/lib/navigator.provider';
-import { updateTokenIfNeeded } from '~/lib/token-utils';
 
 export const meta: MetaFunction = () => {
   return [{title: 'Hydrogen | Home'}];
@@ -25,8 +24,6 @@ export async function loader({request, context}: LoaderFunctionArgs) {
   engineDefinition.recommendationEngineDefinition.setNavigatorContextProvider(
     () => new ServerSideNavigatorContextProvider(request),
   );
-
-  updateTokenIfNeeded('recommendationEngineDefinition', request)
 
   const [header, recommendationStaticState] = await Promise.all([
     context.storefront.query(HEADER_QUERY, {

@@ -14,7 +14,6 @@ import {FullSearch} from '~/components/Search/FullSearch';
 import {buildParameterSerializer} from '@coveo/headless-react/ssr-commerce';
 import {useEffect, useState} from 'react';
 import ParameterManager from '~/components/ParameterManager';
-import {updateTokenIfNeeded} from '~/lib/token-utils';
 
 
 export const meta: MetaFunction<typeof loader> = ({data}) => {
@@ -29,8 +28,6 @@ export async function loader({context, params, request}: LoaderFunctionArgs) {
   listingEngineDefinition.setNavigatorContextProvider(
     () => new ServerSideNavigatorContextProvider(request),
   );
-
-  updateTokenIfNeeded('listingEngineDefinition', request)
 
   const staticState = await fetchStaticState({
     url: `https://shop.barca.group/plp/${params['*']}`,

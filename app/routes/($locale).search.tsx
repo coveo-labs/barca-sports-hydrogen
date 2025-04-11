@@ -14,7 +14,6 @@ import {FullSearch} from '~/components/Search/FullSearch';
 import ParameterManager from '~/components/ParameterManager';
 import {buildParameterSerializer} from '@coveo/headless-react/ssr-commerce';
 import {useEffect, useState} from 'react';
-import {updateTokenIfNeeded} from '~/lib/token-utils';
 
 export const meta: MetaFunction = () => {
   return [{title: `Coveo | Search`}];
@@ -31,8 +30,6 @@ export async function loader({request, context}: LoaderFunctionArgs) {
   searchEngineDefinition.setNavigatorContextProvider(
     () => new ServerSideNavigatorContextProvider(request),
   );
-
-  updateTokenIfNeeded('searchEngineDefinition', request)
 
   const staticState = await fetchStaticState({
     context,

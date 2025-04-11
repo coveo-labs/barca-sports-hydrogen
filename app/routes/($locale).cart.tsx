@@ -26,7 +26,6 @@ import {
   ServerSideNavigatorContextProvider,
 } from '~/lib/navigator.provider';
 import type {RootLoader} from '~/root';
-import {updateTokenIfNeeded} from '~/lib/token-utils';
 
 export const meta: MetaFunction = () => {
   return [{title: `Hydrogen | Cart`}];
@@ -119,8 +118,6 @@ export async function loader({request, context}: LoaderFunctionArgs) {
   engineDefinition.recommendationEngineDefinition.setNavigatorContextProvider(
     () => new ServerSideNavigatorContextProvider(request),
   );
-
-  updateTokenIfNeeded('recommendationEngineDefinition', request)
 
   const recommendationStaticState = await fetchRecommendationStaticState({
     request,
