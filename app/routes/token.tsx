@@ -25,7 +25,8 @@ export const loader = async ({ request, context }: LoaderFunctionArgs) => {
     );
   }
 
-  const newToken = await fetchNewToken(context);
+  // const newToken = await fetchTokenFromSAPI(context);
+  const newToken = await fetchTokenFromAppProxy();
 
   const cookie = serialize('coveo_accessToken', newToken, {
     httpOnly: true,
@@ -43,7 +44,7 @@ export const loader = async ({ request, context }: LoaderFunctionArgs) => {
   });
 };
 
-async function fetchNewToken(context: AppLoadContext): Promise<string> {
+async function fetchTokenFromSAPI(context: AppLoadContext): Promise<string> {
   const organizationEndpoint = getOrganizationEndpoint(engineConfig.configuration.organizationId);
 
   // This example focuses on demonstrating the Coveo search token authentication flow in an SSR scenario. For the sake
@@ -85,4 +86,20 @@ async function fetchNewToken(context: AppLoadContext): Promise<string> {
 
   const responseData = (await response.json()) as { token: string };
   return responseData.token;
+}
+
+async function fetchTokenFromAppProxy(): Promise<string> {
+  // If you've installed the [Coveo app for Shopify](https://docs.coveo.com/en/p2la0421), it includes
+  // an [app proxy](https://shopify.dev/docs/api/shopify-app-remix/v2/authenticate/public/app-proxy)
+  // that you can use to generate anonymous search tokens.
+  //
+  // Pass the target market ID to the app proxy URL as a query parameter.
+  const response = await fetch('https://barca-sports.myshopify.com/apps/coveo?marketId=88728731922');
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch token from app proxy');
+  }
+
+  const data = (await response.json()) as { accessToken: string };
+  return data.accessToken;
 }
