@@ -92,9 +92,11 @@ async function fetchTokenFromAppProxy(): Promise<string> {
   // If you've installed the [Coveo app for Shopify](https://docs.coveo.com/en/p2la0421), it includes
   // an [app proxy](https://shopify.dev/docs/api/shopify-app-remix/v2/authenticate/public/app-proxy)
   // that you can use to generate anonymous search tokens.
-  //
-  // Pass the target market ID to the app proxy URL as a query parameter.
-  const response = await fetch('https://barca-sports.myshopify.com/apps/coveo?marketId=88728731922');
+
+  // In a real application, you would retrieve the `marketId` dynamically.
+  // Details will vary depending on your setup.
+  const marketId = '88728731922';
+  const response = await fetch(`https://barca-sports.myshopify.com/apps/coveo?marketId=${marketId}`);
 
   if (!response.ok) {
     throw new Error('Failed to fetch token from app proxy');
