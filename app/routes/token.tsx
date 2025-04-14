@@ -93,10 +93,9 @@ async function fetchTokenFromAppProxy(): Promise<string> {
   // an [app proxy](https://shopify.dev/docs/api/shopify-app-remix/v2/authenticate/public/app-proxy)
   // that you can use to generate anonymous search tokens.
 
-  // In a real application, you would retrieve the `marketId` dynamically.
-  // Details will vary depending on your setup.
-  const marketId = '88728731922';
-  const response = await fetch(`https://barca-sports.myshopify.com/apps/coveo?marketId=${marketId}`);
+  // You need to pass a `marketId` query parameter to the app proxy URL, but it's not relevant in the
+  // context of Hydrogen.
+  const response = await fetch('https://barca-sports.myshopify.com/apps/coveo?marketId=1');
 
   if (!response.ok) {
     throw new Error('Failed to fetch token from app proxy');
