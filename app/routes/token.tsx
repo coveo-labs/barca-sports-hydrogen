@@ -25,8 +25,8 @@ export const loader = async ({ request, context }: LoaderFunctionArgs) => {
     );
   }
 
-  // const newToken = await fetchTokenFromSAPI(context);
-  const newToken = await fetchTokenFromAppProxy();
+  const newToken = await fetchTokenFromSAPI(context);
+  // const newToken = await fetchTokenFromAppProxy();
 
   const cookie = serialize('coveo_accessToken', newToken, {
     httpOnly: true,

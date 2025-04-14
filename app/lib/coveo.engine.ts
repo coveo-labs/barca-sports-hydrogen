@@ -27,6 +27,11 @@ import {mapShopifyMerchandiseToCoveoCartItem} from './map.coveo.shopify';
 import {fetchToken} from './fetch-token';
 import {updateTokenIfNeeded} from '~/lib/token-utils';
 
+// Headless requires an `accessToken` to be set in the configuration.
+// We can't simply call `fetchToken` in all cases, because when the file
+// first loads, the /token route might not be ready. As a backup, we can
+// pass an empty, invalid value. Later in this file, we use the `updateTokenIfNeeded`
+// function to update invalid or outdated tokens before interacting with Coveo APIs.
 const getAccessToken = async (usePublicApiKey: boolean) => {
   return usePublicApiKey || typeof window !== 'undefined'
     ? await fetchToken(usePublicApiKey)
@@ -154,7 +159,7 @@ export async function fetchStaticState({
 
   const cart = await context.cart.get();
 
-  updateTokenIfNeeded(k, request)
+  await updateTokenIfNeeded(k, request)
 
   return engineDefinition[k].fetchStaticState({
     controllers: {
@@ -197,7 +202,7 @@ export async function fetchRecommendationStaticState({
   const cart = await context.cart.get();
   const {country, language, currency} = getLocaleFromRequest(request);
 
-  updateTokenIfNeeded('recommendationEngineDefinition', request)
+  await updateTokenIfNeeded('recommendationEngineDefinition', request)
 
   return engineDefinition.recommendationEngineDefinition.fetchStaticState({
     controllers: {
