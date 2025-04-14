@@ -93,9 +93,14 @@ async function fetchTokenFromAppProxy(): Promise<string> {
   // an [app proxy](https://shopify.dev/docs/api/shopify-app-remix/v2/authenticate/public/app-proxy)
   // that you can use to generate anonymous search tokens.
 
-  // You need to pass a `marketId` query parameter to the app proxy URL, but it's not relevant in the
-  // context of Hydrogen.
-  const response = await fetch('https://barca-sports.myshopify.com/apps/coveo?marketId=1');
+  // In a real application, you would most likely retrieve the `marketId` dynamically. Details will
+  // vary depending on your setup.
+  // The `marketId` doesn't affect the generated token. But, if you've used the Coveo app for Shopify
+  // to set up your Coveo organization, the app proxy will return the `trackingId` value associated with the
+  // target market. You can use it to facilitate setting the correct Headless engine `context.analytics.trackingId`
+  // value. We do not do this in this sample project, since it was not configured with the Coveo app for Shopify.
+  const marketId = '88728731922';
+  const response = await fetch(`https://barca-sports.myshopify.com/apps/coveo?marketId=${marketId}`);
 
   if (!response.ok) {
     throw new Error('Failed to fetch token from app proxy');
