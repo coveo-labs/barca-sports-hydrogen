@@ -18,15 +18,29 @@ import {
   defineBreadcrumbManager,
   defineParameterManager,
   defineRecommendations,
+  CommerceEngineDefinitionOptions,
 } from '@coveo/headless-react/ssr-commerce';
 import type {AppLoadContext} from '@shopify/remix-oxygen';
 import {getLocaleFromRequest} from './i18n';
 import type {CartReturn} from '@shopify/hydrogen';
 import {mapShopifyMerchandiseToCoveoCartItem} from './map.coveo.shopify';
+import {fetchToken} from './fetch-token';
+import {updateTokenIfNeeded} from '~/lib/token-utils';
 
-export const engineDefinition = defineCommerceEngine({
+// Headless requires an `accessToken` to be set in the configuration.
+// We can't simply call `fetchToken` in all cases, because when the file
+// first loads, the /token route might not be ready. As a backup, we can
+// pass an empty, invalid value. Later in this file, we use the `updateTokenIfNeeded`
+// function to update invalid or outdated tokens before interacting with Coveo APIs.
+const getAccessToken = async (usePublicApiKey: boolean) => {
+  return usePublicApiKey || typeof window !== 'undefined'
+    ? await fetchToken(usePublicApiKey)
+    : '';
+};
+
+export const engineConfig: CommerceEngineDefinitionOptions = {
   configuration: {
-    accessToken: 'xx697404a7-6cfd-48c6-93d1-30d73d17e07a',
+    accessToken: await getAccessToken(true),
     organizationId: 'barcagroupproductionkwvdy6lp',
     analytics: {
       enabled: true,
@@ -73,7 +87,9 @@ export const engineDefinition = defineCommerceEngine({
     }),
     parameterManager: defineParameterManager(),
   },
-});
+};
+
+export const engineDefinition = defineCommerceEngine(engineConfig);
 
 export const {
   listingEngineDefinition,
@@ -143,6 +159,8 @@ export async function fetchStaticState({
 
   const cart = await context.cart.get();
 
+  await updateTokenIfNeeded(k, request)
+
   return engineDefinition[k].fetchStaticState({
     controllers: {
       parameterManager: {
@@ -183,6 +201,8 @@ export async function fetchRecommendationStaticState({
 }) {
   const cart = await context.cart.get();
   const {country, language, currency} = getLocaleFromRequest(request);
+
+  await updateTokenIfNeeded('recommendationEngineDefinition', request)
 
   return engineDefinition.recommendationEngineDefinition.fetchStaticState({
     controllers: {
