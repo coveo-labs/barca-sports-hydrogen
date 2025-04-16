@@ -1,6 +1,8 @@
 import { engineConfig } from '~/lib/coveo.engine';
 import { getOrganizationEndpoint } from '@coveo/headless-react/ssr-commerce';
 import { AppLoadContext, LoaderFunctionArgs } from '@remix-run/node';
+import { parse, serialize } from 'cookie';
+import { isTokenExpired, decodeBase64Url } from '~/lib/token-utils';
 
 declare global {
   interface Env {
@@ -8,8 +10,9 @@ declare global {
   }
 }
 
-import { parse, serialize } from 'cookie';
-import { isTokenExpired } from '~/lib/token-utils';
+interface ParsedToken {
+  exp: number;
+}
 
 export const loader = async ({ request, context }: LoaderFunctionArgs) => {
 
@@ -28,11 +31,14 @@ export const loader = async ({ request, context }: LoaderFunctionArgs) => {
   const newToken = await fetchTokenFromSAPI(context);
   // const newToken = await fetchTokenFromAppProxy();
 
+  const parsedToken = JSON.parse(decodeBase64Url(newToken.split('.')[1])) as ParsedToken;
+  const maxAge = parsedToken.exp * 1000 - Date.now();
+
   const cookie = serialize('coveo_accessToken', newToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
-    maxAge: 24 * 60 * 60, // 24 hours
+    maxAge: Math.floor(maxAge / 1000),
     path: '/',
   });
 

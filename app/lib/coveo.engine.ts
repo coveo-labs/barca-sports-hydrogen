@@ -40,7 +40,7 @@ const getAccessToken = async (usePublicApiKey: boolean) => {
 
 export const engineConfig: CommerceEngineDefinitionOptions = {
   configuration: {
-    accessToken: await getAccessToken(true),
+    accessToken: await getAccessToken(false),
     organizationId: 'barcagroupproductionkwvdy6lp',
     analytics: {
       enabled: true,
