@@ -5,7 +5,7 @@ type TokenResponse = {
 export const fetchToken = async (request?: null|Request, apiKeyAuthentication = false) => {
   const baseUrl = request && request.url ? new URL(request.url).origin : '';
 
-  if (apiKeyAuthentication) {
+  if (apiKeyAuthentication || typeof window == 'undefined') {
     return 'xx697404a7-6cfd-48c6-93d1-30d73d17e07a'; // demo API key
   }
 
