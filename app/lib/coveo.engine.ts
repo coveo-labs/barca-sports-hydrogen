@@ -34,7 +34,7 @@ import {updateTokenIfNeeded} from '~/lib/token-utils';
 // function to update invalid or outdated tokens before interacting with Coveo APIs.
 const getAccessToken = async (usePublicApiKey: boolean) => {
   return usePublicApiKey || typeof window !== 'undefined'
-    ? await fetchToken(usePublicApiKey)
+    ? await fetchToken(null, usePublicApiKey)
     : '';
 };
 

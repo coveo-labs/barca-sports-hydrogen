@@ -2,7 +2,7 @@ type TokenResponse = {
   token: string;
 };
 
-export const fetchToken = async (request: Request, apiKeyAuthentication = false) => {
+export const fetchToken = async (request?: null|Request, apiKeyAuthentication = false) => {
   const baseUrl = request && request.url ? new URL(request.url).origin : '';
   console.log('baseUrl', baseUrl);
 
