@@ -21,12 +21,12 @@ export const fetchToken = async (request?: null | Request, apiKeyAuthentication 
 
 const headersToRelay = (request: Request) => {
   const headers = new Headers();
-  const authHeader = request && request.headers && request.headers.get('Authorization');
+  const authHeader = request.headers && request.headers.get('Authorization');
   if (authHeader) {
     headers.set('Authorization', authHeader);
   }
 
-  const cookieHeader = request && request.headers && request.headers.get('Cookie');
+  const cookieHeader = request.headers && request.headers.get('Cookie');
   if (cookieHeader) {
     headers.set('Cookie', cookieHeader);
   }

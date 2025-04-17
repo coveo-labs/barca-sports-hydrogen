@@ -28,8 +28,8 @@ export const loader = async ({ request, context }: LoaderFunctionArgs) => {
     );
   }
 
-  const newToken = await fetchTokenFromSAPI(context);
-  //const newToken = await fetchTokenFromAppProxy();
+  //const newToken = await fetchTokenFromSAPI(context);
+  const newToken = await fetchTokenFromAppProxy();
 
   const parsedToken = JSON.parse(decodeBase64Url(newToken.split('.')[1])) as ParsedToken;
   const maxAge = parsedToken.exp * 1000 - Date.now();

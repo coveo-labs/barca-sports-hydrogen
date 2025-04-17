@@ -41,7 +41,7 @@ const getAccessToken = async (usePublicApiKey: boolean) => {
 export const engineConfig: CommerceEngineDefinitionOptions = {
   configuration: {
     accessToken: await getAccessToken(false),
-    organizationId: 'barcagroupproductionkwvdy6lp',
+    organizationId: 'simonshopifytestj1yywg6i',
     analytics: {
       enabled: true,
       trackingId: 'shop_en_us',
