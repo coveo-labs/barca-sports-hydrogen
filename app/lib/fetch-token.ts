@@ -9,7 +9,7 @@ export const fetchToken = async (request?: null | Request, apiKeyAuthentication 
     return 'xx697404a7-6cfd-48c6-93d1-30d73d17e07a'; // demo API key
   }
 
-  const headers = request? headersToRelay(request) : new Headers();
+  const headers = relayRequestCookies(request);
 
   const response = await fetch(`${baseUrl}/token`, { headers });
   if (!response.ok) {
@@ -19,10 +19,10 @@ export const fetchToken = async (request?: null | Request, apiKeyAuthentication 
   return data.token;
 };
 
-const headersToRelay = (request: Request) => {
+const relayRequestCookies = (request: Request | null | undefined) => {
   const headers = new Headers();
 
-  const cookieHeader = request.headers && request.headers.get('Cookie');
+  const cookieHeader = request && request.headers && request.headers.get('Cookie');
   if (cookieHeader) {
     headers.set('Cookie', cookieHeader);
   }
