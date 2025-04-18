@@ -2,7 +2,7 @@ import { parse } from 'cookie';
 import { engineDefinition } from './coveo.engine';
 import {fetchToken} from '~/lib/fetch-token';
 
-function decodeBase64Url(base64Url: string): string {
+export function decodeBase64Url(base64Url: string): string {
   const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
   return atob(base64);
 }
@@ -44,7 +44,7 @@ export async function updateTokenIfNeeded(
       const accessTokenCookie = extractAccessTokenFromCookie(request)
       const accessToken =  accessTokenCookie && !isTokenExpired(accessTokenCookie)
         ? accessTokenCookie
-        : await fetchToken();
+        : await fetchToken(request);
 
         engineDefinition[engineType].setAccessToken(accessToken);
     }
