@@ -44,8 +44,7 @@ const getPublicApiKey = () => {
 
 export const engineConfig: CommerceEngineDefinitionOptions = {
   configuration: {
-    // accessToken: getPublicApiKey(),
-    accessToken: await getSearchToken(),
+    accessToken: getPublicApiKey(),
     organizationId: 'barcagroupproductionkwvdy6lp',
     analytics: {
       enabled: true,
