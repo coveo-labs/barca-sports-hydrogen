@@ -32,15 +32,20 @@ import {updateTokenIfNeeded} from '~/lib/token-utils';
 // first loads, the /token route might not be ready. As a backup, we can
 // pass an empty, invalid value. Later in this file, we use the `updateTokenIfNeeded`
 // function to update invalid or outdated tokens before interacting with Coveo APIs.
-const getAccessToken = async (usePublicApiKey: boolean) => {
-  return usePublicApiKey || typeof window !== 'undefined'
-    ? await fetchToken(null, usePublicApiKey)
+const getSearchToken = async () => {
+  return typeof window !== 'undefined'
+    ? await fetchToken()
     : '';
+};
+
+const getPublicApiKey = () => {
+  return 'xx697404a7-6cfd-48c6-93d1-30d73d17e07a';
 };
 
 export const engineConfig: CommerceEngineDefinitionOptions = {
   configuration: {
-    accessToken: await getAccessToken(false),
+    // accessToken: getPublicApiKey(),
+    accessToken: await getSearchToken(),
     organizationId: 'barcagroupproductionkwvdy6lp',
     analytics: {
       enabled: true,

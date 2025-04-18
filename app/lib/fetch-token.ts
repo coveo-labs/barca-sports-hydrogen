@@ -2,11 +2,7 @@ type TokenResponse = {
   token: string;
 };
 
-export const fetchToken = async (request?: null | Request, apiKeyAuthentication = false) => {
-  if (apiKeyAuthentication) {
-    return 'xx697404a7-6cfd-48c6-93d1-30d73d17e07a'; // demo API key
-  }
-
+export const fetchToken = async (request?: Request) => {
   const baseUrl = request && request.url ? new URL(request.url).origin : '';
   const headersToRelay = extractCookiesFromRequest(request);
   const sapiResponse = await fetch(`${baseUrl}/token`, { headers: headersToRelay });
@@ -16,7 +12,7 @@ export const fetchToken = async (request?: null | Request, apiKeyAuthentication 
   return ((await sapiResponse.json()) as TokenResponse).token;
 };
 
-const extractCookiesFromRequest = (request: Request | null | undefined) => {
+const extractCookiesFromRequest = (request?: Request) => {
   const headers = new Headers();
 
   const cookieHeader = request && request.headers && request.headers.get('Cookie');
