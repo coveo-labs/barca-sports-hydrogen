@@ -1,6 +1,14 @@
 import { parse } from 'cookie';
 import { engineDefinition } from './coveo.engine';
 import { fetchToken } from '~/lib/fetch-token';
+import { createCookie } from "@remix-run/node";
+
+export const accessTokenCookie = createCookie('coveo_accessToken', {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'lax',
+  path: '/',
+});
 
 export function decodeBase64Url(base64Url: string): string {
   const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
