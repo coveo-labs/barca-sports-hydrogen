@@ -1,6 +1,6 @@
 import { parse } from 'cookie';
 import { engineDefinition } from './coveo.engine';
-import {fetchToken} from '~/lib/fetch-token';
+import { fetchToken } from '~/lib/fetch-token';
 
 export function decodeBase64Url(base64Url: string): string {
   const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');

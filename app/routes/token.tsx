@@ -2,7 +2,7 @@ import { engineConfig } from '~/lib/coveo.engine';
 import { getOrganizationEndpoint } from '@coveo/headless-react/ssr-commerce';
 import { AppLoadContext, LoaderFunctionArgs } from '@remix-run/node';
 import { parse, serialize } from 'cookie';
-import { isTokenExpired, decodeBase64Url } from '~/lib/token-utils';
+import { isTokenExpired, decodeBase64Url } from '~/lib/token-utils.server';
 
 declare global {
   interface Env {

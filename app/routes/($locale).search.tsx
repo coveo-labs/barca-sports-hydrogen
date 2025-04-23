@@ -1,10 +1,10 @@
 import {type LoaderFunctionArgs} from '@shopify/remix-oxygen';
 import {useLoaderData, type MetaFunction} from '@remix-run/react';
 import {
-  fetchStaticState,
   searchEngineDefinition,
   type SearchStaticState,
 } from '~/lib/coveo.engine';
+import {fetchStaticState} from '~/lib/coveo.engine.server';
 import {
   ClientSideNavigatorContextProvider,
   ServerSideNavigatorContextProvider,

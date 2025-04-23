@@ -18,9 +18,9 @@ import {CartMain} from '~/components/Cart/CartMain';
 import {CartRecommendations} from '~/components/Cart/CartRecommendations';
 import {RecommendationProvider} from '~/components/Search/Context';
 import {
-  engineDefinition,
-  fetchRecommendationStaticState,
+  engineDefinition
 } from '~/lib/coveo.engine';
+import {fetchRecommendationStaticState} from '~/lib/coveo.engine.server';
 import {
   ClientSideNavigatorContextProvider,
   ServerSideNavigatorContextProvider,
