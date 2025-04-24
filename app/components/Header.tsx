@@ -29,6 +29,7 @@ import type {RootLoader} from '~/root';
 import {CountrySelector} from './CountrySelector';
 import {NavLinkWithLocale, relativeLink} from './NavLinkWithLocale';
 import {StandaloneSearchBox} from './Search/StandaloneSearchBox';
+import {OneSearchBox} from './Search/OneSearchBox';
 interface HeaderProps {
   header: HeaderQuery;
   cart: Promise<CartApiQueryFragment | null>;
@@ -409,7 +410,8 @@ function MenuDesktop({header, setOpen, cart}: MenuDesktopProps) {
                         className="absolute inset-0 top-1/2 bg-white shadow"
                       />
                       <div className="relative -top-1 bg-white mx-auto max-w-7xl p-0 z-50">
-                        <StandaloneSearchBox close={close} />
+                        <OneSearchBox />
+                        {/* <StandaloneSearchBox close={close} /> */}
                       </div>
                     </>
                   )}
