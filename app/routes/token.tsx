@@ -1,8 +1,8 @@
-import { engineConfig } from '~/lib/coveo.engine';
-import { getOrganizationEndpoint } from '@coveo/headless-react/ssr-commerce';
-import { AppLoadContext, LoaderFunctionArgs } from '@remix-run/node';
-import { parse, serialize } from 'cookie';
-import { isTokenExpired, decodeBase64Url } from '~/lib/token-utils';
+import {engineConfig} from '~/lib/coveo.engine';
+import {getOrganizationEndpoint} from '@coveo/headless-react/ssr-commerce';
+import type {AppLoadContext, LoaderFunctionArgs} from '@remix-run/node';
+import {isTokenExpired, decodeBase64Url} from '~/lib/token-utils.server';
+import {accessTokenCookie} from '~/lib/cookies.server';
 
 declare global {
   interface Env {
@@ -14,43 +14,40 @@ interface ParsedToken {
   exp: number;
 }
 
-export const loader = async ({ request, context }: LoaderFunctionArgs) => {
-
+export const loader = async ({request, context}: LoaderFunctionArgs) => {
   // In an SSR scenario, we recommend storing the search token in a cookie to minimize the number of network requests.
   // This is not mandatory, but it can help improve the performance of your application.
-  const cookies = parse(request.headers.get('Cookie') ?? '');
-  const accessTokenCookie = cookies['coveo_accessToken'];
+  const accessTokenCookieValue = await accessTokenCookie.parse(
+    request.headers.get('Cookie'),
+  );
 
-  if (accessTokenCookie && !isTokenExpired(accessTokenCookie)) {
-    return new Response(
-      JSON.stringify({ token: accessTokenCookie }),
-      { headers: { 'Content-Type': 'application/json' } }
-    );
+  if (accessTokenCookie && !isTokenExpired(accessTokenCookieValue)) {
+    return new Response(JSON.stringify({token: accessTokenCookieValue}), {
+      headers: {'Content-Type': 'application/json'},
+    });
   }
 
   const newToken = await fetchTokenFromSAPI(context);
 
-  const parsedToken = JSON.parse(decodeBase64Url(newToken.split('.')[1])) as ParsedToken;
+  const parsedToken = JSON.parse(
+    decodeBase64Url(newToken.split('.')[1]),
+  ) as ParsedToken;
   const maxAge = parsedToken.exp * 1000 - Date.now();
 
-  const cookie = serialize('coveo_accessToken', newToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    maxAge: Math.floor(maxAge / 1000),
-    path: '/',
-  });
-
-  return new Response(JSON.stringify({ token: newToken }), {
+  return new Response(JSON.stringify({token: newToken}), {
     headers: {
       'Content-Type': 'application/json',
-      'Set-Cookie': cookie,
+      'Set-Cookie': await accessTokenCookie.serialize(newToken, {
+        maxAge: Math.floor(maxAge / 1000),
+      }),
     },
   });
 };
 
 async function fetchTokenFromSAPI(context: AppLoadContext): Promise<string> {
-  const organizationEndpoint = getOrganizationEndpoint(engineConfig.configuration.organizationId);
+  const organizationEndpoint = getOrganizationEndpoint(
+    engineConfig.configuration.organizationId,
+  );
 
   // This example focuses on demonstrating the Coveo search token authentication flow in an SSR scenario. For the sake
   // of simplicity, it only generates anonymous search tokens.
@@ -89,7 +86,7 @@ async function fetchTokenFromSAPI(context: AppLoadContext): Promise<string> {
     throw new Error('Failed to fetch access token from Coveo Search API');
   }
 
-  const responseData = (await response.json()) as { token: string };
+  const responseData = (await response.json()) as {token: string};
   return responseData.token;
 }
 
@@ -105,12 +102,14 @@ async function fetchTokenFromAppProxy(): Promise<string> {
   // target market. You can use it to facilitate setting the correct Headless engine `context.analytics.trackingId`
   // value. We do not do this in this sample project, since it was not configured with the Coveo app for Shopify.
   const marketId = '88728731922';
-  const response = await fetch(`https://barca-sports.myshopify.com/apps/coveo?marketId=${marketId}`);
+  const response = await fetch(
+    `https://barca-sports.myshopify.com/apps/coveo?marketId=${marketId}`,
+  );
 
   if (!response.ok) {
     throw new Error('Failed to fetch token from app proxy');
   }
 
-  const data = (await response.json()) as { accessToken: string };
+  const data = (await response.json()) as {accessToken: string};
   return data.accessToken;
 }
