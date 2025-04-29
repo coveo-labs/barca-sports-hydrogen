@@ -18,11 +18,8 @@ import {ImageGallery} from '~/components/Products/ImageGallery';
 import {Colors} from '~/components/Products/Colors';
 import {Sizes} from '~/components/Products/Sizes';
 import {Description} from '~/components/Products/Description';
-import {
-  engineDefinition,
-  fetchRecommendationStaticState,
-  useProductView,
-} from '~/lib/coveo.engine';
+import {engineDefinition, useProductView} from '~/lib/coveo.engine';
+import {fetchRecommendationStaticState} from '~/lib/coveo.engine.server';
 import {useCallback, useEffect, useState} from 'react';
 import {ProductRecommendations} from '~/components/Products/Recommendations';
 import {RecommendationProvider} from '~/components/Search/Context';
@@ -186,6 +183,7 @@ export default function Product() {
       productId: `${handle?.toUpperCase()!}_${colorToShorthand(currentColor)}`,
       price: Number(selectedVariant.price.amount),
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [product.title, selectedVariant.price.amount, handle, currentColor]);
 
   useEffect(() => {

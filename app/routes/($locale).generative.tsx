@@ -188,6 +188,7 @@ function useGenAIAnswer(q: string) {
     return gen.subscribe(() => {
       setGenAnswerState(gen.state);
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [q]);
 
   return genAnswerState;
@@ -241,6 +242,7 @@ function useRelatedArticles(q: string, genAnswerState?: GeneratedAnswerState) {
         action: '/answer-to-articles',
       });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [genAnswerState]);
 
   return {relatedArticles, basicExpression};
@@ -310,6 +312,7 @@ function useRelatedProducts(basicExpression: string) {
       method: 'POST',
       action: '/answer-to-products',
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [basicExpression]);
 
   return relatedProducts;

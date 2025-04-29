@@ -1,12 +1,18 @@
 import {useParameterManager} from '../lib/coveo.engine';
-import {buildParameterSerializer} from '@coveo/headless-react/ssr-commerce';
+import {
+  buildParameterSerializer,
+  type ParameterManagerState,
+  type ParameterManager,
+  type CommerceSearchParameters,
+} from '@coveo/headless-react/ssr-commerce';
 import {useSearchParams} from '@remix-run/react';
 import {useEffect, useMemo, useRef} from 'react';
 
 export default function ParameterManager({url}: {url: string | null}) {
-  const {state, methods} = useParameterManager();
-
-  const {serialize, deserialize} = buildParameterSerializer();
+  const {state, methods} = useParameterManager() as {
+    state: ParameterManagerState<CommerceSearchParameters>;
+    methods: ParameterManager<CommerceSearchParameters>;
+  };
 
   const initialUrl = useMemo(() => new URL(url ?? ''), [url]);
   const previousUrl = useRef(initialUrl.href);
@@ -16,6 +22,8 @@ export default function ParameterManager({url}: {url: string | null}) {
     if (methods === undefined) {
       return;
     }
+
+    const {serialize, deserialize} = buildParameterSerializer();
 
     const newCommerceParams = deserialize(searchParams);
 
@@ -27,12 +35,15 @@ export default function ParameterManager({url}: {url: string | null}) {
 
     previousUrl.current = newUrl;
     methods.synchronize(newCommerceParams);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
   useEffect(() => {
     if (methods === undefined) {
       return;
     }
+
+    const {serialize} = buildParameterSerializer();
 
     const newUrl = serialize(state.parameters, new URL(previousUrl.current));
 
@@ -42,6 +53,7 @@ export default function ParameterManager({url}: {url: string | null}) {
 
     previousUrl.current = newUrl;
     history.pushState(null, '', newUrl);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.parameters]);
 
   return null;

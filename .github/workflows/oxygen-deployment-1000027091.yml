@@ -16,10 +16,10 @@ jobs:
       - name: Setup node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "lts/*"
+          node-version: 'lts/*'
           check-latest: true
       - name: Install tailwind oxyde
-        run: npm i 
+        run: npm i
 
       - name: Cache node modules
         id: cache-npm
