@@ -6,9 +6,9 @@ import {
 } from '~/lib/navigator.provider';
 import {
   engineDefinition,
-  fetchStaticState,
   type ListingStaticState,
 } from '~/lib/coveo.engine';
+import {fetchStaticState} from '~/lib/coveo.engine.server';
 import {ListingProvider} from '~/components/Search/Context';
 import {FullSearch} from '~/components/Search/FullSearch';
 import {buildParameterSerializer} from '@coveo/headless-react/ssr-commerce';

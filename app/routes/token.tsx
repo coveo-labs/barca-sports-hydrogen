@@ -1,8 +1,8 @@
 import {engineConfig} from '~/lib/coveo.engine';
 import {getOrganizationEndpoint} from '@coveo/headless-react/ssr-commerce';
 import type {AppLoadContext, LoaderFunctionArgs} from '@remix-run/node';
-import {parse, serialize} from 'cookie';
-import {isTokenExpired, decodeBase64Url} from '~/lib/token-utils';
+import {isTokenExpired, decodeBase64Url} from '~/lib/token-utils.server';
+import {accessTokenCookie} from '~/lib/cookies.server';
 
 declare global {
   interface Env {
@@ -17,11 +17,12 @@ interface ParsedToken {
 export const loader = async ({request, context}: LoaderFunctionArgs) => {
   // In an SSR scenario, we recommend storing the search token in a cookie to minimize the number of network requests.
   // This is not mandatory, but it can help improve the performance of your application.
-  const cookies = parse(request.headers.get('Cookie') ?? '');
-  const accessTokenCookie = cookies['coveo_accessToken'];
+  const accessTokenCookieValue = await accessTokenCookie.parse(
+    request.headers.get('Cookie'),
+  );
 
-  if (accessTokenCookie && !isTokenExpired(accessTokenCookie)) {
-    return new Response(JSON.stringify({token: accessTokenCookie}), {
+  if (accessTokenCookie && !isTokenExpired(accessTokenCookieValue)) {
+    return new Response(JSON.stringify({token: accessTokenCookieValue}), {
       headers: {'Content-Type': 'application/json'},
     });
   }
@@ -33,18 +34,12 @@ export const loader = async ({request, context}: LoaderFunctionArgs) => {
   ) as ParsedToken;
   const maxAge = parsedToken.exp * 1000 - Date.now();
 
-  const cookie = serialize('coveo_accessToken', newToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    maxAge: Math.floor(maxAge / 1000),
-    path: '/',
-  });
-
   return new Response(JSON.stringify({token: newToken}), {
     headers: {
       'Content-Type': 'application/json',
-      'Set-Cookie': cookie,
+      'Set-Cookie': await accessTokenCookie.serialize(newToken, {
+        maxAge: Math.floor(maxAge / 1000),
+      }),
     },
   });
 };

@@ -1,6 +1,6 @@
-import {parse} from 'cookie';
 import {engineDefinition} from './coveo.engine';
 import {fetchToken} from '~/lib/fetch-token';
+import {accessTokenCookie} from './cookies.server';
 
 export function decodeBase64Url(base64Url: string): string {
   const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
@@ -29,11 +29,6 @@ function isApiKey(token: string) {
   );
 }
 
-export function extractAccessTokenFromCookie(request: Request): string | null {
-  const cookies = parse(request.headers.get('Cookie') ?? '');
-  return cookies['coveo_accessToken'];
-}
-
 export async function updateTokenIfNeeded(
   engineType:
     | 'listingEngineDefinition'
@@ -43,10 +38,12 @@ export async function updateTokenIfNeeded(
   request: Request,
 ) {
   if (isTokenExpired(engineDefinition[engineType].getAccessToken())) {
-    const accessTokenCookie = extractAccessTokenFromCookie(request);
+    const accessTokenCookieValue = await accessTokenCookie.parse(
+      request.headers.get('Cookie'),
+    );
     const accessToken =
-      accessTokenCookie && !isTokenExpired(accessTokenCookie)
-        ? accessTokenCookie
+      accessTokenCookieValue && !isTokenExpired(accessTokenCookieValue)
+        ? accessTokenCookieValue
         : await fetchToken(request);
 
     engineDefinition[engineType].setAccessToken(accessToken);

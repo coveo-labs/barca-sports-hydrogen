@@ -3,9 +3,9 @@ import type {LoaderFunctionArgs} from '@remix-run/server-runtime';
 import {Hero} from '~/components/Homepage/Hero';
 import {FeaturedCategories} from '~/components/Homepage/FeaturedCategories';
 import {
-  engineDefinition,
-  fetchRecommendationStaticState,
+  engineDefinition
 } from '~/lib/coveo.engine';
+import {fetchRecommendationStaticState} from '~/lib/coveo.engine.server';
 import {HEADER_QUERY} from '~/lib/fragments';
 import {LearnMore} from '~/components/Homepage/LearnMore';
 import {Recommendations} from '~/components/Homepage/Recommendations';
