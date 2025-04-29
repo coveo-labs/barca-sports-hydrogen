@@ -6,6 +6,7 @@ export interface DetectIntentResponse {
     expandedOrReformulatedQuery: string;
     intent: number;
     reason: string;
+    intentHumanReadable: string;
   };
   agent: string;
 }
@@ -15,7 +16,7 @@ export async function action({request}: ActionFunctionArgs) {
   const input = formData.get('input');
 
   try {
-    const res = await fetch(`http://127.0.0.1:5000/detect`, {
+    const res = await fetch(`http://127.0.0.1:5001/detect`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

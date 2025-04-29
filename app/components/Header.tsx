@@ -410,7 +410,7 @@ function MenuDesktop({header, setOpen, cart}: MenuDesktopProps) {
                         className="absolute inset-0 top-1/2 bg-white shadow"
                       />
                       <div className="relative -top-1 bg-white mx-auto max-w-7xl p-0 z-50">
-                        <OneSearchBox />
+                        <OneSearchBox close={close} />
                         {/* <StandaloneSearchBox close={close} /> */}
                       </div>
                     </>

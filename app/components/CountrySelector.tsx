@@ -76,7 +76,7 @@ function CountryFlag({countryName, currency}: I18nLocale) {
     <>
       <img
         alt=""
-        src={`https://tailwindui.com/plus/img/flags/flag-${countryName!}.svg`}
+        src={`https://tailwindui.com/plus-assets/img/flags/flag-${countryName!}.svg`}
         className="block h-auto w-5 shrink-0"
       />
       <span className="ml-3 block text-sm font-medium">{currency}</span>
