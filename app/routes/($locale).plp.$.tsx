@@ -4,10 +4,7 @@ import {
   ClientSideNavigatorContextProvider,
   ServerSideNavigatorContextProvider,
 } from '~/lib/navigator.provider';
-import {
-  engineDefinition,
-  type ListingStaticState,
-} from '~/lib/coveo.engine';
+import {engineDefinition, type ListingStaticState} from '~/lib/coveo.engine';
 import {fetchStaticState} from '~/lib/coveo.engine.server';
 import {ListingProvider} from '~/components/Search/Context';
 import {FullSearch} from '~/components/Search/FullSearch';
