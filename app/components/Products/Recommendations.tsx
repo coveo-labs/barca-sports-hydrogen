@@ -17,6 +17,7 @@ export function ProductRecommendations() {
             return null;
           }
           return (
+            // eslint-disable-next-line react/no-array-index-key
             <Fragment key={`product-recs-${i}`}>
               <div className="recommendation-container">
                 <h2

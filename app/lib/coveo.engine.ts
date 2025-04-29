@@ -1,4 +1,5 @@
 import {
+  type CommerceEngineDefinitionOptions,
   type CommerceSearchParameters,
   defineCommerceEngine,
   defineFacetGenerator,
@@ -18,7 +19,6 @@ import {
   defineBreadcrumbManager,
   defineParameterManager,
   defineRecommendations,
-  CommerceEngineDefinitionOptions,
 } from '@coveo/headless-react/ssr-commerce';
 import type {AppLoadContext} from '@shopify/remix-oxygen';
 import {getLocaleFromRequest} from './i18n';
@@ -33,9 +33,7 @@ import {updateTokenIfNeeded} from '~/lib/token-utils';
 // pass an empty, invalid value. Later in this file, we use the `updateTokenIfNeeded`
 // function to update invalid or outdated tokens before interacting with Coveo APIs.
 const getSearchToken = async () => {
-  return typeof window !== 'undefined'
-    ? await fetchToken()
-    : '';
+  return typeof window !== 'undefined' ? await fetchToken() : '';
 };
 
 const getPublicApiKey = () => {
@@ -163,7 +161,7 @@ export async function fetchStaticState({
 
   const cart = await context.cart.get();
 
-  await updateTokenIfNeeded(k, request)
+  await updateTokenIfNeeded(k, request);
 
   return engineDefinition[k].fetchStaticState({
     controllers: {
@@ -206,7 +204,7 @@ export async function fetchRecommendationStaticState({
   const cart = await context.cart.get();
   const {country, language, currency} = getLocaleFromRequest(request);
 
-  await updateTokenIfNeeded('recommendationEngineDefinition', request)
+  await updateTokenIfNeeded('recommendationEngineDefinition', request);
 
   return engineDefinition.recommendationEngineDefinition.fetchStaticState({
     controllers: {

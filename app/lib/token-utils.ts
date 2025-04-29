@@ -1,5 +1,5 @@
-import { parse } from 'cookie';
-import { engineDefinition } from './coveo.engine';
+import {parse} from 'cookie';
+import {engineDefinition} from './coveo.engine';
 import {fetchToken} from '~/lib/fetch-token';
 
 export function decodeBase64Url(base64Url: string): string {
@@ -8,13 +8,15 @@ export function decodeBase64Url(base64Url: string): string {
 }
 
 export function isTokenExpired(token: string): boolean {
-    if (isApiKey(token)) {
-        return false;
-    }
+  if (isApiKey(token)) {
+    return false;
+  }
 
   try {
     const [, payload] = token.split('.');
-    const decodedPayload = JSON.parse(decodeBase64Url(payload)) as { exp: number };
+    const decodedPayload = JSON.parse(decodeBase64Url(payload)) as {
+      exp: number;
+    };
     return decodedPayload.exp * 1000 < Date.now();
   } catch {
     return true; // Treat invalid tokens as expired
@@ -23,7 +25,7 @@ export function isTokenExpired(token: string): boolean {
 
 function isApiKey(token: string) {
   return /^xx[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$/.test(
-    token
+    token,
   );
 }
 
@@ -38,14 +40,15 @@ export async function updateTokenIfNeeded(
     | 'searchEngineDefinition'
     | 'standaloneEngineDefinition'
     | 'recommendationEngineDefinition',
-  request: Request)
-  {
-    if (isTokenExpired(engineDefinition[engineType].getAccessToken())) {
-      const accessTokenCookie = extractAccessTokenFromCookie(request)
-      const accessToken =  accessTokenCookie && !isTokenExpired(accessTokenCookie)
+  request: Request,
+) {
+  if (isTokenExpired(engineDefinition[engineType].getAccessToken())) {
+    const accessTokenCookie = extractAccessTokenFromCookie(request);
+    const accessToken =
+      accessTokenCookie && !isTokenExpired(accessTokenCookie)
         ? accessTokenCookie
         : await fetchToken(request);
 
-        engineDefinition[engineType].setAccessToken(accessToken);
-    }
+    engineDefinition[engineType].setAccessToken(accessToken);
   }
+}

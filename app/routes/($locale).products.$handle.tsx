@@ -186,6 +186,7 @@ export default function Product() {
       productId: `${handle?.toUpperCase()!}_${colorToShorthand(currentColor)}`,
       price: Number(selectedVariant.price.amount),
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [product.title, selectedVariant.price.amount, handle, currentColor]);
 
   useEffect(() => {
