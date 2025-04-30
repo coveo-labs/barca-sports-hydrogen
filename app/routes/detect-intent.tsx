@@ -20,7 +20,6 @@ export async function action({request}: ActionFunctionArgs) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: 'Bearer xx697404a7-6cfd-48c6-93d1-30d73d17e07a',
       },
       body: JSON.stringify({
         input,
