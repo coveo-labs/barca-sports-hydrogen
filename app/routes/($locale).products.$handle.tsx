@@ -28,6 +28,7 @@ import {
   ServerSideNavigatorContextProvider,
 } from '~/lib/navigator.provider';
 import {colorToShorthand} from '~/lib/map.coveo.shopify';
+import {CompareButton} from '~/components/CompareButton';
 
 export const meta: MetaFunction<typeof loader> = ({data}) => {
   return [{title: `Hydrogen | ${data?.product.title ?? ''}`}];
@@ -231,7 +232,7 @@ export default function Product() {
 
               <Sizes product={product} selectedVariant={selectedVariant} />
 
-              <div className="mt-10 flex">
+              <div className="mt-10 flex gap-4 items-center">
                 <AddToCartButton
                   disabled={
                     !selectedVariant || !selectedVariant.availableForSale
@@ -254,9 +255,20 @@ export default function Product() {
                     ? 'Add to cart'
                     : 'Sold out'}
                 </AddToCartButton>
+                <RecommendationProvider
+                  navigatorContext={new ClientSideNavigatorContextProvider()}
+                  staticState={recommendationStaticState}
+                >
+                  <CompareButton
+                    mainProduct={`${handle?.toUpperCase()!}_${colorToShorthand(
+                      currentColor,
+                    )}`}
+                  />
+                </RecommendationProvider>
+
                 <button
                   type="button"
-                  className="ml-4 flex items-center justify-center rounded-md px-3 py-3 text-gray-400 hover:bg-gray-100 hover:text-gray-500"
+                  className="flex items-center justify-center rounded-md px-3 py-3 text-gray-400 hover:bg-gray-100 hover:text-gray-500"
                 >
                   <HeartIcon aria-hidden="true" className="size-6 shrink-0" />
                   <span className="sr-only">Add to favorites</span>

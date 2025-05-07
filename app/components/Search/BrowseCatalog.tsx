@@ -23,8 +23,10 @@ export const LoadingBrowseCatalog = () => {
 
 export const BrowseCatalogSteps = ({
   catalog,
+  close,
 }: {
   catalog: BrowseCatalogResponse;
+  close: () => void;
 }) => {
   return (
     <div className="flex items-center px-4">
