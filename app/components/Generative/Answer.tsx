@@ -67,6 +67,14 @@ const customRenderer = {
     return escapeHtml(text);
   },
 
+  link(href: string, title: string, text: string) {
+    return `<a href="${escapeHtml(
+      href,
+    )}" class="text-indigo-600 underline hover:text-indigo-800 transition-colors duration-200 relative group"${
+      title ? ` title="${escapeHtml(title)}"` : ''
+    }>${text}</a>`;
+  },
+
   list(body: string, ordered: boolean, start: number | '') {
     const type = ordered ? 'ol' : 'ul';
     const part = 'mt-8 space-y-4';

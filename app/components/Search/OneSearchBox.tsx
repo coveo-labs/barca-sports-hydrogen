@@ -5,9 +5,12 @@ import {useFetcher, useNavigate} from '@remix-run/react';
 import {useEffect, useRef, useState} from 'react';
 import type {BrowseCatalogResponse} from '~/routes/browse-catalog';
 import type {DetectIntentResponse} from '~/routes/detect-intent';
+import type {TroubleshootResponse} from '~/routes/troubleshoot';
 import {IntentDetectionSteps, LoadingIntentDetection} from './IntentDetection';
 import {BrowseCatalogSteps, LoadingBrowseCatalog} from './BrowseCatalog';
 import {Spinner} from './Spinner';
+import {ChatInterface} from './ChatInterface';
+import {LoadingChatInterface} from './ChatInterface';
 
 export function OneSearchBox({close}: {close: () => void}) {
   const input = useRef<HTMLInputElement>(null);
@@ -22,12 +25,19 @@ export function OneSearchBox({close}: {close: () => void}) {
   const isLoadingCatalog = browseCatalogFetcher.state !== 'idle';
   const [intentAccepted, setIntentAccepted] = useState(false);
 
+  const troubleshootFetcher = useFetcher<TroubleshootResponse>();
+  const isLoadingTroubleshoot = troubleshootFetcher.state !== 'idle';
+  const [troubleshoot, setTroubleshoot] = useState(troubleshootFetcher.data);
+
   useEffect(() => {
     setIntentDetection(intentionFetcher.data);
   }, [intentionFetcher.data]);
   useEffect(() => {
     setCatalog(browseCatalogFetcher.data);
   }, [browseCatalogFetcher.data]);
+  useEffect(() => {
+    setTroubleshoot(troubleshootFetcher.data);
+  }, [troubleshootFetcher.data]);
 
   return (
     <Combobox>
@@ -53,6 +63,7 @@ export function OneSearchBox({close}: {close: () => void}) {
               setCatalog(undefined);
               setQuery(e.currentTarget.value);
               setIntentDetection(undefined);
+              setTroubleshoot(undefined); // Reset troubleshoot section
             }
           }}
         />
@@ -81,6 +92,12 @@ export function OneSearchBox({close}: {close: () => void}) {
               );
 
               switch (intentDetection.output.intent) {
+                case 1:
+                  troubleshootFetcher.submit(
+                    {input: intentDetection.output.expandedOrReformulatedQuery},
+                    {method: 'post', action: '/troubleshoot'},
+                  );
+                  break;
                 case 2:
                   browseCatalogFetcher.submit(
                     {
@@ -92,7 +109,6 @@ export function OneSearchBox({close}: {close: () => void}) {
                   );
                   break;
                 default:
-                  console.log('NOT HANDLED', intentDetection);
                   break;
               }
             }}
@@ -106,6 +122,12 @@ export function OneSearchBox({close}: {close: () => void}) {
 
         {catalog && !isLoadingCatalog && (
           <BrowseCatalogSteps catalog={catalog} close={close} />
+        )}
+
+        {isLoadingTroubleshoot && <LoadingChatInterface />}
+
+        {troubleshoot && !isLoadingTroubleshoot && (
+          <ChatInterface response={troubleshoot} />
         )}
       </div>
     </Combobox>
