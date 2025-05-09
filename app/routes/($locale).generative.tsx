@@ -111,37 +111,42 @@ export default function GenerativeAnswering() {
                 <h2 className="text-xl/8 font-semibold text-gray-900 flex mb-4">
                   These products might interest you
                 </h2>
-                <div className="grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 xl:gap-x-8">
+                <div className="flex flex-col gap-y-10">
                   {Object.entries(relatedProducts).map(([slug, products]) => {
                     const slugSplit = slug.split('/');
                     const lastLevel = slugSplit.pop()?.replaceAll('-', ' ');
                     const parents = slugSplit.join(' / ').replaceAll('-', ' ');
                     return (
-                      <div key={slug}>
+                      <div key={slug} className="w-full">
                         <NavLink
                           to={`/plp/${slug}`}
                           className="capitalize tracking-tight text-ellipsis overflow-hidden text-nowrap"
                         >
-                          <>
-                            <div className="text-sm text-gray-500 mb-2">
-                              {parents}
-                            </div>
-                            <div className="text-lg font-bold text-indigo-gray-600 mb-2">
-                              {lastLevel}
-                            </div>
-                            {products.map((product) => (
+                          <div className="text-sm text-gray-500 mb-2">
+                            {parents}
+                          </div>
+                          <div className="text-lg font-bold text-indigo-gray-600 mb-2">
+                            {lastLevel}
+                          </div>
+                        </NavLink>
+                        <div className="flex flex-wrap gap-4 pb-2">
+                          {products.map((product) => (
+                            <NavLink
+                              key={product.uniqueId}
+                              to={`/plp/${slug}`}
+                              className="flex-shrink-0"
+                            >
                               <img
-                                key={product.uniqueId}
                                 loading="lazy"
-                                width={1024}
-                                height={1024}
+                                width={200}
+                                height={200}
                                 alt={product.title}
                                 src={(product.raw['ec_images'] as string[])[0]}
-                                className="aspect-square w-full rounded-lg bg-gray-200 object-cover group-hover:opacity-75"
+                                className="h-48 w-48 rounded-lg bg-gray-200 object-cover group-hover:opacity-75"
                               />
-                            ))}
-                          </>
-                        </NavLink>
+                            </NavLink>
+                          ))}
+                        </div>
                       </div>
                     );
                   })}
