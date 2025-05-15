@@ -24,7 +24,7 @@ export function CountrySelector() {
 
   return (
     <Popover className="relative">
-      <PopoverButton className="currency-cta inline-flex items-center gap-x-1 text-sm/6 font-semibold text-gray-900">
+      <PopoverButton className="currency-cta flex items-center gap-x-1 text-sm/6 font-semibold text-gray-900">
         <CountryFlag {...currentMarket} />
         <ChevronDownIcon aria-hidden="true" className="size-5" />
       </PopoverButton>
