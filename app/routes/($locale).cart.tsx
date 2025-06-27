@@ -18,7 +18,7 @@ import {
   RecommendationProvider,
   StandaloneProvider,
 } from '~/components/Search/Context';
-import {engineDefinition} from '~/lib/coveo/engine';
+import {engineConfig, engineDefinition} from '~/lib/coveo/engine';
 import {
   fetchRecommendationStaticState,
   fetchStandaloneStaticState,
@@ -35,6 +35,60 @@ export const meta: MetaFunction = () => {
 
 export interface CartReturn {
   cart: Cart;
+}
+
+// Helper function to ensure Coveo client ID and tracking ID are set as cart attributes
+async function setCoveoConfigAttributes(
+  context: any,
+  request: Request,
+  cartResult: CartQueryDataReturn,
+) {
+  const {cart: cartHandler} = context;
+  const cart = cartResult.cart;
+
+  if (!cart) return cartResult;
+
+  const existingCoveoClientId = cart.attributes?.find(
+    (attr) => attr.key === 'coveo_client_id',
+  );
+
+  const existingCoveoTrackingId = cart.attributes?.find(
+    (attr) => attr.key === 'coveo_tracking_id',
+  );
+
+  const navigatorProvider = new ServerSideNavigatorContextProvider(request);
+  const clientId = navigatorProvider.clientId;
+
+  // Get tracking ID from engine config
+  const trackingId = engineConfig.configuration.analytics?.trackingId || 'shop_en_us';
+
+  // Set cart attributes if missing
+  let updatedResult = cartResult;
+  const attributesToUpdate = [];
+
+  if (!existingCoveoClientId) {
+    attributesToUpdate.push({
+      key: 'coveo_client_id',
+      value: clientId,
+    });
+  }
+
+  if (!existingCoveoTrackingId) {
+    attributesToUpdate.push({
+      key: 'coveo_tracking_id',
+      value: trackingId,
+    });
+  }
+
+  if (attributesToUpdate.length > 0) {
+    try {
+      updatedResult = await cartHandler.updateAttributes(attributesToUpdate);
+    } catch (error) {
+      console.warn('Failed to set Coveo attributes:', error);
+    }
+  }
+
+  return updatedResult;
 }
 
 export async function action({request, context}: ActionFunctionArgs) {
@@ -63,29 +117,19 @@ export async function action({request, context}: ActionFunctionArgs) {
       break;
     case CartForm.ACTIONS.DiscountCodesUpdate: {
       const formDiscountCode = inputs.discountCode;
-
-      // User inputted discount code
       const discountCodes = (
         formDiscountCode ? [formDiscountCode] : []
       ) as string[];
-
-      // Combine discount codes already applied on cart
       discountCodes.push(...inputs.discountCodes);
-
       result = await cart.updateDiscountCodes(discountCodes);
       break;
     }
     case CartForm.ACTIONS.GiftCardCodesUpdate: {
       const formGiftCardCode = inputs.giftCardCode;
-
-      // User inputted gift card code
       const giftCardCodes = (
         formGiftCardCode ? [formGiftCardCode] : []
       ) as string[];
-
-      // Combine gift card codes already applied on cart
       giftCardCodes.push(...inputs.giftCardCodes);
-
       result = await cart.updateGiftCardCodes(giftCardCodes);
       break;
     }
@@ -101,6 +145,9 @@ export async function action({request, context}: ActionFunctionArgs) {
 
   const cartId = result?.cart?.id;
   const headers = cartId ? cart.setCartId(result.cart.id) : new Headers();
+
+  result = await setCoveoConfigAttributes(context, request, result);
+
   const {cart: cartResult, errors, warnings} = result;
 
   return data(
@@ -117,6 +164,8 @@ export async function action({request, context}: ActionFunctionArgs) {
 }
 
 export async function loader({request, context}: LoaderFunctionArgs) {
+  const {cart} = context;
+
   // Set up navigator context for recommendations
   engineDefinition.recommendationEngineDefinition.setNavigatorContextProvider(
     () => new ServerSideNavigatorContextProvider(request),
@@ -139,6 +188,12 @@ export async function loader({request, context}: LoaderFunctionArgs) {
       context,
     }),
   ]);
+
+  // Get current cart and ensure Coveo client ID is set
+  const cartData = await cart.get();
+  if (cartData) {
+    await setCoveoConfigAttributes(context, request, {cart: cartData});
+  }
 
   return {
     recommendationStaticState: recommendationResult.staticState,
