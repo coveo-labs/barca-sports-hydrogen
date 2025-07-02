@@ -9,6 +9,7 @@ export interface I18nLocale extends I18nBase {
   currency: CurrencyCode;
   countryName: string;
 }
+
 export const SupportedMarkets: Partial<Record<CountryCode, I18nLocale>> = {
   US: {
     country: 'US',
@@ -24,30 +25,40 @@ export const SupportedMarkets: Partial<Record<CountryCode, I18nLocale>> = {
     pathPrefix: '/en-ca',
     countryName: 'canada',
   },
-  GB: {
-    country: 'GB',
-    language: 'EN',
-    currency: 'GBP',
-    countryName: 'united-kingdom',
-    pathPrefix: '/en-gb',
+};
+
+// Additional market configurations for language variants
+export const MarketLanguageVariants: Record<string, I18nLocale> = {
+  'fr-ca': {
+    country: 'CA',
+    language: 'FR',
+    currency: 'CAD',
+    pathPrefix: '/fr-ca',
+    countryName: 'canada',
   },
 };
 
 export function getLocaleFromURL(url: URL): I18nLocale {
-  const firstPathPart = url.pathname.split('/')[1]?.toUpperCase() ?? '';
+  const firstPathPart = url.pathname.split('/')[1]?.toLowerCase() ?? '';
 
+  // Check if the path matches a language variant first
+  if (firstPathPart && MarketLanguageVariants[firstPathPart]) {
+    return MarketLanguageVariants[firstPathPart];
+  }
+
+  // Fall back to original market handling
+  const upperPathPart = firstPathPart.toUpperCase();
   type I18nFromUrl = [I18nLocale['language'], I18nLocale['country']];
 
   let pathPrefix = '';
   let {language, country} = SupportedMarkets['US']!;
 
-  if (/^[A-Z]{2}-[A-Z]{2}$/i.test(firstPathPart)) {
+  if (/^[A-Z]{2}-[A-Z]{2}$/i.test(upperPathPart)) {
     pathPrefix = '/' + firstPathPart;
-    [language, country] = firstPathPart.split('-') as I18nFromUrl;
+    [language, country] = upperPathPart.split('-') as I18nFromUrl;
   }
 
   const supportedMarket = SupportedMarkets[country] || SupportedMarkets['US']!;
-
   return supportedMarket;
 }
 
