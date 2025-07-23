@@ -1,24 +1,32 @@
 import {Popover, PopoverButton, PopoverPanel} from '@headlessui/react';
 import {ChevronDownIcon} from '@heroicons/react/20/solid';
 import {Form, useLocation, useRouteLoaderData} from '@remix-run/react';
-import type {CountryCode} from '@shopify/hydrogen/customer-account-api-types';
-import {type I18nLocale, SupportedMarkets} from '~/lib/i18n';
+import {
+  type I18nLocale,
+  SupportedMarkets,
+  MarketLanguageVariants,
+} from '~/lib/i18n';
 import type {RootLoader} from '~/root';
 
 export function CountrySelector() {
   const rootData = useRouteLoaderData<RootLoader>('root');
   const {pathname, search} = useLocation();
-  const countries = Object.keys(SupportedMarkets) as CountryCode[];
 
   if (!rootData) {
     return null;
   }
 
-  const currentMarket = SupportedMarkets[rootData.locale.country];
+  const markets = [
+    ...Object.values(SupportedMarkets),
+    ...Object.values(MarketLanguageVariants),
+  ];
 
-  if (!currentMarket) {
-    return null;
-  }
+  const currentMarket =
+    markets.find(
+      (market) =>
+        market.country === rootData.locale.country &&
+        market.language === rootData.locale.language,
+    ) || SupportedMarkets['US']!;
 
   const strippedPathname = pathname.replace(currentMarket.pathPrefix, '');
 
@@ -34,22 +42,13 @@ export function CountrySelector() {
         className="absolute left-1/2 z-10 mt-2 flex w-screen max-w-min -translate-x-1/2 px-4 transition data-[closed]:translate-y-1 data-[closed]:opacity-0 data-[enter]:duration-200 data-[leave]:duration-150 data-[enter]:ease-out data-[leave]:ease-in"
       >
         <div className="w-32 shrink rounded-xl bg-white p-4 text-sm/6 font-semibold text-gray-900 shadow-lg ring-1 ring-gray-900/5">
-          {countries.map((countryKey) => {
-            const countryInfo = SupportedMarkets[countryKey]!;
-            const hreflang = `${countryInfo.language.toLowerCase()}-${countryInfo.country.toLowerCase()}`;
+          {markets.map((market) => {
+            const hreflang = `${market.language.toLowerCase()}-${market.country.toLowerCase()}`;
 
             return (
               <Form method="post" action="/locale" key={hreflang}>
-                <input
-                  type="hidden"
-                  name="language"
-                  value={countryInfo.language}
-                />
-                <input
-                  type="hidden"
-                  name="country"
-                  value={countryInfo.country}
-                />
+                <input type="hidden" name="language" value={market.language} />
+                <input type="hidden" name="country" value={market.country} />
                 <input
                   type="hidden"
                   name="path"
@@ -59,8 +58,11 @@ export function CountrySelector() {
                   className="flex items-center text-gray-700 p-2 hover:text-indigo-600"
                   type="submit"
                 >
-                  <CountryFlag {...countryInfo} />
-                  <span className="sr-only">, change currency</span>
+                  <CountryFlag {...market} />
+                  <span className="sr-only">
+                    {market.language === 'FR' ? 'Français' : 'English'}
+                    {' - change currency'}
+                  </span>
                 </button>
               </Form>
             );
@@ -71,7 +73,7 @@ export function CountrySelector() {
   );
 }
 
-function CountryFlag({countryName, currency}: I18nLocale) {
+function CountryFlag({countryName, country, currency, language}: I18nLocale) {
   return (
     <>
       <img
@@ -79,7 +81,10 @@ function CountryFlag({countryName, currency}: I18nLocale) {
         src={`https://tailwindui.com/plus-assets/img/flags/flag-${countryName!}.svg`}
         className="block h-auto w-5 shrink-0"
       />
-      <span className="ml-3 block text-sm font-medium">{currency}</span>
+      <span className="ml-3 block text-sm font-medium">
+        {country}
+        {language === 'FR' ? '-fr' : ''}
+      </span>
     </>
   );
 }
