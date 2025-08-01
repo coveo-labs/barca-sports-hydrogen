@@ -5,17 +5,17 @@ import {
   type GeneratedAnswerState,
   type Result,
 } from '@coveo/headless';
-import {NavLink, useFetcher, useLoaderData} from '@remix-run/react';
-import {useEffect, useState} from 'react';
-import {type LoaderFunctionArgs} from '@shopify/remix-oxygen';
-import {BookOpenIcon} from '@heroicons/react/24/outline';
+import { NavLink, useFetcher, useLoaderData } from '@remix-run/react';
+import { useEffect, useState } from 'react';
+import { type LoaderFunctionArgs } from '@shopify/remix-oxygen';
+import { BookOpenIcon } from '@heroicons/react/24/outline';
 import cx from '~/lib/cx';
-import type {AnswerToArticlesData} from './answer-to-articles';
-import {ResultCard} from '~/components/Generative/ResultCard';
-import {AnswerSection} from '~/components/Generative/Section';
-import {Skeleton} from '~/components/Generative/Skeleton';
-import {Answer} from '~/components/Generative/Answer';
-import type {AnswerToProductsData} from './answer-to-products';
+import type { AnswerToArticlesData } from './answer-to-articles';
+import { ResultCard } from '~/components/Generative/ResultCard';
+import { AnswerSection } from '~/components/Generative/Section';
+import { Skeleton } from '~/components/Generative/Skeleton';
+import { Answer } from '~/components/Generative/Answer';
+import type { AnswerToProductsData } from './answer-to-products';
 
 /**
 What to look for when buying a kayak?
@@ -26,16 +26,16 @@ Which kayak materials offer the best balance for advanced use?
 
  */
 
-export async function loader({request}: LoaderFunctionArgs) {
+export async function loader({ request }: LoaderFunctionArgs) {
   const url = new URL(request.url);
   const q = url.searchParams.get('q') || '';
-  return {q};
+  return { q };
 }
 
 export default function GenerativeAnswering() {
-  const {q} = useLoaderData<typeof loader>();
+  const { q } = useLoaderData<typeof loader>();
   const genAnswerState = useGenAIAnswer(q);
-  const {relatedArticles, basicExpression} = useRelatedArticles(
+  const { relatedArticles, basicExpression } = useRelatedArticles(
     q,
     genAnswerState,
   );
@@ -45,6 +45,34 @@ export default function GenerativeAnswering() {
 
   const hasCitations =
     genAnswerState?.citations && genAnswerState.citations.length > 0;
+
+  const trackGenerativeAnswering = (hasNoAnswer: any) => {
+    if (hasNoAnswer) {
+      //@ts-ignore
+      window.dataLayer = window.dataLayer || [];
+      //@ts-ignore
+      window.dataLayer.push({
+        event: "search",
+        search_type: "generative_answering",
+        search_term: q,
+        has_answer: "false"
+      });
+    } else {
+      //@ts-ignore
+      window.dataLayer = window.dataLayer || [];
+      //@ts-ignore
+      window.dataLayer.push({
+        event: "search",
+        search_type: "generative_answering",
+        search_term: q,
+        has_answer: "true"
+      });
+    }
+  }
+
+  useEffect(() => {
+    trackGenerativeAnswering(hasNoAnswerAfterADelay)
+  }, [hasNoAnswerAfterADelay]);
 
   return (
     <div className="bg-gray-50">
@@ -184,7 +212,7 @@ export default function GenerativeAnswering() {
 }
 
 function useGenAIAnswer(q: string) {
-  const {gen, searchBox} = initGenAI();
+  const { gen, searchBox } = initGenAI();
   const [genAnswerState, setGenAnswerState] = useState<GeneratedAnswerState>();
 
   useEffect(() => {
@@ -212,13 +240,13 @@ function initGenAI() {
 
   const gen = buildGeneratedAnswer(searchEngine, {
     initialState: {
-      responseFormat: {contentFormat: ['text/markdown']},
+      responseFormat: { contentFormat: ['text/markdown'] },
       isEnabled: true,
       isVisible: true,
     },
   });
   const searchBox = buildSearchBox(searchEngine);
-  return {gen, searchBox};
+  return { gen, searchBox };
 }
 
 function useRelatedArticles(q: string, genAnswerState?: GeneratedAnswerState) {
@@ -250,7 +278,7 @@ function useRelatedArticles(q: string, genAnswerState?: GeneratedAnswerState) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [genAnswerState]);
 
-  return {relatedArticles, basicExpression};
+  return { relatedArticles, basicExpression };
 }
 
 function useHasNoAnswerAfterADelay(
