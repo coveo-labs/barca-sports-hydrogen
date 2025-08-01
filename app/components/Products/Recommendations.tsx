@@ -6,6 +6,9 @@ import { ProductCard } from './ProductCard';
 import { Fragment, useEffect, useRef } from 'react';
 import { use } from 'marked';
 
+let hasRunRefUpper = false;
+let hasRunRefLower = false;
+
 export function ProductRecommendations() {
   const pdpRecommendationsUpperCarousel = usePdpRecommendationsUpperCarousel();
   const pdpRecommendationsLowerCarousel = usePdpRecommendationsLowerCarousel();
@@ -31,17 +34,13 @@ export function ProductRecommendations() {
       quantity: 1
     })
   });
-
-  const hasRunRefUpper = useRef(false);
-  const hasRunRefLower = useRef(false);
-
   useEffect(() => {
+    if (hasRunRefUpper) return;
+    hasRunRefUpper = true;
     //@ts-ignore
     window.dataLayer = window.dataLayer || [];
     //@ts-ignore
     window.dataLayer.push({ ecommerce: null });  // Clear the previous ecommerce object.
-    if (hasRunRefUpper.current) return;
-    hasRunRefUpper.current = true;
     //@ts-ignore
     window.dataLayer.push({
       event: "view_item_list",
@@ -52,12 +51,12 @@ export function ProductRecommendations() {
   }, []);
 
   useEffect(() => {
+    if (hasRunRefLower) return;
+    hasRunRefLower = true;
     //@ts-ignore
     window.dataLayer = window.dataLayer || [];
     //@ts-ignore
     window.dataLayer.push({ ecommerce: null });  // Clear the previous ecommerce object.
-    if (hasRunRefLower.current) return;
-    hasRunRefLower.current = true;
     //@ts-ignore
     window.dataLayer.push({
       event: "view_item_list",

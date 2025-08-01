@@ -1,7 +1,8 @@
 import { useCartRecommendations } from '~/lib/coveo.engine';
 import { ProductCard } from '../Products/ProductCard';
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 
+let hasRunRef = false;
 
 export function CartRecommendations() {
   const recs = useCartRecommendations();
@@ -17,15 +18,14 @@ export function CartRecommendations() {
     })
   });
 
-  const hasRunRef = useRef(false);
-
   useEffect(() => {
+    if (hasRunRef) return;
+    hasRunRef = true;
+
     //@ts-ignore
     window.dataLayer = window.dataLayer || [];
     //@ts-ignore
     window.dataLayer.push({ ecommerce: null });  // Clear the previous ecommerce object.
-    if (hasRunRef.current) return;
-    hasRunRef.current = true;
     //@ts-ignore
     window.dataLayer.push({
       event: "view_item_list",
