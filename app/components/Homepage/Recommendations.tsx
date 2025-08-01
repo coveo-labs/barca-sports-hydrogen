@@ -28,7 +28,7 @@ export function Recommendations() {
     //@ts-ignore
     window.dataLayer.push({
       event: "view_item_list",
-      item_list_id: `recommendations_${homepageRecommendations.state.headline.toString().replace(' ', '_').toLowerCase()}`,
+      item_list_id: `recommendations_${homepageRecommendations.state.headline.toString().replaceAll(' ', '_').toLowerCase()}`,
       item_list_name: homepageRecommendations.state.headline,
       items: [...recommendationsItemsArray]
     });
