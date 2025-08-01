@@ -56,6 +56,7 @@ export function StandaloneSearchBox({ close }: StandaloneSearchBoxProps) {
       //@ts-ignore
       window.dataLayer.push({
         event: 'search',
+        search_type: 'search_box',
         search_term: encodeURIComponent(searchBox.state.value)
       });
     }
