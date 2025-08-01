@@ -2,12 +2,70 @@ import {
   usePdpRecommendationsLowerCarousel,
   usePdpRecommendationsUpperCarousel,
 } from '~/lib/coveo.engine';
-import {ProductCard} from './ProductCard';
-import {Fragment} from 'react';
+import { ProductCard } from './ProductCard';
+import { Fragment, useEffect, useRef } from 'react';
+import { use } from 'marked';
 
 export function ProductRecommendations() {
   const pdpRecommendationsUpperCarousel = usePdpRecommendationsUpperCarousel();
   const pdpRecommendationsLowerCarousel = usePdpRecommendationsLowerCarousel();
+
+  const recommendationsUpperCarouselItemsArray: any[] = [];
+  pdpRecommendationsUpperCarousel.state.products.slice(0, 4).forEach((recommendationItem: any, index: number) => {
+    recommendationsUpperCarouselItemsArray.push({
+      item_id: recommendationItem.permanentid,
+      item_name: recommendationItem.ec_name,
+      index: index,
+      price: recommendationItem.ec_price,
+      quantity: 1
+    })
+  });
+
+  const recommendationsLowerCarouselItemsArray: any[] = [];
+  pdpRecommendationsLowerCarousel.state.products.slice(0, 4).forEach((recommendationItem: any, index: number) => {
+    recommendationsLowerCarouselItemsArray.push({
+      item_id: recommendationItem.permanentid,
+      item_name: recommendationItem.ec_name,
+      index: index,
+      price: recommendationItem.ec_price,
+      quantity: 1
+    })
+  });
+
+  const hasRunRefUpper = useRef(false);
+  const hasRunRefLower = useRef(false);
+
+  useEffect(() => {
+    //@ts-ignore
+    window.dataLayer = window.dataLayer || [];
+    //@ts-ignore
+    window.dataLayer.push({ ecommerce: null });  // Clear the previous ecommerce object.
+    if (hasRunRefUpper.current) return;
+    hasRunRefUpper.current = true;
+    //@ts-ignore
+    window.dataLayer.push({
+      event: "view_item_list",
+      item_list_id: `recommendations_${pdpRecommendationsUpperCarousel.state.headline.toString().replaceAll(' ', '_').toLowerCase()}`,
+      item_list_name: pdpRecommendationsUpperCarousel.state.headline,
+      items: [...recommendationsUpperCarouselItemsArray]
+    });
+  }, []);
+
+  useEffect(() => {
+    //@ts-ignore
+    window.dataLayer = window.dataLayer || [];
+    //@ts-ignore
+    window.dataLayer.push({ ecommerce: null });  // Clear the previous ecommerce object.
+    if (hasRunRefLower.current) return;
+    hasRunRefLower.current = true;
+    //@ts-ignore
+    window.dataLayer.push({
+      event: "view_item_list",
+      item_list_id: `recommendations_${pdpRecommendationsLowerCarousel.state.headline.toString().replaceAll(' ', '_').toLowerCase()}`,
+      item_list_name: pdpRecommendationsLowerCarousel.state.headline,
+      items: [...recommendationsLowerCarouselItemsArray]
+    });
+  }, []);
 
   return (
     <section aria-labelledby="related-heading" className="mt-24">
@@ -37,7 +95,7 @@ export function ProductRecommendations() {
                         key={relatedProduct.permanentid}
                         onSelect={
                           recommendationCarousel.methods?.interactiveProduct({
-                            options: {product: relatedProduct},
+                            options: { product: relatedProduct },
                           }).select
                         }
                       />
