@@ -1,8 +1,38 @@
-import {useHomepageRecommendations} from '~/lib/coveo.engine';
-import {ProductCard} from '../Products/ProductCard';
+import { useHomepageRecommendations } from '~/lib/coveo.engine';
+import { ProductCard } from '../Products/ProductCard';
+import { useEffect, useRef } from 'react';
 
 export function Recommendations() {
   const homepageRecommendations = useHomepageRecommendations();
+
+  const recommendationsItemsArray: any[] = [];
+  homepageRecommendations.state.products.forEach((recommendationItem: any, index: number) => {
+    recommendationsItemsArray.push({
+      item_id: recommendationItem.permanentid,
+      item_name: recommendationItem.ec_name,
+      index: index,
+      price: recommendationItem.ec_price,
+      quantity: 1
+    })
+  });
+
+  const hasRunRef = useRef(false);
+
+  useEffect(() => {
+    //@ts-ignore
+    window.dataLayer = window.dataLayer || [];
+    //@ts-ignore
+    window.dataLayer.push({ ecommerce: null });  // Clear the previous ecommerce object.
+    if (hasRunRef.current) return;
+    hasRunRef.current = true;
+    //@ts-ignore
+    window.dataLayer.push({
+      event: "view_item_list",
+      item_list_id: `recommendations_${homepageRecommendations.state.headline.toString().replace(' ', '_').toLowerCase()}`,
+      item_list_name: homepageRecommendations.state.headline,
+      items: [...recommendationsItemsArray]
+    });
+  }, []);
 
   return (
     <section
@@ -27,12 +57,13 @@ export function Recommendations() {
                 product={recommendation}
                 onSelect={
                   homepageRecommendations.methods?.interactiveProduct({
-                    options: {product: recommendation},
+                    options: { product: recommendation },
                   }).select
                 }
               />
             </div>
-          ))}
+          ))
+          }
         </div>
       </div>
     </section>
