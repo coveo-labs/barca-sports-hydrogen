@@ -265,7 +265,7 @@ export function CartMain({ cart: originalCart }: CartMainProps) {
           <div className="mt-6">
             <NavLink
               onClick={(e) =>
-                hasCartItems
+                hasCartItems && cart
                   ? (
                     //@ts-ignore
                     window.dataLayer = window.dataLayer || [],
