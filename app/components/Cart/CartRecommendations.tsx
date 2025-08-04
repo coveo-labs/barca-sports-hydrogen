@@ -4,10 +4,18 @@ import { useEffect } from 'react';
 
 let hasRunRef = false;
 
+type itemsList = {
+  item_id: string,
+  item_name: string,
+  index: number,
+  price: number,
+  quantity: number
+}
+
 export function CartRecommendations() {
   const recs = useCartRecommendations();
 
-  const recommendationsItemsArray: any[] = [];
+  const recommendationsItemsArray: itemsList[] = [];
   recs.state.products.forEach((recommendationItem: any, index: number) => {
     recommendationsItemsArray.push({
       item_id: recommendationItem.permanentid,
@@ -31,7 +39,7 @@ export function CartRecommendations() {
       event: "view_item_list",
       item_list_id: `recommendations_${recs.state.headline.toString().replaceAll(' ', '_').toLowerCase()}`,
       item_list_name: recs.state.headline,
-      items: [...recommendationsItemsArray]
+      items: recommendationsItemsArray
     });
   }, []);
 
