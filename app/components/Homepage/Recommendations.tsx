@@ -4,10 +4,18 @@ import { useEffect, useRef } from 'react';
 
 let hasRunRef = false;
 
+type itemsList = {
+  item_id: string,
+  item_name: string,
+  index: number,
+  price: number,
+  quantity: number
+}
+
 export function Recommendations() {
   const homepageRecommendations = useHomepageRecommendations();
 
-  const recommendationsItemsArray: any[] = [];
+  const recommendationsItemsArray: itemsList[] = [];
   homepageRecommendations.state.products.forEach((recommendationItem: any, index: number) => {
     recommendationsItemsArray.push({
       item_id: recommendationItem.permanentid,
