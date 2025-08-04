@@ -34,9 +34,11 @@ export function ProductRecommendations() {
     });
     return {
       event: "view_item_list",
-      item_list_id: `recommendations_${recommendationsProducts.state.headline.toString().replaceAll(' ', '_').toLowerCase()}`,
-      item_list_name: recommendationsProducts.state.headline,
-      items: recommandationsItemsArray
+      ecommerce: {
+        item_list_id: `recommendations_${recommendationsProducts.state.headline.toString().replaceAll(' ', '_').toLowerCase()}`,
+        item_list_name: recommendationsProducts.state.headline,
+        items: recommandationsItemsArray
+      }
     }
   }
 

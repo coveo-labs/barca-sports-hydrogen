@@ -42,8 +42,10 @@ export function ProductList() {
     //@ts-ignore
     window.dataLayer.push({
       event: "view_item_list",
-      item_list_id: `listings_${productList.state.responseId}`,
-      items: [...listingsItemsArray]
+      ecommerce: {
+        item_list_id: `listings_${productList.state.responseId}`,
+        items: listingsItemsArray
+      }
     });
   }, []);
 

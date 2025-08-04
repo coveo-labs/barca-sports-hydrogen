@@ -37,13 +37,13 @@ export function CartRecommendations() {
     //@ts-ignore
     window.dataLayer.push({
       event: "view_item_list",
-      item_list_id: `recommendations_${recs.state.headline.toString().replaceAll(' ', '_').toLowerCase()}`,
-      item_list_name: recs.state.headline,
-      items: recommendationsItemsArray
+      ecommerce: {
+        item_list_id: `recommendations_${recs.state.headline.toString().replaceAll(' ', '_').toLowerCase()}`,
+        item_list_name: recs.state.headline,
+        items: recommendationsItemsArray
+      }
     });
   }, []);
-
-
 
   return (
     <section
