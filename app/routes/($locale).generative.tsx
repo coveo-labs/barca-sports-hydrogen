@@ -47,27 +47,15 @@ export default function GenerativeAnswering() {
     genAnswerState?.citations && genAnswerState.citations.length > 0;
 
   const trackGenerativeAnswering = (hasNoAnswer: any) => {
-    if (hasNoAnswer) {
-      //@ts-ignore
-      window.dataLayer = window.dataLayer || [];
-      //@ts-ignore
-      window.dataLayer.push({
-        event: "search",
-        search_type: "generative_answering",
-        search_term: q,
-        has_answer: "false"
-      });
-    } else {
-      //@ts-ignore
-      window.dataLayer = window.dataLayer || [];
-      //@ts-ignore
-      window.dataLayer.push({
-        event: "search",
-        search_type: "generative_answering",
-        search_term: q,
-        has_answer: "true"
-      });
-    }
+    //@ts-ignore
+    window.dataLayer = window.dataLayer || [];
+    //@ts-ignore
+    window.dataLayer.push({
+      event: "search",
+      search_type: "generative_answering",
+      search_term: q,
+      has_answer: hasNoAnswer ? "false" : "true"
+    });
   }
 
   useEffect(() => {
