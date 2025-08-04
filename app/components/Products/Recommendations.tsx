@@ -9,32 +9,39 @@ import { use } from 'marked';
 let hasRunRefUpper = false;
 let hasRunRefLower = false;
 
+type itemsList = {
+  item_id: string,
+  item_name: string,
+  index: number,
+  price: number,
+  quantity: number
+};
+
 export function ProductRecommendations() {
   const pdpRecommendationsUpperCarousel = usePdpRecommendationsUpperCarousel();
   const pdpRecommendationsLowerCarousel = usePdpRecommendationsLowerCarousel();
 
-  const recommendationsUpperCarouselItemsArray: any[] = [];
-  pdpRecommendationsUpperCarousel.state.products.slice(0, 4).forEach((recommendationItem: any, index: number) => {
-    recommendationsUpperCarouselItemsArray.push({
-      item_id: recommendationItem.permanentid,
-      item_name: recommendationItem.ec_name,
-      index: index,
-      price: recommendationItem.ec_price,
-      quantity: 1
-    })
-  });
+  function constructViewItemsListEvent(recommendationsProducts: any) {
+    const recommandationsItemsArray: itemsList[] = [];
+    recommendationsProducts.state.products.slice(0, 4).forEach((recommendationItem: any, index: number) => {
+      recommandationsItemsArray.push({
+        item_id: recommendationItem.permanentid,
+        item_name: recommendationItem.ec_name,
+        index: index,
+        price: recommendationItem.ec_price,
+        quantity: 1
+      })
+    });
+    return {
+      event: "view_item_list",
+      item_list_id: `recommendations_${recommendationsProducts.state.headline.toString().replaceAll(' ', '_').toLowerCase()}`,
+      item_list_name: recommendationsProducts.state.headline,
+      items: recommandationsItemsArray
+    }
+  }
 
-  const recommendationsLowerCarouselItemsArray: any[] = [];
-  pdpRecommendationsLowerCarousel.state.products.slice(0, 4).forEach((recommendationItem: any, index: number) => {
-    recommendationsLowerCarouselItemsArray.push({
-      item_id: recommendationItem.permanentid,
-      item_name: recommendationItem.ec_name,
-      index: index,
-      price: recommendationItem.ec_price,
-      quantity: 1
-    })
-  });
   useEffect(() => {
+
     if (hasRunRefUpper) return;
     hasRunRefUpper = true;
     //@ts-ignore
@@ -42,15 +49,8 @@ export function ProductRecommendations() {
     //@ts-ignore
     window.dataLayer.push({ ecommerce: null });  // Clear the previous ecommerce object.
     //@ts-ignore
-    window.dataLayer.push({
-      event: "view_item_list",
-      item_list_id: `recommendations_${pdpRecommendationsUpperCarousel.state.headline.toString().replaceAll(' ', '_').toLowerCase()}`,
-      item_list_name: pdpRecommendationsUpperCarousel.state.headline,
-      items: [...recommendationsUpperCarouselItemsArray]
-    });
-  }, []);
+    window.dataLayer.push(constructViewItemsListEvent(pdpRecommendationsUpperCarousel));
 
-  useEffect(() => {
     if (hasRunRefLower) return;
     hasRunRefLower = true;
     //@ts-ignore
@@ -58,12 +58,8 @@ export function ProductRecommendations() {
     //@ts-ignore
     window.dataLayer.push({ ecommerce: null });  // Clear the previous ecommerce object.
     //@ts-ignore
-    window.dataLayer.push({
-      event: "view_item_list",
-      item_list_id: `recommendations_${pdpRecommendationsLowerCarousel.state.headline.toString().replaceAll(' ', '_').toLowerCase()}`,
-      item_list_name: pdpRecommendationsLowerCarousel.state.headline,
-      items: [...recommendationsLowerCarouselItemsArray]
-    });
+    window.dataLayer.push(constructViewItemsListEvent(pdpRecommendationsLowerCarousel));
+
   }, []);
 
   return (
