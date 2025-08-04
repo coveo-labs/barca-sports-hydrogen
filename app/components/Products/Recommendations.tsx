@@ -3,7 +3,7 @@ import {
   usePdpRecommendationsUpperCarousel,
 } from '~/lib/coveo.engine';
 import { ProductCard } from './ProductCard';
-import { Fragment, useEffect, useRef } from 'react';
+import { Fragment, useEffect } from 'react';
 import { use } from 'marked';
 
 let hasRunRefUpper = false;
