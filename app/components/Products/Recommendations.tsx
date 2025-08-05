@@ -4,7 +4,6 @@ import {
 } from '~/lib/coveo.engine';
 import { ProductCard } from './ProductCard';
 import { Fragment, useEffect } from 'react';
-import { use } from 'marked';
 
 let hasRunRefUpper = false;
 let hasRunRefLower = false;
