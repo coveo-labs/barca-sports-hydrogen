@@ -1,8 +1,8 @@
-import type {CartLineUpdateInput} from '@shopify/hydrogen/storefront-api-types';
-import {CartForm} from '@shopify/hydrogen';
-import {XMarkIcon as XMarkIconMini} from '@heroicons/react/20/solid';
-import {useCart} from '~/lib/coveo.engine';
-import type {CartItem} from '@coveo/headless-react/ssr-commerce';
+import type { CartLineUpdateInput } from '@shopify/hydrogen/storefront-api-types';
+import { CartForm } from '@shopify/hydrogen';
+import { XMarkIcon as XMarkIconMini } from '@heroicons/react/20/solid';
+import { useCart } from '~/lib/coveo.engine';
+import type { CartItem } from '@coveo/headless-react/ssr-commerce';
 
 /**
  * A button that removes a line item from the cart. It is disabled
@@ -23,11 +23,30 @@ export function CartLineRemoveButton({
     <CartForm
       route="/cart"
       action={CartForm.ACTIONS.LinesRemove}
-      inputs={{lineIds}}
+      inputs={{ lineIds }}
     >
       <button
         onClick={() => {
           coveoCart.methods?.updateItemQuantity(cartItem);
+          //@ts-ignore
+          window.dataLayer = window.dataLayer || [];
+          //@ts-ignore
+          window.dataLayer.push({ ecommerce: null });  // Clear the previous ecommerce object.
+          //@ts-ignore
+          window.dataLayer.push({
+            event: "remove_from_cart",
+            ecommerce: {
+              currency: "USD",
+              value: cartItem.price,
+              items: [{
+                item_id: cartItem.productId,
+                item_name: cartItem.name,
+                price: cartItem.price
+              }]
+            }
+          });
+
+
           /*setTimeout(() => {
             window.location.reload();
           }, 100);*/
@@ -54,7 +73,7 @@ export function CartLineUpdateButton({
     <CartForm
       route="/cart"
       action={CartForm.ACTIONS.LinesUpdate}
-      inputs={{lines}}
+      inputs={{ lines }}
     >
       {children}
     </CartForm>

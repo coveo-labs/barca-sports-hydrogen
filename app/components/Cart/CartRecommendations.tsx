@@ -1,8 +1,50 @@
-import {useCartRecommendations} from '~/lib/coveo.engine';
-import {ProductCard} from '../Products/ProductCard';
+import { useCartRecommendations } from '~/lib/coveo.engine';
+import { ProductCard } from '../Products/ProductCard';
+import { useEffect } from 'react';
+
+let hasRunRef = false;
+
+type itemsList = {
+  item_id: string,
+  item_name: string,
+  index: number,
+  price: number,
+  quantity: number
+}
 
 export function CartRecommendations() {
   const recs = useCartRecommendations();
+
+  const recommendationsItemsArray: itemsList[] = [];
+  recs.state.products.forEach((recommendationItem: any, index: number) => {
+    recommendationsItemsArray.push({
+      item_id: recommendationItem.permanentid,
+      item_name: recommendationItem.ec_name,
+      index: index,
+      price: recommendationItem.ec_price,
+      quantity: 1
+    })
+  });
+
+  useEffect(() => {
+    if (hasRunRef) return;
+    hasRunRef = true;
+
+    //@ts-ignore
+    window.dataLayer = window.dataLayer || [];
+    //@ts-ignore
+    window.dataLayer.push({ ecommerce: null });  // Clear the previous ecommerce object.
+    //@ts-ignore
+    window.dataLayer.push({
+      event: "view_item_list",
+      ecommerce: {
+        item_list_id: `recommendations_${recs.state.headline.toString().replaceAll(' ', '_').toLowerCase()}`,
+        item_list_name: recs.state.headline,
+        items: recommendationsItemsArray
+      }
+    });
+  }, []);
+
   return (
     <section
       aria-labelledby="related-heading"
@@ -21,7 +63,7 @@ export function CartRecommendations() {
             className="recommendation-card"
             onSelect={
               recs.methods?.interactiveProduct({
-                options: {product: relatedProduct},
+                options: { product: relatedProduct },
               }).select
             }
             product={relatedProduct}

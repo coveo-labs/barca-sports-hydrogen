@@ -5,14 +5,14 @@ import {
   ComboboxOption,
   ComboboxOptions,
 } from '@headlessui/react';
-import {type RefObject, useEffect, useRef} from 'react';
-import {useInstantProducts, useStandaloneSearchBox} from '~/lib/coveo.engine';
+import { type RefObject, useEffect, useRef } from 'react';
+import { useInstantProducts, useStandaloneSearchBox } from '~/lib/coveo.engine';
 import {
   MagnifyingGlassIcon,
   ChatBubbleBottomCenterIcon,
 } from '@heroicons/react/24/outline';
-import {ProductCard} from '../Products/ProductCard';
-import {useNavigate} from '@remix-run/react';
+import { ProductCard } from '../Products/ProductCard';
+import { useNavigate } from '@remix-run/react';
 
 const redirectToGenerative = [
   'what',
@@ -36,7 +36,7 @@ const shouldRedirectToGenerative = (query: string) => {
 interface StandaloneSearchBoxProps {
   close?: () => void;
 }
-export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
+export function StandaloneSearchBox({ close }: StandaloneSearchBoxProps) {
   const searchBox = useStandaloneSearchBox();
   const instantProducts = useInstantProducts();
   const navigate = useNavigate();
@@ -51,6 +51,14 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
       close?.();
     } else {
       searchBox.methods?.submit();
+      //@ts-ignore
+      window.dataLayer = window.dataLayer || [];
+      //@ts-ignore
+      window.dataLayer.push({
+        event: 'search',
+        search_type: 'search_box',
+        search_term: encodeURIComponent(searchBox.state.value)
+      });
     }
   };
   return (
@@ -133,7 +141,7 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
                         className="product-suggestion"
                         onSelect={
                           instantProducts.methods?.interactiveProduct({
-                            options: {product},
+                            options: { product },
                           }).select
                         }
                       />
@@ -163,11 +171,10 @@ function useRedirect(
 
   useEffect(() => {
     if (searchBox.state.redirectTo === '/search') {
-      const url = `${
-        shouldRedirectToGenerative(searchBox.state.value)
-          ? '/generative'
-          : searchBox.state.redirectTo
-      }?q=${encodeURIComponent(searchBox.state.value)}`;
+      const url = `${shouldRedirectToGenerative(searchBox.state.value)
+        ? '/generative'
+        : searchBox.state.redirectTo
+        }?q=${encodeURIComponent(searchBox.state.value)}`;
 
       navigate(url);
       close?.();

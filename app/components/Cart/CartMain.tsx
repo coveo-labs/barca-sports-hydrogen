@@ -1,12 +1,12 @@
-import {NavLink} from '@remix-run/react';
-import {Money, useOptimisticCart} from '@shopify/hydrogen';
-import type {CartApiQueryFragment} from 'storefrontapi.generated';
-import {CheckIcon, QuestionMarkCircleIcon} from '@heroicons/react/20/solid';
-import {CartLineRemoveButton} from './CartLineItem';
-import {useCart} from '~/lib/coveo.engine';
+import { NavLink } from '@remix-run/react';
+import { Money, useOptimisticCart } from '@shopify/hydrogen';
+import type { CartApiQueryFragment } from 'storefrontapi.generated';
+import { CheckIcon, QuestionMarkCircleIcon } from '@heroicons/react/20/solid';
+import { CartLineRemoveButton } from './CartLineItem';
+import { useCart } from '~/lib/coveo.engine';
 import cx from '~/lib/cx';
-import type {CartLine} from '@shopify/hydrogen/storefront-api-types';
-import {mapShopifyMerchandiseToCoveoCartItem} from '~/lib/map.coveo.shopify';
+import type { CartLine } from '@shopify/hydrogen/storefront-api-types';
+import { mapShopifyMerchandiseToCoveoCartItem } from '~/lib/map.coveo.shopify';
 
 export type CartLayout = 'page' | 'aside';
 
@@ -14,12 +14,55 @@ export type CartMainProps = {
   cart: CartApiQueryFragment | null;
 };
 
-export function CartMain({cart: originalCart}: CartMainProps) {
+export function CartMain({ cart: originalCart }: CartMainProps) {
   // The useOptimisticCart hook applies pending actions to the cart
   // so the user immediately sees feedback when they modify the cart.
   const cart = useOptimisticCart(originalCart);
   const coveoCart = useCart();
   const hasCartItems = coveoCart.state.totalQuantity > 0;
+
+  const buildDataLayerForPurchase = (cart: any) => {
+    if (!cart) {
+      console.error("Failed to fetch cart object. Aborting tracking!")
+      return
+    }
+    const purchaseDataLayerObject = {
+      event: "purchase",
+      ecommerce: {},
+    }
+
+    // Assigning the transaction_id
+    const transaction_id = cart.id.split("key=")[1] || null
+    purchaseDataLayerObject.ecommerce.transaction_id = transaction_id
+
+    //Assigning the total value
+    const value = cart.cost.totalAmount.amount || null
+    purchaseDataLayerObject.ecommerce.value = value
+
+    //Assigning transaction currency
+    const currency = cart.cost.totalAmount.currencyCode || null
+    purchaseDataLayerObject.ecommerce.currency = currency
+
+    // Constructing the items array
+
+    const items = []
+
+    if (cart.lines.nodes) {
+      cart.lines.nodes.forEach((node, index) => {
+        items.push({
+          item_id: node.merchandise.product.handle,
+          item_name: node.merchandise.product.title,
+          index: index,
+          price: node.merchandise.price.amount,
+          quantity: node.quantity,
+        })
+      })
+    }
+
+    purchaseDataLayerObject.ecommerce.items = items;
+
+    return purchaseDataLayerObject;
+  }
   return (
     <div>
       <h1 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
@@ -90,7 +133,7 @@ export function CartMain({cart: originalCart}: CartMainProps) {
                         name={`quantity-${productIdx}`}
                         className="max-w-full rounded-md border border-gray-300 py-1.5 text-left text-base/5 font-medium text-gray-700 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm"
                       >
-                        {Array.from({length: 10}, (_, i) => i).map((i) => (
+                        {Array.from({ length: 10 }, (_, i) => i).map((i) => (
                           <option key={i + 1} value={i + 1}>
                             {i + 1}
                           </option>
@@ -222,11 +265,18 @@ export function CartMain({cart: originalCart}: CartMainProps) {
           <div className="mt-6">
             <NavLink
               onClick={(e) =>
-                hasCartItems
-                  ? coveoCart.methods?.purchase({
+                hasCartItems && cart
+                  ? (
+                    //@ts-ignore
+                    window.dataLayer = window.dataLayer || [],
+                    //@ts-ignore
+                    dataLayer.push({ ecommerce: null }),
+                    //@ts-ignore
+                    window.dataLayer.push(buildDataLayerForPurchase(cart)),
+                    coveoCart.methods?.purchase({
                       id: cart?.id || '',
-                      revenue: Number(cart?.cost?.totalAmount?.amount),
-                    })
+                      revenue: Number(cart?.cost?.totalAmount?.amount)
+                    }))
                   : e.preventDefault()
               }
               to={cart?.checkoutUrl || ''}

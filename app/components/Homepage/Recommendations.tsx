@@ -1,8 +1,48 @@
-import {useHomepageRecommendations} from '~/lib/coveo.engine';
-import {ProductCard} from '../Products/ProductCard';
+import { useHomepageRecommendations } from '~/lib/coveo.engine';
+import { ProductCard } from '../Products/ProductCard';
+import { useEffect, useRef } from 'react';
+
+let hasRunRef = false;
+
+type itemsList = {
+  item_id: string,
+  item_name: string,
+  index: number,
+  price: number,
+  quantity: number
+}
 
 export function Recommendations() {
   const homepageRecommendations = useHomepageRecommendations();
+
+  const recommendationsItemsArray: itemsList[] = [];
+  homepageRecommendations.state.products.forEach((recommendationItem: any, index: number) => {
+    recommendationsItemsArray.push({
+      item_id: recommendationItem.permanentid,
+      item_name: recommendationItem.ec_name,
+      index: index,
+      price: recommendationItem.ec_price,
+      quantity: 1
+    })
+  });
+
+  useEffect(() => {
+    if (hasRunRef) return;
+    hasRunRef = true;
+    //@ts-ignore
+    window.dataLayer = window.dataLayer || [];
+    //@ts-ignore
+    window.dataLayer.push({ ecommerce: null });  // Clear the previous ecommerce object.
+    //@ts-ignore
+    window.dataLayer.push({
+      event: "view_item_list",
+      ecommerce: {
+        item_list_id: `recommendations_${homepageRecommendations.state.headline.toString().replaceAll(' ', '_').toLowerCase()}`,
+        item_list_name: homepageRecommendations.state.headline,
+        items: recommendationsItemsArray
+      }
+    });
+  }, []);
 
   return (
     <section
@@ -27,12 +67,13 @@ export function Recommendations() {
                 product={recommendation}
                 onSelect={
                   homepageRecommendations.methods?.interactiveProduct({
-                    options: {product: recommendation},
+                    options: { product: recommendation },
                   }).select
                 }
               />
             </div>
-          ))}
+          ))
+          }
         </div>
       </div>
     </section>
