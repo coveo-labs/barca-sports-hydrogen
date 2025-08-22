@@ -26,7 +26,7 @@ export async function loader({request, context}: LoaderFunctionArgs) {
     context.storefront.query(HEADER_QUERY, {
       cache: context.storefront.CacheLong(),
       variables: {
-        headerMenuHandle: 'hydrogen-menu',
+        headerMenuHandle: 'coveo-shopify-menu',
       },
     }),
     fetchRecommendationStaticState({
