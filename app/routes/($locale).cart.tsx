@@ -33,6 +33,7 @@ export interface CartReturn {
   cart: Cart;
 }
 
+// TODO: For this branch update the fields here to be in Camel Case rather than snake case
 // Helper function to ensure Coveo client ID and tracking ID are set as cart attributes
 async function setCoveoConfigAttributes(
   context: any,
@@ -44,38 +45,35 @@ async function setCoveoConfigAttributes(
 
   if (!cart) return cartResult;
 
-  const existingCoveoClientId = cart.attributes?.find(
-    (attr) => attr.key === 'coveo_client_id',
-  );
-
-  const existingCoveoTrackingId = cart.attributes?.find(
-    (attr) => attr.key === 'coveo_tracking_id',
-  );
-
-  const navigatorProvider = new ServerSideNavigatorContextProvider(request);
-  const clientId = navigatorProvider.clientId;
-
-  // Get tracking ID from engine config
-  const trackingId = engineConfig.configuration.analytics?.trackingId || 'shop_en_us';
-
-  // Set cart attributes if missing
-  let updatedResult = cartResult;
+  const attributes = cart.attributes;
   const attributesToUpdate = [];
 
-  if (!existingCoveoClientId) {
+  const navigatorProvider = new ServerSideNavigatorContextProvider(request);
+
+  const clientId = navigatorProvider.clientId;
+  const trackingId = engineConfig.configuration.analytics.trackingId;
+  const organizationId = engineConfig.configuration.organizationId;
+  const accessToken = engineConfig.configuration.accessToken;
+
+  const hasAttr = (key: string) => attributes.some((attr) => attr.key === key);
+
+  if (!hasAttr('coveo_client_id')) {
+    attributesToUpdate.push({key: 'coveo_client_id', value: clientId});
+  }
+  if (!hasAttr('coveo_tracking_id')) {
+    attributesToUpdate.push({key: 'coveo_tracking_id', value: trackingId});
+  }
+  if (!hasAttr('coveo_organization_id')) {
     attributesToUpdate.push({
-      key: 'coveo_client_id',
-      value: clientId,
+      key: 'coveo_organization_id',
+      value: organizationId,
     });
   }
-
-  if (!existingCoveoTrackingId) {
-    attributesToUpdate.push({
-      key: 'coveo_tracking_id',
-      value: trackingId,
-    });
+  if (!hasAttr('coveo_access_token')) {
+    attributesToUpdate.push({key: 'coveo_access_token', value: accessToken});
   }
 
+  let updatedResult = cartResult;
   if (attributesToUpdate.length > 0) {
     try {
       updatedResult = await cartHandler.updateAttributes(attributesToUpdate);
