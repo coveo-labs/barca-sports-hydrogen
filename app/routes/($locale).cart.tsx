@@ -33,7 +33,6 @@ export interface CartReturn {
   cart: Cart;
 }
 
-// TODO: For this branch update the fields here to be in Camel Case rather than snake case
 // Helper function to ensure Coveo client ID and tracking ID are set as cart attributes
 async function setCoveoConfigAttributes(
   context: any,
