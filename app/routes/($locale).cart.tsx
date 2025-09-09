@@ -44,7 +44,7 @@ async function setCoveoConfigAttributes(
 
   if (!cart) return cartResult;
 
-  const attributes = cart.attributes;
+  const attributes = cart.attributes ?? [];
   const attributesToUpdate = [];
 
   const navigatorProvider = new ServerSideNavigatorContextProvider(request);
@@ -56,19 +56,19 @@ async function setCoveoConfigAttributes(
 
   const hasAttr = (key: string) => attributes.some((attr) => attr.key === key);
 
-  if (!hasAttr('coveo_client_id')) {
+  if (!hasAttr('coveoClientId')) {
     attributesToUpdate.push({key: 'coveoClientId', value: clientId});
   }
-  if (!hasAttr('coveo_tracking_id')) {
+  if (!hasAttr('coveoTrackingId')) {
     attributesToUpdate.push({key: 'coveoTrackingId', value: trackingId});
   }
-  if (!hasAttr('coveo_organization_id')) {
+  if (!hasAttr('coveoOrganizationId')) {
     attributesToUpdate.push({
       key: 'coveoOrganizationId',
       value: organizationId,
     });
   }
-  if (!hasAttr('coveo_access_token')) {
+  if (!hasAttr('coveoAccessToken')) {
     attributesToUpdate.push({key: 'coveoAccessToken', value: accessToken});
   }
 
