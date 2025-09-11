@@ -49,26 +49,42 @@ async function setCoveoConfigAttributes(
 
   const navigatorProvider = new ServerSideNavigatorContextProvider(request);
 
-  const clientId = navigatorProvider.clientId;
-  const trackingId = engineConfig.configuration.analytics.trackingId;
-  const organizationId = engineConfig.configuration.organizationId;
-  const accessToken = engineConfig.configuration.accessToken;
+  const {clientId} = navigatorProvider;
+  const {
+    configuration: {
+      analytics: {trackingId},
+      organizationId,
+      accessToken,
+    },
+  } = engineConfig;
 
-  const hasAttr = (key: string) => attributes.some((attr) => attr.key === key);
+  const attributesToFind = [
+    'coveoClientId',
+    'coveoTrackingId',
+    'coveoOrganizationId',
+    'coveoAccessToken',
+  ];
 
-  if (!hasAttr('coveoClientId')) {
+  const foundAttributes = (cart.attributes ?? []).reduce((acc, item) => {
+    if (attributesToFind.includes(item.key) && item.value != null) {
+      acc[item.key] = {key: item.key, value: item.value ?? ''};
+    }
+    return acc;
+  }, {} as Record<string, {key: string; value: string}>);
+
+  if (!foundAttributes.coveoClientId) {
     attributesToUpdate.push({key: 'coveoClientId', value: clientId});
   }
-  if (!hasAttr('coveoTrackingId')) {
+  if (!foundAttributes.coveoTrackingId) {
     attributesToUpdate.push({key: 'coveoTrackingId', value: trackingId});
   }
-  if (!hasAttr('coveoOrganizationId')) {
+  if (!foundAttributes.coveoOrganizationId) {
     attributesToUpdate.push({
       key: 'coveoOrganizationId',
       value: organizationId,
     });
   }
-  if (!hasAttr('coveoAccessToken')) {
+  if (!foundAttributes.coveoAccessToken) {
     attributesToUpdate.push({key: 'coveoAccessToken', value: accessToken});
   }
 
