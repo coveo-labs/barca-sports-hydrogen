@@ -33,7 +33,7 @@ export interface CartReturn {
   cart: Cart;
 }
 
-// Helper function to ensure Coveo client ID and tracking ID are set as cart attributes
+// Helper function to ensure the Web Pixel receives what it needs to emit Coveo cart events in the checkout page.
 async function setCoveoConfigAttributes(
   context: any,
   request: Request,
