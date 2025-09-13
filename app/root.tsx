@@ -139,7 +139,7 @@ async function loadCriticalData({ context, request }: LoaderFunctionArgs) {
     storefront.query(HEADER_QUERY, {
       cache: storefront.CacheLong(),
       variables: {
-        headerMenuHandle: 'hydrogen-menu',
+        headerMenuHandle: 'coveo-shopify-menu',
       },
     }),
     loggedIn

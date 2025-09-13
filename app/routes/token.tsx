@@ -27,7 +27,7 @@ export const loader = async ({request, context}: LoaderFunctionArgs) => {
     });
   }
 
-  const newToken = await fetchTokenFromSAPI(context);
+  const newToken = await fetchTokenFromAppProxy();
 
   const parsedToken = JSON.parse(
     decodeBase64Url(newToken.split('.')[1]),
