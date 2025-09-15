@@ -4,6 +4,7 @@ import type {
   SearchSummaryState,
   Product,
   ProductListState,
+  ProductList as ProductListType,
 } from '@coveo/headless/ssr-commerce';
 import {useEffect, useRef} from 'react';
 
@@ -11,11 +12,13 @@ export function ProductList() {
   const hasRunRef = useRef(false);
   const productList = engineDefinition.controllers.useProductList() as {
     state: ProductListState;
-    methods: any;
+    methods: Pick<
+      ProductListType,
+      'interactiveProduct' | 'promoteChildToParent'
+    >;
   };
   const summary = engineDefinition.controllers.useSummary() as {
     state: SearchSummaryState;
-    methods: any;
   };
   const noResultClass = !productList.state.products.length
     ? ' no-results '
@@ -26,7 +29,7 @@ export function ProductList() {
     if (child) {
       // TODO: https://coveord.atlassian.net/browse/KIT-3810
       // workaround to promote child to parent
-      (productList.methods as any)?.['promoteChildToParent'](child);
+      productList.methods?.promoteChildToParent(child);
     }
   };
 

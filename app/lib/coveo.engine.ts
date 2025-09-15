@@ -3,8 +3,6 @@ import {
   defineFacetGenerator,
   definePagination,
   defineProductList,
-  type InferHydratedState,
-  type InferStaticState,
   defineSummary,
   defineCart,
   defineSort,
@@ -17,6 +15,9 @@ import {
   defineBreadcrumbManager,
   defineParameterManager,
   defineRecommendations,
+  type InferHydratedState,
+  type InferStaticState,
+  type CommerceEngineDefinitionOptions,
 } from '@coveo/headless-react/ssr-commerce';
 import {fetchToken} from './fetch-token';
 
