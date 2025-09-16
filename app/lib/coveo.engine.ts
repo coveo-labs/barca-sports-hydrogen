@@ -3,8 +3,6 @@ import {
   defineFacetGenerator,
   definePagination,
   defineProductList,
-  type InferHydratedState,
-  type InferStaticState,
   defineSummary,
   defineCart,
   defineSort,
@@ -17,6 +15,9 @@ import {
   defineBreadcrumbManager,
   defineParameterManager,
   defineRecommendations,
+  type InferHydratedState,
+  type InferStaticState,
+  type CommerceEngineDefinitionOptions,
 } from '@coveo/headless-react/ssr-commerce';
 import {fetchToken} from './fetch-token';
 
@@ -39,7 +40,7 @@ export const engineConfig: CommerceEngineDefinitionOptions = {
     organizationId: 'barcagroupproductionkwvdy6lp',
     analytics: {
       enabled: true,
-      trackingId: 'shop_en_us',
+      trackingId: 'market_88728731922',
     },
     context: {
       language: 'en',

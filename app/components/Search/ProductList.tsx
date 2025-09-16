@@ -1,13 +1,25 @@
-import { engineDefinition } from '~/lib/coveo.engine';
-import { ProductCard } from '../Products/ProductCard';
-import type { SearchSummaryState, Product } from '@coveo/headless/ssr-commerce';
-import { useEffect } from 'react';
-
-let hasRunRef = false;
+import {engineDefinition} from '~/lib/coveo.engine';
+import {ProductCard} from '../Products/ProductCard';
+import type {
+  SearchSummaryState,
+  Product,
+  ProductListState,
+  ProductList as ProductListType,
+} from '@coveo/headless/ssr-commerce';
+import {useEffect, useRef} from 'react';
 
 export function ProductList() {
-  const productList = engineDefinition.controllers.useProductList();
-  const summary = engineDefinition.controllers.useSummary();
+  const hasRunRef = useRef(false);
+  const productList = engineDefinition.controllers.useProductList() as {
+    state: ProductListState;
+    methods: Pick<
+      ProductListType,
+      'interactiveProduct' | 'promoteChildToParent'
+    >;
+  };
+  const summary = engineDefinition.controllers.useSummary() as {
+    state: SearchSummaryState;
+  };
   const noResultClass = !productList.state.products.length
     ? ' no-results '
     : ' ';
@@ -17,43 +29,47 @@ export function ProductList() {
     if (child) {
       // TODO: https://coveord.atlassian.net/browse/KIT-3810
       // workaround to promote child to parent
-      (productList.methods as any)?.['promoteChildToParent'](child);
+      productList.methods?.promoteChildToParent(child);
     }
   };
 
-  const listingsItemsArray: any[] = [];
-  productList.state.products.forEach((recommendationItem: any, index: number) => {
-    listingsItemsArray.push({
-      item_id: recommendationItem.permanentid,
-      item_name: recommendationItem.ec_name,
-      index: index,
-      price: recommendationItem.ec_price,
-      quantity: 1
-    })
-  });
-
   useEffect(() => {
-    if (hasRunRef) return;
-    hasRunRef = true;
+    if (hasRunRef.current) return;
+    hasRunRef.current = true;
+
+    const listingsItemsArray: any[] = [];
+    productList.state.products.forEach(
+      (recommendationItem: any, index: number) => {
+        listingsItemsArray.push({
+          item_id: recommendationItem.permanentid,
+          item_name: recommendationItem.ec_name,
+          index,
+          price: recommendationItem.ec_price,
+          quantity: 1,
+        });
+      },
+    );
+
     //@ts-ignore
     window.dataLayer = window.dataLayer || [];
     //@ts-ignore
-    window.dataLayer.push({ ecommerce: null });  // Clear the previous ecommerce object.
+    window.dataLayer.push({ecommerce: null}); // Clear the previous ecommerce object.
     //@ts-ignore
     window.dataLayer.push({
-      event: "view_item_list",
+      event: 'view_item_list',
       ecommerce: {
         item_list_id: `listings_${productList.state.responseId}`,
-        items: listingsItemsArray
-      }
+        items: listingsItemsArray,
+      },
     });
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Intentionally only run once on mount for analytics tracking
 
   return (
     <section
       aria-labelledby="products-heading"
       data-bam-search-uid={productList.state.responseId}
-      data-bam-search-query={(summary.state as SearchSummaryState).query}
+      data-bam-search-query={summary.state.query}
       data-bam-result-count={summary.state.totalNumberOfProducts}
       className={
         'result-list' +
