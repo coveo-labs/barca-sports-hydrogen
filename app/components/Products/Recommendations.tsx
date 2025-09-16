@@ -4,6 +4,7 @@ import {
 } from '~/lib/coveo.engine';
 import { ProductCard } from './ProductCard';
 import { Fragment, useEffect } from 'react';
+import '~/types/gtm';
 
 let hasRunRefUpper = false;
 let hasRunRefLower = false;
@@ -45,20 +46,14 @@ export function ProductRecommendations() {
 
     if (hasRunRefUpper) return;
     hasRunRefUpper = true;
-    //@ts-ignore
     window.dataLayer = window.dataLayer || [];
-    //@ts-ignore
     window.dataLayer.push({ ecommerce: null });  // Clear the previous ecommerce object.
-    //@ts-ignore
     window.dataLayer.push(constructViewItemsListEvent(pdpRecommendationsUpperCarousel));
 
     if (hasRunRefLower) return;
     hasRunRefLower = true;
-    //@ts-ignore
     window.dataLayer = window.dataLayer || [];
-    //@ts-ignore
     window.dataLayer.push({ ecommerce: null });  // Clear the previous ecommerce object.
-    //@ts-ignore
     window.dataLayer.push(constructViewItemsListEvent(pdpRecommendationsLowerCarousel));
 
   }, []);

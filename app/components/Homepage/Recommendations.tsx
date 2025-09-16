@@ -1,6 +1,7 @@
 import { useHomepageRecommendations } from '~/lib/coveo.engine';
 import { ProductCard } from '../Products/ProductCard';
 import { useEffect, useRef } from 'react';
+import '~/types/gtm';
 
 let hasRunRef = false;
 
@@ -29,11 +30,8 @@ export function Recommendations() {
   useEffect(() => {
     if (hasRunRef) return;
     hasRunRef = true;
-    //@ts-ignore
     window.dataLayer = window.dataLayer || [];
-    //@ts-ignore
     window.dataLayer.push({ ecommerce: null });  // Clear the previous ecommerce object.
-    //@ts-ignore
     window.dataLayer.push({
       event: "view_item_list",
       ecommerce: {

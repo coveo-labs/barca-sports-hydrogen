@@ -16,6 +16,7 @@ import { AnswerSection } from '~/components/Generative/Section';
 import { Skeleton } from '~/components/Generative/Skeleton';
 import { Answer } from '~/components/Generative/Answer';
 import type { AnswerToProductsData } from './answer-to-products';
+import '~/types/gtm';
 
 /**
 What to look for when buying a kayak?
@@ -47,9 +48,7 @@ export default function GenerativeAnswering() {
     genAnswerState?.citations && genAnswerState.citations.length > 0;
 
   const trackGenerativeAnswering = (hasNoAnswer: any) => {
-    //@ts-ignore
     window.dataLayer = window.dataLayer || [];
-    //@ts-ignore
     window.dataLayer.push({
       event: "search",
       search_type: "generative_answering",

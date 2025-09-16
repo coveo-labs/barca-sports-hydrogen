@@ -7,6 +7,7 @@ import type {
   ProductList as ProductListType,
 } from '@coveo/headless/ssr-commerce';
 import {useEffect, useRef} from 'react';
+import '~/types/gtm';
 
 export function ProductList() {
   const hasRunRef = useRef(false);
@@ -50,11 +51,8 @@ export function ProductList() {
       },
     );
 
-    //@ts-ignore
     window.dataLayer = window.dataLayer || [];
-    //@ts-ignore
     window.dataLayer.push({ecommerce: null}); // Clear the previous ecommerce object.
-    //@ts-ignore
     window.dataLayer.push({
       event: 'view_item_list',
       ecommerce: {

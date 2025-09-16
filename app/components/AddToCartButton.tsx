@@ -8,6 +8,7 @@ import { useCart } from '~/lib/coveo.engine';
 import { colorToShorthand } from '~/lib/map.coveo.shopify';
 import type { CartReturn } from '~/routes/($locale).cart';
 import type { ProductHandleData } from '~/routes/($locale).products.$handle';
+import '~/types/gtm';
 
 export function AddToCartButton({
   analytics,
@@ -60,11 +61,8 @@ export function AddToCartButton({
                   productId: coveoProductId!,
                   quantity: newQuantity,
                 });
-                //@ts-ignore
                 window.dataLayer = window.dataLayer || [];
-                //@ts-ignore
                 window.dataLayer.push({ ecommerce: null });  // Clear the previous ecommerce object.
-                //@ts-ignore
                 window.dataLayer.push({
                   event: "add_to_cart",
                   ecommerce: {

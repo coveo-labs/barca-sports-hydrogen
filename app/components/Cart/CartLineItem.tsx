@@ -3,6 +3,7 @@ import { CartForm } from '@shopify/hydrogen';
 import { XMarkIcon as XMarkIconMini } from '@heroicons/react/20/solid';
 import { useCart } from '~/lib/coveo.engine';
 import type { CartItem } from '@coveo/headless-react/ssr-commerce';
+import '~/types/gtm';
 
 /**
  * A button that removes a line item from the cart. It is disabled
@@ -28,11 +29,8 @@ export function CartLineRemoveButton({
       <button
         onClick={() => {
           coveoCart.methods?.updateItemQuantity(cartItem);
-          //@ts-ignore
           window.dataLayer = window.dataLayer || [];
-          //@ts-ignore
           window.dataLayer.push({ ecommerce: null });  // Clear the previous ecommerce object.
-          //@ts-ignore
           window.dataLayer.push({
             event: "remove_from_cart",
             ecommerce: {

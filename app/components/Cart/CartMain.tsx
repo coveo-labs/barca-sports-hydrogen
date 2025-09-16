@@ -7,6 +7,7 @@ import { useCart } from '~/lib/coveo.engine';
 import cx from '~/lib/cx';
 import type { CartLine } from '@shopify/hydrogen/storefront-api-types';
 import { mapShopifyMerchandiseToCoveoCartItem } from '~/lib/map.coveo.shopify';
+import '~/types/gtm';
 
 export type CartLayout = 'page' | 'aside';
 
@@ -267,11 +268,8 @@ export function CartMain({ cart: originalCart }: CartMainProps) {
               onClick={(e) =>
                 hasCartItems && cart
                   ? (
-                    //@ts-ignore
                     window.dataLayer = window.dataLayer || [],
-                    //@ts-ignore
-                    dataLayer.push({ ecommerce: null }),
-                    //@ts-ignore
+                    window.dataLayer.push({ ecommerce: null }),
                     window.dataLayer.push(buildDataLayerForPurchase(cart)),
                     coveoCart.methods?.purchase({
                       id: cart?.id || '',

@@ -13,6 +13,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { ProductCard } from '../Products/ProductCard';
 import { useNavigate } from '@remix-run/react';
+import '~/types/gtm';
 
 const redirectToGenerative = [
   'what',
@@ -51,9 +52,7 @@ export function StandaloneSearchBox({ close }: StandaloneSearchBoxProps) {
       close?.();
     } else {
       searchBox.methods?.submit();
-      //@ts-ignore
       window.dataLayer = window.dataLayer || [];
-      //@ts-ignore
       window.dataLayer.push({
         event: 'search',
         search_type: 'search_box',
