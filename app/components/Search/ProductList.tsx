@@ -38,12 +38,12 @@ export function ProductList() {
 
   useEffect(() => {
     const responseId = productList.state.responseId;
-    
+
     // Check if we've already tracked this response
     if (!responseId || trackedResponseIds.has(responseId)) {
       return;
     }
-    
+
     // Mark this response as tracked
     trackedResponseIds.add(responseId);
 

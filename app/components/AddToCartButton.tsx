@@ -3,11 +3,11 @@ import {
   useSearchParams,
   type FetcherWithComponents,
 } from '@remix-run/react';
-import { CartForm, type OptimisticCartLineInput } from '@shopify/hydrogen';
-import { useCart } from '~/lib/coveo.engine';
-import { colorToShorthand } from '~/lib/map.coveo.shopify';
-import type { CartReturn } from '~/routes/($locale).cart';
-import type { ProductHandleData } from '~/routes/($locale).products.$handle';
+import {CartForm, type OptimisticCartLineInput} from '@shopify/hydrogen';
+import {useCart} from '~/lib/coveo.engine';
+import {colorToShorthand} from '~/lib/map.coveo.shopify';
+import type {CartReturn} from '~/routes/($locale).cart';
+import type {ProductHandleData} from '~/routes/($locale).products.$handle';
 import '~/types/gtm';
 
 export function AddToCartButton({
@@ -41,7 +41,7 @@ export function AddToCartButton({
     <CartForm
       fetcherKey="add-to-cart"
       route="/cart"
-      inputs={{ lines }}
+      inputs={{lines}}
       action={CartForm.ACTIONS.LinesAdd}
     >
       {(fetcher: FetcherWithComponents<CartReturn>) => {
@@ -62,22 +62,22 @@ export function AddToCartButton({
                   quantity: newQuantity,
                 });
                 window.dataLayer = window.dataLayer || [];
-                window.dataLayer.push({ ecommerce: null });  // Clear the previous ecommerce object.
+                window.dataLayer.push({ecommerce: null}); // Clear the previous ecommerce object.
                 window.dataLayer.push({
-                  event: "add_to_cart",
+                  event: 'add_to_cart',
                   ecommerce: {
-                    currency: "USD",
+                    currency: 'USD',
                     value: Number(product.selectedVariant?.price.amount),
                     items: [
                       {
                         item_id: coveoProductId!,
                         item_name: product.title,
                         price: Number(product.selectedVariant?.price.amount),
-                        quantity: quantityToAdd
-                      }
-                    ]
-                  }
-                })
+                        quantity: quantityToAdd,
+                      },
+                    ],
+                  },
+                });
               }}
               className="add-to-cart flex max-w-xs flex-1 items-center justify-center rounded-md border border-transparent bg-indigo-600 px-8 py-3 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-50 sm:w-full"
               type="submit"

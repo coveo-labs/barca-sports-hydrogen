@@ -2,19 +2,19 @@ import {
   usePdpRecommendationsLowerCarousel,
   usePdpRecommendationsUpperCarousel,
 } from '~/lib/coveo.engine';
-import { ProductCard } from './ProductCard';
-import { Fragment, useEffect } from 'react';
+import {ProductCard} from './ProductCard';
+import {Fragment, useEffect} from 'react';
 import '~/types/gtm';
 
 let hasRunRefUpper = false;
 let hasRunRefLower = false;
 
 type itemsList = {
-  item_id: string,
-  item_name: string,
-  index: number,
-  price: number,
-  quantity: number
+  item_id: string;
+  item_name: string;
+  index: number;
+  price: number;
+  quantity: number;
 };
 
 export function ProductRecommendations() {
@@ -23,40 +23,47 @@ export function ProductRecommendations() {
 
   function constructViewItemsListEvent(recommendationsProducts: any) {
     const recommandationsItemsArray: itemsList[] = [];
-    recommendationsProducts.state.products.slice(0, 4).forEach((recommendationItem: any, index: number) => {
-      recommandationsItemsArray.push({
-        item_id: recommendationItem.permanentid,
-        item_name: recommendationItem.ec_name,
-        index: index,
-        price: recommendationItem.ec_price,
-        quantity: 1
-      })
-    });
+    recommendationsProducts.state.products
+      .slice(0, 4)
+      .forEach((recommendationItem: any, index: number) => {
+        recommandationsItemsArray.push({
+          item_id: recommendationItem.permanentid,
+          item_name: recommendationItem.ec_name,
+          index,
+          price: recommendationItem.ec_price,
+          quantity: 1,
+        });
+      });
     return {
-      event: "view_item_list",
+      event: 'view_item_list',
       ecommerce: {
-        item_list_id: `recommendations_${recommendationsProducts.state.headline.toString().replaceAll(' ', '_').toLowerCase()}`,
+        item_list_id: `recommendations_${recommendationsProducts.state.headline
+          .toString()
+          .replaceAll(' ', '_')
+          .toLowerCase()}`,
         item_list_name: recommendationsProducts.state.headline,
-        items: recommandationsItemsArray
-      }
-    }
+        items: recommandationsItemsArray,
+      },
+    };
   }
 
   useEffect(() => {
-
     if (hasRunRefUpper) return;
     hasRunRefUpper = true;
     window.dataLayer = window.dataLayer || [];
-    window.dataLayer.push({ ecommerce: null });  // Clear the previous ecommerce object.
-    window.dataLayer.push(constructViewItemsListEvent(pdpRecommendationsUpperCarousel));
+    window.dataLayer.push({ecommerce: null}); // Clear the previous ecommerce object.
+    window.dataLayer.push(
+      constructViewItemsListEvent(pdpRecommendationsUpperCarousel),
+    );
 
     if (hasRunRefLower) return;
     hasRunRefLower = true;
     window.dataLayer = window.dataLayer || [];
-    window.dataLayer.push({ ecommerce: null });  // Clear the previous ecommerce object.
-    window.dataLayer.push(constructViewItemsListEvent(pdpRecommendationsLowerCarousel));
-
-  }, []);
+    window.dataLayer.push({ecommerce: null}); // Clear the previous ecommerce object.
+    window.dataLayer.push(
+      constructViewItemsListEvent(pdpRecommendationsLowerCarousel),
+    );
+  }, [pdpRecommendationsUpperCarousel, pdpRecommendationsLowerCarousel]);
 
   return (
     <section aria-labelledby="related-heading" className="mt-24">
@@ -86,7 +93,7 @@ export function ProductRecommendations() {
                         key={relatedProduct.permanentid}
                         onSelect={
                           recommendationCarousel.methods?.interactiveProduct({
-                            options: { product: relatedProduct },
+                            options: {product: relatedProduct},
                           }).select
                         }
                       />

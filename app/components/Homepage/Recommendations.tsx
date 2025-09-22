@@ -1,46 +1,56 @@
-import { useHomepageRecommendations } from '~/lib/coveo.engine';
-import { ProductCard } from '../Products/ProductCard';
-import { useEffect, useRef } from 'react';
+import {useHomepageRecommendations} from '~/lib/coveo.engine';
+import {ProductCard} from '../Products/ProductCard';
+import {useEffect, useRef} from 'react';
 import '~/types/gtm';
 
+// Global tracking to ensure analytics only fire once
 let hasRunRef = false;
 
 type itemsList = {
-  item_id: string,
-  item_name: string,
-  index: number,
-  price: number,
-  quantity: number
-}
+  item_id: string;
+  item_name: string;
+  index: number;
+  price: number;
+  quantity: number;
+};
 
 export function Recommendations() {
   const homepageRecommendations = useHomepageRecommendations();
 
-  const recommendationsItemsArray: itemsList[] = [];
-  homepageRecommendations.state.products.forEach((recommendationItem: any, index: number) => {
-    recommendationsItemsArray.push({
-      item_id: recommendationItem.permanentid,
-      item_name: recommendationItem.ec_name,
-      index: index,
-      price: recommendationItem.ec_price,
-      quantity: 1
-    })
-  });
-
   useEffect(() => {
     if (hasRunRef) return;
     hasRunRef = true;
+
+    const recommendationsItemsArray: itemsList[] = [];
+    homepageRecommendations.state.products.forEach(
+      (recommendationItem: any, index: number) => {
+        recommendationsItemsArray.push({
+          item_id: recommendationItem.permanentid,
+          item_name: recommendationItem.ec_name,
+          index,
+          price: recommendationItem.ec_price,
+          quantity: 1,
+        });
+      },
+    );
+
     window.dataLayer = window.dataLayer || [];
-    window.dataLayer.push({ ecommerce: null });  // Clear the previous ecommerce object.
+    window.dataLayer.push({ecommerce: null}); // Clear the previous ecommerce object.
     window.dataLayer.push({
-      event: "view_item_list",
+      event: 'view_item_list',
       ecommerce: {
-        item_list_id: `recommendations_${homepageRecommendations.state.headline.toString().replaceAll(' ', '_').toLowerCase()}`,
+        item_list_id: `recommendations_${homepageRecommendations.state.headline
+          .toString()
+          .replaceAll(' ', '_')
+          .toLowerCase()}`,
         item_list_name: homepageRecommendations.state.headline,
-        items: recommendationsItemsArray
-      }
+        items: recommendationsItemsArray,
+      },
     });
-  }, []);
+  }, [
+    homepageRecommendations.state.products,
+    homepageRecommendations.state.headline,
+  ]);
 
   return (
     <section
@@ -65,13 +75,12 @@ export function Recommendations() {
                 product={recommendation}
                 onSelect={
                   homepageRecommendations.methods?.interactiveProduct({
-                    options: { product: recommendation },
+                    options: {product: recommendation},
                   }).select
                 }
               />
             </div>
-          ))
-          }
+          ))}
         </div>
       </div>
     </section>
