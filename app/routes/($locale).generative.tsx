@@ -18,6 +18,19 @@ import { Answer } from '~/components/Generative/Answer';
 import type { AnswerToProductsData } from './answer-to-products';
 import '~/types/gtm';
 
+// Global tracking to ensure analytics only fire once per search query
+const trackedSearchQueries = new Set<string>();
+
+const trackGenerativeAnswering = (q: string, hasNoAnswer: boolean) => {
+  window.dataLayer = window.dataLayer || [];
+  window.dataLayer.push({
+    event: 'search',
+    search_type: 'generative_answering',
+    search_term: q,
+    has_answer: hasNoAnswer ? 'false' : 'true',
+  });
+};
+
 /**
 What to look for when buying a kayak?
 What accessories do I need for a kayak adventure?
@@ -47,19 +60,22 @@ export default function GenerativeAnswering() {
   const hasCitations =
     genAnswerState?.citations && genAnswerState.citations.length > 0;
 
-  const trackGenerativeAnswering = (hasNoAnswer: any) => {
-    window.dataLayer = window.dataLayer || [];
-    window.dataLayer.push({
-      event: "search",
-      search_type: "generative_answering",
-      search_term: q,
-      has_answer: hasNoAnswer ? "false" : "true"
-    });
-  }
-
   useEffect(() => {
-    trackGenerativeAnswering(hasNoAnswerAfterADelay)
-  }, [hasNoAnswerAfterADelay]);
+    // Create a unique tracking ID based on the query and answer status
+    const trackingId = `search_${q}_${
+      hasNoAnswerAfterADelay ? 'no_answer' : 'has_answer'
+    }`;
+
+    // Check if we've already tracked this specific search
+    if (trackedSearchQueries.has(trackingId)) {
+      return;
+    }
+
+    // Mark this search as tracked
+    trackedSearchQueries.add(trackingId);
+
+    trackGenerativeAnswering(q, hasNoAnswerAfterADelay);
+  }, [hasNoAnswerAfterADelay, q]);
 
   return (
     <div className="bg-gray-50">

@@ -9,8 +9,10 @@ import type {
 import {useEffect, useRef} from 'react';
 import '~/types/gtm';
 
+// Global tracking to ensure analytics only fire once per response
+const trackedResponseIds = new Set<string>();
+
 export function ProductList() {
-  const hasRunRef = useRef(false);
   const productList = engineDefinition.controllers.useProductList() as {
     state: ProductListState;
     methods: Pick<
@@ -35,8 +37,15 @@ export function ProductList() {
   };
 
   useEffect(() => {
-    if (hasRunRef.current) return;
-    hasRunRef.current = true;
+    const responseId = productList.state.responseId;
+    
+    // Check if we've already tracked this response
+    if (!responseId || trackedResponseIds.has(responseId)) {
+      return;
+    }
+    
+    // Mark this response as tracked
+    trackedResponseIds.add(responseId);
 
     const listingsItemsArray: any[] = [];
     productList.state.products.forEach(
@@ -56,12 +65,11 @@ export function ProductList() {
     window.dataLayer.push({
       event: 'view_item_list',
       ecommerce: {
-        item_list_id: `listings_${productList.state.responseId}`,
+        item_list_id: `listings_${responseId}`,
         items: listingsItemsArray,
       },
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Intentionally only run once on mount for analytics tracking
+  }, [productList.state.responseId, productList.state.products]); // Track responseId and products changes
 
   return (
     <section
