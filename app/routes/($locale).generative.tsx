@@ -172,7 +172,7 @@ export default function GenerativeAnswering() {
                                 width={200}
                                 height={200}
                                 alt={product.title}
-                                src={(product.raw['ec_images'] as string[])[0]}
+                                src={product.raw['ec_images'] as string}
                                 className="h-48 w-48 rounded-lg bg-gray-200 object-cover group-hover:opacity-75"
                               />
                             </NavLink>

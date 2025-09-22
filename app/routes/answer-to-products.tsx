@@ -19,7 +19,7 @@ export async function action({request}: ActionFunctionArgs) {
       },
       body: JSON.stringify({
         q: basicExpression,
-        pipeline: 'cmh-search-shop_en_us-RGA-Products',
+        pipeline: 'cmh-search-shop_en_us_new-RGA-Products',
       }),
     });
     return await res.json();
