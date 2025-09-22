@@ -26,11 +26,15 @@ export function ProductCard({
   const [selectedColor, setSelectedColor] = useState(
     product.ec_color || 'Black',
   );
-  const availableColors = product.children?.map((c) => c.ec_color || '') || [];
+  const availableColors = Array.from(
+    new Set(product.children?.map((c) => c.ec_color || '') || []),
+  );
   const productImage =
     product.children?.find((c) => c.ec_color === selectedColor)?.ec_images[0] ||
     product.ec_images[0];
-  const productId = product.ec_item_group_id;
+  const productLink = new URL(product.clickUri).pathname;
+  const productName = (product.additionalFields?.ec_item_group_name ||
+    '') as string;
 
   const onColorChange = (color: string) => {
     setSelectedColor(color);
@@ -42,19 +46,19 @@ export function ProductCard({
       <NavLink
         key={product.permanentid}
         onClick={onSelect}
-        to={`/products/${productId?.toUpperCase()}?Color=${selectedColor}`}
+        to={`${productLink}?Color=${selectedColor}`}
         className={`${className} group`}
       >
         <img
           loading="lazy"
           width={1024}
           height={1024}
-          alt={product.ec_name!}
+          alt={productName}
           src={productImage}
           className="aspect-square w-full rounded-lg bg-gray-200 object-cover group-hover:opacity-75"
         />
         <h3 className="result-title mt-4 text-sm text-gray-700">
-          {product.ec_name}
+          {productName}
         </h3>
         <div className="flex">
           {Array.from(Array(5).keys()).map((i) => {
