@@ -4,6 +4,7 @@ import {
 } from '~/lib/coveo.engine';
 import {ProductCard} from './ProductCard';
 import {Fragment, useEffect} from 'react';
+import type {Product} from '@coveo/headless-react/ssr-commerce';
 import '~/types/gtm';
 
 let hasRunRefUpper = false;
@@ -17,20 +18,41 @@ type itemsList = {
   quantity: number;
 };
 
-export function ProductRecommendations() {
-  const pdpRecommendationsUpperCarousel = usePdpRecommendationsUpperCarousel();
-  const pdpRecommendationsLowerCarousel = usePdpRecommendationsLowerCarousel();
+// Define interfaces for the recommendation controller
+interface RecommendationState {
+  products: Product[];
+  headline: string;
+}
 
-  function constructViewItemsListEvent(recommendationsProducts: any) {
+interface RecommendationMethods {
+  interactiveProduct: (options: {options: {product: Product}}) => {
+    select: () => void;
+  };
+}
+
+interface RecommendationController {
+  state: RecommendationState;
+  methods: RecommendationMethods;
+}
+
+export function ProductRecommendations() {
+  const pdpRecommendationsUpperCarousel =
+    usePdpRecommendationsUpperCarousel() as RecommendationController;
+  const pdpRecommendationsLowerCarousel =
+    usePdpRecommendationsLowerCarousel() as RecommendationController;
+
+  function constructViewItemsListEvent(
+    recommendationsProducts: RecommendationController,
+  ) {
     const recommandationsItemsArray: itemsList[] = [];
     recommendationsProducts.state.products
       .slice(0, 4)
-      .forEach((recommendationItem: any, index: number) => {
+      .forEach((recommendationItem: Product, index: number) => {
         recommandationsItemsArray.push({
           item_id: recommendationItem.permanentid,
-          item_name: recommendationItem.ec_name,
+          item_name: recommendationItem.ec_name || '',
           index,
-          price: recommendationItem.ec_price,
+          price: recommendationItem.ec_price || 0,
           quantity: 1,
         });
       });
@@ -86,18 +108,28 @@ export function ProductRecommendations() {
                 <div className="recommendation-list mt-6 grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-4 xl:gap-x-8">
                   {recommendationCarousel.state.products
                     .slice(0, 4)
-                    .map((relatedProduct) => (
-                      <ProductCard
-                        className="recommendation-card"
-                        product={relatedProduct}
-                        key={relatedProduct.permanentid}
-                        onSelect={
-                          recommendationCarousel.methods?.interactiveProduct({
-                            options: {product: relatedProduct},
-                          }).select
-                        }
-                      />
-                    ))}
+                    .map((relatedProduct: Product) => {
+                      // Exclude children to prevent color swatches on recs carousel
+                      const {children, ...productWithoutEcColor} =
+                        relatedProduct;
+
+                      return (
+                        <ProductCard
+                          className="recommendation-card"
+                          product={productWithoutEcColor as Product}
+                          key={productWithoutEcColor.permanentid}
+                          onSelect={() =>
+                            recommendationCarousel.methods
+                              ?.interactiveProduct({
+                                options: {
+                                  product: productWithoutEcColor as Product,
+                                },
+                              })
+                              .select()
+                          }
+                        />
+                      );
+                    })}
                 </div>
               </div>
             </Fragment>

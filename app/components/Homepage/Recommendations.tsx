@@ -1,6 +1,7 @@
 import {useHomepageRecommendations} from '~/lib/coveo.engine';
 import {ProductCard} from '../Products/ProductCard';
 import {useEffect, useRef} from 'react';
+import type {Product} from '@coveo/headless-react/ssr-commerce';
 import '~/types/gtm';
 
 // Global tracking to ensure analytics only fire once
@@ -14,8 +15,26 @@ type itemsList = {
   quantity: number;
 };
 
+// Define interfaces for the recommendation controller
+interface RecommendationState {
+  products: Product[];
+  headline: string;
+}
+
+interface RecommendationMethods {
+  interactiveProduct: (options: {options: {product: Product}}) => {
+    select: () => void;
+  };
+}
+
+interface RecommendationController {
+  state: RecommendationState;
+  methods: RecommendationMethods;
+}
+
 export function Recommendations() {
-  const homepageRecommendations = useHomepageRecommendations();
+  const homepageRecommendations =
+    useHomepageRecommendations() as RecommendationController;
 
   useEffect(() => {
     if (hasRunRef) return;
@@ -23,12 +42,12 @@ export function Recommendations() {
 
     const recommendationsItemsArray: itemsList[] = [];
     homepageRecommendations.state.products.forEach(
-      (recommendationItem: any, index: number) => {
+      (recommendationItem: Product, index: number) => {
         recommendationsItemsArray.push({
           item_id: recommendationItem.permanentid,
-          item_name: recommendationItem.ec_name,
+          item_name: recommendationItem.ec_name || '',
           index,
-          price: recommendationItem.ec_price,
+          price: recommendationItem.ec_price || 0,
           quantity: 1,
         });
       },
@@ -68,19 +87,23 @@ export function Recommendations() {
         </div>
 
         <div className="recommendation-list mt-6 grid grid-cols-1 gap-y-10 sm:grid-cols-3 sm:gap-x-6 sm:gap-y-0 lg:gap-x-8">
-          {homepageRecommendations.state.products.map((recommendation) => (
-            <div key={recommendation.permanentid} className="group relative">
-              <ProductCard
-                className="recommendation-card"
-                product={recommendation}
-                onSelect={
-                  homepageRecommendations.methods?.interactiveProduct({
-                    options: {product: recommendation},
-                  }).select
-                }
-              />
-            </div>
-          ))}
+          {homepageRecommendations.state.products.map(
+            (recommendation: Product) => (
+              <div key={recommendation.permanentid} className="group relative">
+                <ProductCard
+                  className="recommendation-card"
+                  product={recommendation}
+                  onSelect={() =>
+                    homepageRecommendations.methods
+                      ?.interactiveProduct({
+                        options: {product: recommendation},
+                      })
+                      .select()
+                  }
+                />
+              </div>
+            ),
+          )}
         </div>
       </div>
     </section>
