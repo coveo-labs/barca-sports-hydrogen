@@ -1,10 +1,8 @@
 import {useCartRecommendations} from '~/lib/coveo.engine';
 import {ProductCard} from '../Products/ProductCard';
-import {useEffect} from 'react';
+import {useEffect, useRef} from 'react';
 import type {Product} from '@coveo/headless-react/ssr-commerce';
 import '~/types/gtm';
-
-let hasRunRef = false;
 
 type itemsList = {
   item_id: string;
@@ -32,11 +30,12 @@ interface RecommendationController {
 }
 
 export function CartRecommendations() {
+  const hasRunRef = useRef(false);
   const recs = useCartRecommendations() as RecommendationController;
 
   useEffect(() => {
-    if (hasRunRef) return;
-    hasRunRef = true;
+    if (hasRunRef.current) return;
+    hasRunRef.current = true;
 
     const recommendationsItemsArray: itemsList[] = [];
     recs.state.products.forEach(

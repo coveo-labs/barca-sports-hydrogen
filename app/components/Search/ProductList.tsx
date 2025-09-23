@@ -6,7 +6,7 @@ import type {
   ProductListState,
   ProductList as ProductListType,
 } from '@coveo/headless/ssr-commerce';
-import {useEffect, useRef} from 'react';
+import {useEffect} from 'react';
 import '~/types/gtm';
 
 // Global tracking to ensure analytics only fire once per response
@@ -49,7 +49,7 @@ export function ProductList() {
 
     const listingsItemsArray: any[] = [];
     productList.state.products.forEach(
-      (recommendationItem: any, index: number) => {
+      (recommendationItem: Product, index: number) => {
         listingsItemsArray.push({
           item_id: recommendationItem.permanentid,
           item_name: recommendationItem.ec_name,
