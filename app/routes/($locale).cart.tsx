@@ -66,9 +66,9 @@ async function setCoveoConfigAttributes(
   ];
 
   const foundAttributes = (cart.attributes ?? []).reduce((acc, item) => {
-    if (attributesToFind.includes(item.key) && item.value != null) {
-      acc[item.key] = {key: item.key, value: item.value ?? ''};
-    }
+  if (attributesToFind.includes(item.key)) {
+    acc[item.key] = {key: item.key, value: item.value};
+  }
     return acc;
   }, {} as Record<string, {key: string; value: string}>);
 
