@@ -88,21 +88,29 @@ export function Recommendations() {
 
         <div className="recommendation-list mt-6 grid grid-cols-1 gap-y-10 sm:grid-cols-3 sm:gap-x-6 sm:gap-y-0 lg:gap-x-8">
           {homepageRecommendations.state.products.map(
-            (recommendation: Product) => (
-              <div key={recommendation.permanentid} className="group relative">
-                <ProductCard
-                  className="recommendation-card"
-                  product={recommendation}
-                  onSelect={() =>
-                    homepageRecommendations.methods
-                      ?.interactiveProduct({
-                        options: {product: recommendation},
-                      })
-                      .select()
-                  }
-                />
-              </div>
-            ),
+            (recommendation: Product) => {
+              // Exclude children to prevent color swatches on recs carousel
+              const {children, ...productWithoutEcColor} = recommendation;
+
+              return (
+                <div
+                  key={recommendation.permanentid}
+                  className="group relative"
+                >
+                  <ProductCard
+                    className="recommendation-card"
+                    product={productWithoutEcColor as Product}
+                    onSelect={() =>
+                      homepageRecommendations.methods
+                        ?.interactiveProduct({
+                          options: {product: productWithoutEcColor as Product},
+                        })
+                        .select()
+                    }
+                  />
+                </div>
+              );
+            },
           )}
         </div>
       </div>
