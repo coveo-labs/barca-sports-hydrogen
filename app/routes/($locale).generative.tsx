@@ -5,17 +5,31 @@ import {
   type GeneratedAnswerState,
   type Result,
 } from '@coveo/headless';
-import { NavLink, useFetcher, useLoaderData } from '@remix-run/react';
-import { useEffect, useState } from 'react';
-import { type LoaderFunctionArgs } from '@shopify/remix-oxygen';
-import { BookOpenIcon } from '@heroicons/react/24/outline';
+import {NavLink, useFetcher, useLoaderData} from '@remix-run/react';
+import {useEffect, useState} from 'react';
+import {type LoaderFunctionArgs} from '@shopify/remix-oxygen';
+import {BookOpenIcon} from '@heroicons/react/24/outline';
 import cx from '~/lib/cx';
-import type { AnswerToArticlesData } from './answer-to-articles';
-import { ResultCard } from '~/components/Generative/ResultCard';
-import { AnswerSection } from '~/components/Generative/Section';
-import { Skeleton } from '~/components/Generative/Skeleton';
-import { Answer } from '~/components/Generative/Answer';
-import type { AnswerToProductsData } from './answer-to-products';
+import type {AnswerToArticlesData} from './answer-to-articles';
+import {ResultCard} from '~/components/Generative/ResultCard';
+import {AnswerSection} from '~/components/Generative/Section';
+import {Skeleton} from '~/components/Generative/Skeleton';
+import {Answer} from '~/components/Generative/Answer';
+import type {AnswerToProductsData} from './answer-to-products';
+import '~/types/gtm';
+
+// Global tracking to ensure analytics only fire once per search query
+const trackedSearchQueries = new Set<string>();
+
+const trackGenerativeAnswering = (q: string, hasNoAnswer: boolean) => {
+  window.dataLayer = window.dataLayer || [];
+  window.dataLayer.push({
+    event: 'search',
+    search_type: 'generative_answering',
+    search_term: q,
+    has_answer: hasNoAnswer ? 'false' : 'true',
+  });
+};
 
 /**
 What to look for when buying a kayak?
@@ -26,16 +40,16 @@ Which kayak materials offer the best balance for advanced use?
 
  */
 
-export async function loader({ request }: LoaderFunctionArgs) {
+export async function loader({request}: LoaderFunctionArgs) {
   const url = new URL(request.url);
   const q = url.searchParams.get('q') || '';
-  return { q };
+  return {q};
 }
 
 export default function GenerativeAnswering() {
-  const { q } = useLoaderData<typeof loader>();
+  const {q} = useLoaderData<typeof loader>();
   const genAnswerState = useGenAIAnswer(q);
-  const { relatedArticles, basicExpression } = useRelatedArticles(
+  const {relatedArticles, basicExpression} = useRelatedArticles(
     q,
     genAnswerState,
   );
@@ -46,21 +60,22 @@ export default function GenerativeAnswering() {
   const hasCitations =
     genAnswerState?.citations && genAnswerState.citations.length > 0;
 
-  const trackGenerativeAnswering = (hasNoAnswer: any) => {
-    //@ts-ignore
-    window.dataLayer = window.dataLayer || [];
-    //@ts-ignore
-    window.dataLayer.push({
-      event: "search",
-      search_type: "generative_answering",
-      search_term: q,
-      has_answer: hasNoAnswer ? "false" : "true"
-    });
-  }
-
   useEffect(() => {
-    trackGenerativeAnswering(hasNoAnswerAfterADelay)
-  }, [hasNoAnswerAfterADelay]);
+    // Create a unique tracking ID based on the query and answer status
+    const trackingId = `search_${q}_${
+      hasNoAnswerAfterADelay ? 'no_answer' : 'has_answer'
+    }`;
+
+    // Check if we've already tracked this specific search
+    if (trackedSearchQueries.has(trackingId)) {
+      return;
+    }
+
+    // Mark this search as tracked
+    trackedSearchQueries.add(trackingId);
+
+    trackGenerativeAnswering(q, hasNoAnswerAfterADelay);
+  }, [hasNoAnswerAfterADelay, q]);
 
   return (
     <div className="bg-gray-50">
@@ -157,7 +172,7 @@ export default function GenerativeAnswering() {
                                 width={200}
                                 height={200}
                                 alt={product.title}
-                                src={(product.raw['ec_images'] as string[])[0]}
+                                src={product.raw['ec_images'] as string}
                                 className="h-48 w-48 rounded-lg bg-gray-200 object-cover group-hover:opacity-75"
                               />
                             </NavLink>
@@ -200,7 +215,7 @@ export default function GenerativeAnswering() {
 }
 
 function useGenAIAnswer(q: string) {
-  const { gen, searchBox } = initGenAI();
+  const {gen, searchBox} = initGenAI();
   const [genAnswerState, setGenAnswerState] = useState<GeneratedAnswerState>();
 
   useEffect(() => {
@@ -228,13 +243,13 @@ function initGenAI() {
 
   const gen = buildGeneratedAnswer(searchEngine, {
     initialState: {
-      responseFormat: { contentFormat: ['text/markdown'] },
+      responseFormat: {contentFormat: ['text/markdown']},
       isEnabled: true,
       isVisible: true,
     },
   });
   const searchBox = buildSearchBox(searchEngine);
-  return { gen, searchBox };
+  return {gen, searchBox};
 }
 
 function useRelatedArticles(q: string, genAnswerState?: GeneratedAnswerState) {
@@ -266,7 +281,7 @@ function useRelatedArticles(q: string, genAnswerState?: GeneratedAnswerState) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [genAnswerState]);
 
-  return { relatedArticles, basicExpression };
+  return {relatedArticles, basicExpression};
 }
 
 function useHasNoAnswerAfterADelay(

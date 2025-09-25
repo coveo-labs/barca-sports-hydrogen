@@ -3,8 +3,6 @@ import {
   defineFacetGenerator,
   definePagination,
   defineProductList,
-  type InferHydratedState,
-  type InferStaticState,
   defineSummary,
   defineCart,
   defineSort,
@@ -17,6 +15,9 @@ import {
   defineBreadcrumbManager,
   defineParameterManager,
   defineRecommendations,
+  type InferHydratedState,
+  type InferStaticState,
+  type CommerceEngineDefinitionOptions,
 } from '@coveo/headless-react/ssr-commerce';
 import {fetchToken} from './fetch-token';
 
@@ -39,7 +40,7 @@ export const engineConfig: CommerceEngineDefinitionOptions = {
     organizationId: 'barcagroupproductionkwvdy6lp',
     analytics: {
       enabled: true,
-      trackingId: 'shop_en_us',
+      trackingId: 'market_88728731922',
     },
     context: {
       language: 'en',
@@ -69,16 +70,16 @@ export const engineConfig: CommerceEngineDefinitionOptions = {
     facetGenerator: defineFacetGenerator(),
     breadcrumbManager: defineBreadcrumbManager(),
     homepageRecommendations: defineRecommendations({
-      options: {slotId: '9a75d3ba-c053-40bf-b881-6d2d3f8472db'},
+      options: {slotId: '046e2c92-63a5-47dd-8266-b8e5027ae031'},
     }),
     cartRecommendations: defineRecommendations({
-      options: {slotId: '5a93e231-3b58-4dd2-a00b-667e4fd62c55'},
+      options: {slotId: 'b236b1e2-f9b1-4f5d-b384-c1872f6d0b37'},
     }),
     pdpRecommendationsLowerCarousel: defineRecommendations({
-      options: {slotId: 'a24b0e9c-a8d2-4d4f-be76-5962160504e2'},
+      options: {slotId: '43b896c6-57a6-4eb0-a511-69eb7b35f7e3'},
     }),
     pdpRecommendationsUpperCarousel: defineRecommendations({
-      options: {slotId: '05848244-5c01-4846-b280-ff63f5530733'},
+      options: {slotId: '68f1384f-b27c-4355-ac9a-7b63ba084e71'},
     }),
     parameterManager: defineParameterManager(),
   },

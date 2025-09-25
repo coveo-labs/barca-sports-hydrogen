@@ -1,13 +1,28 @@
-import { engineDefinition } from '~/lib/coveo.engine';
-import { ProductCard } from '../Products/ProductCard';
-import type { SearchSummaryState, Product } from '@coveo/headless/ssr-commerce';
-import { useEffect } from 'react';
+import {engineDefinition} from '~/lib/coveo.engine';
+import {ProductCard} from '../Products/ProductCard';
+import type {
+  SearchSummaryState,
+  Product,
+  ProductListState,
+  ProductList as ProductListType,
+} from '@coveo/headless/ssr-commerce';
+import {useEffect} from 'react';
+import '~/types/gtm';
 
-let hasRunRef = false;
+// Global tracking to ensure analytics only fire once per response
+const trackedResponseIds = new Set<string>();
 
 export function ProductList() {
-  const productList = engineDefinition.controllers.useProductList();
-  const summary = engineDefinition.controllers.useSummary();
+  const productList = engineDefinition.controllers.useProductList() as {
+    state: ProductListState;
+    methods: Pick<
+      ProductListType,
+      'interactiveProduct' | 'promoteChildToParent'
+    >;
+  };
+  const summary = engineDefinition.controllers.useSummary() as {
+    state: SearchSummaryState;
+  };
   const noResultClass = !productList.state.products.length
     ? ' no-results '
     : ' ';
@@ -17,43 +32,50 @@ export function ProductList() {
     if (child) {
       // TODO: https://coveord.atlassian.net/browse/KIT-3810
       // workaround to promote child to parent
-      (productList.methods as any)?.['promoteChildToParent'](child);
+      productList.methods?.promoteChildToParent(child);
     }
   };
 
-  const listingsItemsArray: any[] = [];
-  productList.state.products.forEach((recommendationItem: any, index: number) => {
-    listingsItemsArray.push({
-      item_id: recommendationItem.permanentid,
-      item_name: recommendationItem.ec_name,
-      index: index,
-      price: recommendationItem.ec_price,
-      quantity: 1
-    })
-  });
-
   useEffect(() => {
-    if (hasRunRef) return;
-    hasRunRef = true;
-    //@ts-ignore
+    const responseId = productList.state.responseId;
+
+    // Check if we've already tracked this response
+    if (!responseId || trackedResponseIds.has(responseId)) {
+      return;
+    }
+
+    // Mark this response as tracked
+    trackedResponseIds.add(responseId);
+
+    const listingsItemsArray: any[] = [];
+    productList.state.products.forEach(
+      (recommendationItem: Product, index: number) => {
+        listingsItemsArray.push({
+          item_id: recommendationItem.permanentid,
+          item_name: recommendationItem.ec_name,
+          index,
+          price: recommendationItem.ec_price,
+          quantity: 1,
+        });
+      },
+    );
+
     window.dataLayer = window.dataLayer || [];
-    //@ts-ignore
-    window.dataLayer.push({ ecommerce: null });  // Clear the previous ecommerce object.
-    //@ts-ignore
+    window.dataLayer.push({ecommerce: null}); // Clear the previous ecommerce object.
     window.dataLayer.push({
-      event: "view_item_list",
+      event: 'view_item_list',
       ecommerce: {
-        item_list_id: `listings_${productList.state.responseId}`,
-        items: listingsItemsArray
-      }
+        item_list_id: `listings_${responseId}`,
+        items: listingsItemsArray,
+      },
     });
-  }, []);
+  }, [productList.state.responseId, productList.state.products]); // Track responseId and products changes
 
   return (
     <section
       aria-labelledby="products-heading"
       data-bam-search-uid={productList.state.responseId}
-      data-bam-search-query={(summary.state as SearchSummaryState).query}
+      data-bam-search-query={summary.state.query}
       data-bam-result-count={summary.state.totalNumberOfProducts}
       className={
         'result-list' +

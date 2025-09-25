@@ -1,49 +1,69 @@
-import { useCartRecommendations } from '~/lib/coveo.engine';
-import { ProductCard } from '../Products/ProductCard';
-import { useEffect } from 'react';
-
-let hasRunRef = false;
+import {useCartRecommendations} from '~/lib/coveo.engine';
+import {ProductCard} from '../Products/ProductCard';
+import {useEffect, useRef} from 'react';
+import type {Product} from '@coveo/headless-react/ssr-commerce';
+import '~/types/gtm';
 
 type itemsList = {
-  item_id: string,
-  item_name: string,
-  index: number,
-  price: number,
-  quantity: number
+  item_id: string;
+  item_name: string;
+  index: number;
+  price: number;
+  quantity: number;
+};
+
+// Define interfaces for the recommendation controller
+interface RecommendationState {
+  products: Product[];
+  headline: string;
+}
+
+interface RecommendationMethods {
+  interactiveProduct: (options: {options: {product: Product}}) => {
+    select: () => void;
+  };
+}
+
+interface RecommendationController {
+  state: RecommendationState;
+  methods: RecommendationMethods;
 }
 
 export function CartRecommendations() {
-  const recs = useCartRecommendations();
-
-  const recommendationsItemsArray: itemsList[] = [];
-  recs.state.products.forEach((recommendationItem: any, index: number) => {
-    recommendationsItemsArray.push({
-      item_id: recommendationItem.permanentid,
-      item_name: recommendationItem.ec_name,
-      index: index,
-      price: recommendationItem.ec_price,
-      quantity: 1
-    })
-  });
+  const hasRunRef = useRef(false);
+  const recs = useCartRecommendations() as RecommendationController;
 
   useEffect(() => {
-    if (hasRunRef) return;
-    hasRunRef = true;
+    if (hasRunRef.current) return;
+    hasRunRef.current = true;
 
-    //@ts-ignore
+    const recommendationsItemsArray: itemsList[] = [];
+    recs.state.products.forEach(
+      (recommendationItem: Product, index: number) => {
+        recommendationsItemsArray.push({
+          item_id: recommendationItem.permanentid,
+          item_name: recommendationItem.ec_name || '',
+          index,
+          price: recommendationItem.ec_price || 0,
+          quantity: 1,
+        });
+      },
+    );
+
     window.dataLayer = window.dataLayer || [];
-    //@ts-ignore
-    window.dataLayer.push({ ecommerce: null });  // Clear the previous ecommerce object.
-    //@ts-ignore
+    window.dataLayer.push({ecommerce: null}); // Clear the previous ecommerce object.
     window.dataLayer.push({
-      event: "view_item_list",
+      event: 'view_item_list',
       ecommerce: {
-        item_list_id: `recommendations_${recs.state.headline.toString().replaceAll(' ', '_').toLowerCase()}`,
+        item_list_id: `recommendations_${recs.state.headline
+          .toString()
+          .replaceAll(' ', '_')
+          .toLowerCase()}`,
         item_list_name: recs.state.headline,
-        items: recommendationsItemsArray
-      }
+        items: recommendationsItemsArray,
+      },
     });
-  }, []);
+  }, [recs.state.headline, recs.state.products]);
 
   return (
     <section
@@ -58,13 +78,15 @@ export function CartRecommendations() {
       </h2>
 
       <div className="recommendation-list mt-6 grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-4 xl:gap-x-8">
-        {recs.state.products.map((relatedProduct) => (
+        {recs.state.products.map((relatedProduct: Product) => (
           <ProductCard
             className="recommendation-card"
-            onSelect={
-              recs.methods?.interactiveProduct({
-                options: { product: relatedProduct },
-              }).select
+            onSelect={() =>
+              recs.methods
+                ?.interactiveProduct({
+                  options: {product: relatedProduct},
+                })
+                .select()
             }
             product={relatedProduct}
             key={relatedProduct.permanentid}
