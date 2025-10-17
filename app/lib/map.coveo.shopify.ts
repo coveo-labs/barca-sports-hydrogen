@@ -32,17 +32,6 @@ export function constructConsistentProductId(product: Product): string {
     productColor,
   )}`;
 
-  // Debug logging to verify ID consistency
-  if (typeof window !== 'undefined') {
-    // eslint-disable-next-line no-console
-    console.log('🔍 Product ID Conversion:', {
-      originalId: product.permanentid,
-      handle: productHandle,
-      color: productColor,
-      consistentId,
-    });
-  }
-
   return consistentId;
 }
 
