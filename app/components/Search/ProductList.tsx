@@ -7,6 +7,10 @@ import type {
   ProductList as ProductListType,
 } from '@coveo/headless/ssr-commerce';
 import {useEffect} from 'react';
+import {
+  createProductWithConsistentId,
+  createGTMItemFromProduct,
+} from '~/lib/map.coveo.shopify';
 import '~/types/gtm';
 
 // Global tracking to ensure analytics only fire once per response
@@ -50,13 +54,9 @@ export function ProductList() {
     const listingsItemsArray: any[] = [];
     productList.state.products.forEach(
       (recommendationItem: Product, index: number) => {
-        listingsItemsArray.push({
-          item_id: recommendationItem.permanentid,
-          item_name: recommendationItem.ec_name,
-          index,
-          price: recommendationItem.ec_price,
-          quantity: 1,
-        });
+        listingsItemsArray.push(
+          createGTMItemFromProduct(recommendationItem, index),
+        );
       },
     );
 
@@ -94,15 +94,26 @@ export function ProductList() {
               className="result-card"
               key={product.permanentid}
               product={product}
-              onSelect={() =>
+              onSelect={() => {
+                const productWithConsistentId =
+                  createProductWithConsistentId(product);
+
+                // Debug logging for click tracking
+                // eslint-disable-next-line no-console
+                console.log('🖱️ Product Click:', {
+                  originalProduct: product.permanentid,
+                  clickTrackingId: productWithConsistentId.ec_product_id,
+                  productName: product.ec_name,
+                });
+
                 productList.methods
                   ?.interactiveProduct({
                     options: {
-                      product,
+                      product: productWithConsistentId,
                     },
                   })
-                  .select()
-              }
+                  .select();
+              }}
               onSwapColor={(color) => onSwapColor(product, color)}
             />
           );

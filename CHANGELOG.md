@@ -1,5 +1,29 @@
 # skeleton
 
+## 2025.10.1
+
+### Patch Changes
+
+- Fix product ID consistency in click tracking for proper revenue attribution ([#UNI-1347](https://github.com/coveo-labs/barca-sports-hydrogen/pull/UNI-1347)) by [@owallace](https://github.com/owallace)
+
+  **Problem**: Click events used Shopify variant IDs (`gid://shopify/ProductVariant/123`) while other events (view, cart, purchase) used custom format (`HANDLE_COLORCODE`). This prevented proper revenue attribution in analytics.
+
+  **Solution**: Created utility functions to ensure all events use consistent product ID format:
+  
+  - Added `constructConsistentProductId()` to build consistent IDs from product data
+  - Added `createProductWithConsistentId()` for click tracking with `ec_product_id`  
+  - Added `createGTMItemFromProduct()` for GTM events with consistent `item_id`
+  - Updated all recommendation components to use utility functions
+
+  **Components Updated**:
+  - `app/components/Search/ProductList.tsx`
+  - `app/components/Cart/CartRecommendations.tsx` 
+  - `app/components/Products/Recommendations.tsx`
+  - `app/components/Homepage/Recommendations.tsx`
+  - `app/components/Search/StandaloneSearchBox.tsx`
+
+  **Result**: All tracking events now use consistent `HANDLE_COLORCODE` format, enabling proper click-to-purchase attribution.
+
 ## 2024.10.1
 
 ### Patch Changes

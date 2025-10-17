@@ -2,7 +2,7 @@
   "name": "barca-sports-hydrogen",
   "private": true,
   "sideEffects": false,
-  "version": "2024.10.1",
+  "version": "2025.10.1",
   "type": "module",
   "scripts": {
     "build": "shopify hydrogen build --codegen",
