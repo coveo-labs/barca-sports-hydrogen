@@ -60,16 +60,6 @@ export function createGTMItemFromProduct(
 } {
   const consistentId = constructConsistentProductId(product);
 
-  // Debug logging for GTM events
-  if (typeof window !== 'undefined') {
-    // eslint-disable-next-line no-console
-    console.log('📊 GTM Item Created:', {
-      originalId: product.permanentid,
-      gtmItemId: consistentId,
-      productName: product.ec_name,
-    });
-  }
-
   return {
     item_id: consistentId,
     item_name: product.ec_name || '',

@@ -98,14 +98,6 @@ export function ProductList() {
                 const productWithConsistentId =
                   createProductWithConsistentId(product);
 
-                // Debug logging for click tracking
-                // eslint-disable-next-line no-console
-                console.log('🖱️ Product Click:', {
-                  originalProduct: product.permanentid,
-                  clickTrackingId: productWithConsistentId.ec_product_id,
-                  productName: product.ec_name,
-                });
-
                 productList.methods
                   ?.interactiveProduct({
                     options: {
