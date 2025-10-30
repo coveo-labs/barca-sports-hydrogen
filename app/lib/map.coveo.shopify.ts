@@ -2,6 +2,7 @@ import type {
   CartLine,
   ComponentizableCartLine,
 } from '@shopify/hydrogen/storefront-api-types';
+import type {Product} from '@coveo/headless-react/ssr-commerce';
 
 export function mapShopifyMerchandiseToCoveoCartItem(
   node: CartLine | ComponentizableCartLine,
@@ -17,6 +18,54 @@ export function mapShopifyMerchandiseToCoveoCartItem(
     name: merchandise.product.title,
     price: Number(merchandise.price.amount),
     quantity: node.quantity,
+  };
+}
+
+/**
+ * Constructs a consistent product ID from a Coveo product object
+ * by extracting the handle from clickUri and combining with color shorthand
+ */
+export function constructConsistentProductId(product: Product): string {
+  const productHandle = new URL(product.clickUri).pathname.split('/').pop();
+  const productColor = product.ec_color || 'Black';
+  const consistentId = `${productHandle?.toUpperCase()}_${colorToShorthand(
+    productColor,
+  )}`;
+
+  return consistentId;
+}
+
+/**
+ * Creates a product object with consistent product ID for click tracking
+ */
+export function createProductWithConsistentId(product: Product): Product {
+  return {
+    ...product,
+    ec_product_id: constructConsistentProductId(product),
+  };
+}
+
+/**
+ * Constructs a GTM item with consistent product ID
+ */
+export function createGTMItemFromProduct(
+  product: Product,
+  index: number,
+): {
+  item_id: string;
+  item_name: string;
+  index: number;
+  price: number;
+  quantity: number;
+} {
+  const consistentId = constructConsistentProductId(product);
+
+  return {
+    item_id: consistentId,
+    item_name: product.ec_name || '',
+    index,
+    price: product.ec_price || 0,
+    quantity: 1,
   };
 }
 

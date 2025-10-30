@@ -2,6 +2,10 @@ import {useCartRecommendations} from '~/lib/coveo.engine';
 import {ProductCard} from '../Products/ProductCard';
 import {useEffect, useRef} from 'react';
 import type {Product} from '@coveo/headless-react/ssr-commerce';
+import {
+  createProductWithConsistentId,
+  createGTMItemFromProduct,
+} from '~/lib/map.coveo.shopify';
 import '~/types/gtm';
 
 type itemsList = {
@@ -40,13 +44,9 @@ export function CartRecommendations() {
     const recommendationsItemsArray: itemsList[] = [];
     recs.state.products.forEach(
       (recommendationItem: Product, index: number) => {
-        recommendationsItemsArray.push({
-          item_id: recommendationItem.permanentid,
-          item_name: recommendationItem.ec_name || '',
-          index,
-          price: recommendationItem.ec_price || 0,
-          quantity: 1,
-        });
+        recommendationsItemsArray.push(
+          createGTMItemFromProduct(recommendationItem, index),
+        );
       },
     );
 
@@ -81,13 +81,15 @@ export function CartRecommendations() {
         {recs.state.products.map((relatedProduct: Product) => (
           <ProductCard
             className="recommendation-card"
-            onSelect={() =>
+            onSelect={() => {
               recs.methods
                 ?.interactiveProduct({
-                  options: {product: relatedProduct},
+                  options: {
+                    product: createProductWithConsistentId(relatedProduct),
+                  },
                 })
-                .select()
-            }
+                .select();
+            }}
             product={relatedProduct}
             key={relatedProduct.permanentid}
           />

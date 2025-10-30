@@ -13,6 +13,7 @@ import {
 } from '@heroicons/react/24/outline';
 import {ProductCard} from '../Products/ProductCard';
 import {useNavigate} from '@remix-run/react';
+import {createProductWithConsistentId} from '~/lib/map.coveo.shopify';
 import '~/types/gtm';
 
 const redirectToGenerative = [
@@ -138,11 +139,15 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
                         key={product.permanentid}
                         product={product}
                         className="product-suggestion"
-                        onSelect={
-                          instantProducts.methods?.interactiveProduct({
-                            options: {product},
-                          }).select
-                        }
+                        onSelect={() => {
+                          instantProducts.methods
+                            ?.interactiveProduct({
+                              options: {
+                                product: createProductWithConsistentId(product),
+                              },
+                            })
+                            .select();
+                        }}
                       />
                     );
                   })}

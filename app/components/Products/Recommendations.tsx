@@ -5,6 +5,10 @@ import {
 import {ProductCard} from './ProductCard';
 import {Fragment, useEffect} from 'react';
 import type {Product} from '@coveo/headless-react/ssr-commerce';
+import {
+  createProductWithConsistentId,
+  createGTMItemFromProduct,
+} from '~/lib/map.coveo.shopify';
 import '~/types/gtm';
 
 let hasRunRefUpper = false;
@@ -48,13 +52,9 @@ export function ProductRecommendations() {
     recommendationsProducts.state.products
       .slice(0, 4)
       .forEach((recommendationItem: Product, index: number) => {
-        recommandationsItemsArray.push({
-          item_id: recommendationItem.permanentid,
-          item_name: recommendationItem.ec_name || '',
-          index,
-          price: recommendationItem.ec_price || 0,
-          quantity: 1,
-        });
+        recommandationsItemsArray.push(
+          createGTMItemFromProduct(recommendationItem, index),
+        );
       });
     return {
       event: 'view_item_list',
@@ -118,15 +118,18 @@ export function ProductRecommendations() {
                           className="recommendation-card"
                           product={productWithoutEcColor as Product}
                           key={productWithoutEcColor.permanentid}
-                          onSelect={() =>
+                          onSelect={() => {
                             recommendationCarousel.methods
                               ?.interactiveProduct({
                                 options: {
-                                  product: productWithoutEcColor as Product,
+                                  product:
+                                    createProductWithConsistentId(
+                                      relatedProduct,
+                                    ),
                                 },
                               })
-                              .select()
-                          }
+                              .select();
+                          }}
                         />
                       );
                     })}
