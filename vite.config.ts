@@ -35,8 +35,17 @@ export default defineConfig({
        *
        * Include 'example-dep' in the array below.
        * @see https://vitejs.dev/config/dep-optimization-options
+       *
+       * CRITICAL SSR FIX:
+       * - '@headlessui/react' and 'use-sync-external-store/with-selector' are required
+       *   to prevent "ReferenceError: module is not defined" errors in SSR context.
+       * - DO NOT REMOVE these entries without thorough testing in local dev environment.
+       * - This fix is paired with pinned Coveo package versions in package.json:
+       *   @coveo/headless: 3.23.0 (no ^)
+       *   @coveo/headless-react: 2.4.22 (no ^)
+       * - Upgrading these packages independently may reintroduce SSR errors.
        */
-      include: ['cookie'],
+      include: ['cookie', '@headlessui/react', 'use-sync-external-store/with-selector'],
     },
   },
 });

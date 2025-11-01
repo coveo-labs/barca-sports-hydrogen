@@ -28,6 +28,16 @@ Hydrogen is Shopify’s stack for headless commerce. Hydrogen is designed to dov
 npm create @shopify/hydrogen@latest
 ```
 
+## ⚠️ Important: Dependency Management
+
+This project uses **pinned versions** for certain packages to prevent SSR (Server-Side Rendering) errors. Before updating dependencies, especially `@coveo/headless`, `@coveo/headless-react`, or `@headlessui/react`, please read [DEPENDENCIES.md](./DEPENDENCIES.md) for critical configuration details.
+
+**Common issues if dependencies are modified incorrectly:**
+- `TypeError: Cannot read properties of undefined (reading 'extend')`
+- `ReferenceError: module is not defined`
+
+See [DEPENDENCIES.md](./DEPENDENCIES.md) for solutions and safe upgrade procedures.
+
 ## Building for production
 
 ```bash
