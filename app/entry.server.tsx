@@ -21,7 +21,6 @@ export default async function handleRequest(
     },
     connectSrc: [
       'https://*.coveo.com',
-      'https://coveo.com',
       'https://*.googletagmanager.com',
       'https://*.google-analytics.com',
     ],
@@ -35,6 +34,8 @@ export default async function handleRequest(
     imgSrc: [
       "'self'",
       'https://cdn.shopify.com',
+      'https://*.myshopify.com',
+      'https://images.barca.group',
       'data:',
       'https://tailwindui.com',
     ],
