@@ -1,11 +1,3 @@
-import dayjs from 'dayjs/esm';
-import customParseFormat from 'dayjs/esm/plugin/customParseFormat/index.js';
-import timezone from 'dayjs/esm/plugin/timezone/index.js';
-import utc from 'dayjs/esm/plugin/utc/index.js';
-dayjs.extend(utc);
-dayjs.extend(timezone);
-dayjs.extend(customParseFormat);
-
 import {ServerRouter} from 'react-router';
 import {isbot} from 'isbot';
 import {renderToReadableStream} from 'react-dom/server';
@@ -27,6 +19,25 @@ export default async function handleRequest(
       checkoutDomain: context.env.PUBLIC_CHECKOUT_DOMAIN,
       storeDomain: context.env.PUBLIC_STORE_DOMAIN,
     },
+    connectSrc: [
+      'https://*.coveo.com',
+      'https://coveo.com',
+      'https://*.googletagmanager.com',
+      'https://*.google-analytics.com',
+    ],
+    scriptSrc: [
+      "'self'",
+      'https://cdn.shopify.com',
+      'https://shopify.com',
+      'http://localhost:*',
+      'https://*.googletagmanager.com',
+    ],
+    imgSrc: [
+      "'self'",
+      'https://cdn.shopify.com',
+      'data:',
+      'https://tailwindui.com',
+    ],
   });
 
   const body = await renderToReadableStream(
@@ -52,7 +63,10 @@ export default async function handleRequest(
   }
 
   responseHeaders.set('Content-Type', 'text/html');
-  responseHeaders.set('Content-Security-Policy', header);
+  responseHeaders.set(
+    'Content-Security-Policy',
+    header.replace('https://https://', 'https://'),
+  );
 
   return new Response(body, {
     headers: responseHeaders,

@@ -1,13 +1,30 @@
-import {defineConfig} from 'vite';
+import {defineConfig, type Plugin} from 'vite';
 import {hydrogen} from '@shopify/hydrogen/vite';
 import {oxygen} from '@shopify/mini-oxygen/vite';
 import {reactRouter} from '@react-router/dev/vite';
 import tsconfigPaths from 'vite-tsconfig-paths';
-import tailwindcss from '@tailwindcss/vite';
+
+// Plugin to fix dayjs imports for Coveo Headless in SSR
+function dayjsEsmPlugin(): Plugin {
+  return {
+    name: 'dayjs-esm-fix',
+    enforce: 'pre',
+    resolveId(id, importer) {
+      if (id === 'dayjs' && importer?.includes('@coveo/headless')) {
+        return this.resolve('dayjs/esm/index.js', importer, {skipSelf: true});
+      }
+      if (id.startsWith('dayjs/plugin/') && importer?.includes('@coveo/headless')) {
+        const pluginName = id.replace('dayjs/plugin/', '').replace('.js', '');
+        return this.resolve(`dayjs/esm/plugin/${pluginName}/index.js`, importer, {skipSelf: true});
+      }
+      return null;
+    },
+  };
+}
 
 export default defineConfig({
   plugins: [
-    tailwindcss(),
+    dayjsEsmPlugin(),
     hydrogen(),
     oxygen(),
     reactRouter(),
@@ -19,6 +36,15 @@ export default defineConfig({
     assetsInlineLimit: 0,
   },
   ssr: {
+    noExternal: [
+      '@headlessui/react',
+      'use-sync-external-store',
+      'use-sync-external-store/shim/with-selector',
+      '@coveo/headless',
+      'dayjs',
+      'exponential-backoff',
+      'pino',
+    ],
     optimizeDeps: {
       /**
        * Include dependencies here if they throw CJS<>ESM errors.
@@ -31,14 +57,15 @@ export default defineConfig({
        * @see https://vitejs.dev/config/dep-optimization-options
        */
       include: [
-        'set-cookie-parser',
         'cookie',
-        'react-router',
+        '@headlessui/react',
+        'use-sync-external-store',
+        'use-sync-external-store/shim',
         'use-sync-external-store/with-selector',
+        'exponential-backoff',
+        'pino',
       ],
+      exclude: ['dayjs', '@coveo/headless'],
     },
-  },
-  server: {
-    allowedHosts: ['.tryhydrogen.dev'],
   },
 });
