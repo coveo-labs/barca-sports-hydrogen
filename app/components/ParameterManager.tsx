@@ -5,8 +5,8 @@ import {
   type ParameterManager,
   type CommerceSearchParameters,
 } from '@coveo/headless-react/ssr-commerce';
-import {useSearchParams} from '@remix-run/react';
 import {useEffect, useMemo, useRef} from 'react';
+import {useSearchParams} from 'react-router';
 
 export default function ParameterManager({url}: {url: string | null}) {
   const {state, methods} = useParameterManager() as {

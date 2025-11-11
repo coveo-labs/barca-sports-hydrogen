@@ -1,4 +1,4 @@
-import {NavLink, type NavLinkProps, useParams} from '@remix-run/react';
+import {NavLink, useParams, type NavLinkProps} from 'react-router';
 
 interface NavLinkWithLocaleProps extends NavLinkProps {}
 export function NavLinkWithLocale(props: NavLinkWithLocaleProps) {

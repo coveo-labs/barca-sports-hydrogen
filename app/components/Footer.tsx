@@ -1,5 +1,4 @@
 import type {HeaderQuery} from 'storefrontapi.generated';
-import {NavLink} from '@remix-run/react';
 import BarcaLogo from '~/assets/barca-logo.svg';
 import {NavLinkWithLocale, relativeLink} from './NavLinkWithLocale';
 

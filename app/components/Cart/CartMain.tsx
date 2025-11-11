@@ -1,4 +1,3 @@
-import {NavLink} from '@remix-run/react';
 import {Money, useOptimisticCart} from '@shopify/hydrogen';
 import type {CartApiQueryFragment} from 'storefrontapi.generated';
 import {CheckIcon, QuestionMarkCircleIcon} from '@heroicons/react/20/solid';
@@ -8,6 +7,7 @@ import cx from '~/lib/cx';
 import type {CartLine} from '@shopify/hydrogen/storefront-api-types';
 import {mapShopifyMerchandiseToCoveoCartItem} from '~/lib/map.coveo.shopify';
 import '~/types/gtm';
+import {NavLink} from 'react-router';
 
 export type CartLayout = 'page' | 'aside';
 

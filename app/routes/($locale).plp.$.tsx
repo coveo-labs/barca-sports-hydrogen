@@ -1,5 +1,6 @@
-import {type LoaderFunctionArgs} from '@shopify/remix-oxygen';
-import {useLoaderData, useParams, type MetaFunction} from '@remix-run/react';
+import {Await, useLoaderData, Link} from 'react-router';
+import type {Route} from './+types/_index';
+
 import {
   ClientSideNavigatorContextProvider,
   ServerSideNavigatorContextProvider,
@@ -11,6 +12,7 @@ import {FullSearch} from '~/components/Search/FullSearch';
 import {buildParameterSerializer} from '@coveo/headless-react/ssr-commerce';
 import {useEffect, useState} from 'react';
 import ParameterManager from '~/components/ParameterManager';
+import type {LoaderFunctionArgs} from 'react-router';
 
 export const meta: MetaFunction<typeof loader> = ({data}) => {
   return [{title: `Coveo ProductListingPage Work in progress`}];

@@ -1,4 +1,4 @@
-import {NavLink} from '@remix-run/react';
+import {NavLink} from 'react-router';
 import type {HeaderQuery} from 'storefrontapi.generated';
 
 interface FeaturedCategoriesProps {

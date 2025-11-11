@@ -1,16 +1,9 @@
 import {useNonce, getShopAnalytics, Analytics, Script} from '@shopify/hydrogen';
-import {defer, type LoaderFunctionArgs} from '@shopify/remix-oxygen';
 import {
-  Links,
-  Meta,
-  Outlet,
-  Scripts,
-  useRouteError,
-  useRouteLoaderData,
-  ScrollRestoration,
-  isRouteErrorResponse,
+  data,
+  type LoaderFunctionArgs,
   type ShouldRevalidateFunction,
-} from '@remix-run/react';
+} from 'react-router';
 import favicon from '~/assets/favicon.ico';
 import tailwindCss from './styles/tailwind.css?url';
 import {PageLayout} from '~/components/PageLayout';
@@ -82,7 +75,7 @@ export async function loader(args: LoaderFunctionArgs) {
     'coveo_visitorId',
   );
 
-  return defer(
+  return data(
     {
       ...deferredData,
       ...criticalData,

@@ -1,4 +1,3 @@
-import {Await, useRouteLoaderData} from '@remix-run/react';
 import type {CartApiQueryFragment, HeaderQuery} from 'storefrontapi.generated';
 
 import {
@@ -29,6 +28,7 @@ import type {RootLoader} from '~/root';
 import {CountrySelector} from './CountrySelector';
 import {NavLinkWithLocale, relativeLink} from './NavLinkWithLocale';
 import {StandaloneSearchBox} from './Search/StandaloneSearchBox';
+import {Await, useRouteLoaderData} from 'react-router';
 interface HeaderProps {
   header: HeaderQuery;
   cart: Promise<CartApiQueryFragment | null>;

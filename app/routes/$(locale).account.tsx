@@ -1,10 +1,10 @@
 import {Switch} from '@headlessui/react';
-import {Form, NavLink, useFetcher, useLoaderData} from '@remix-run/react';
 import {
-  type ActionFunctionArgs,
+  useFetcher,
+  useLoaderData,
   type LoaderFunctionArgs,
-  json,
-} from '@shopify/remix-oxygen';
+  data as reactRouterData,
+} from 'react-router';
 import {GET_CUSTOMER_QUERY} from '~/lib/fragments';
 
 const SET_METAFIELDS_MUTATION = `
@@ -53,7 +53,7 @@ export async function loader({context}: LoaderFunctionArgs) {
     throw new Error('Customer not found');
   }
 
-  return json(
+  return reactRouterData(
     {customer: data.customer},
     {
       headers: {

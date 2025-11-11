@@ -1,7 +1,7 @@
 import type {Result} from '@coveo/headless';
 import {BookOpenIcon} from '@heroicons/react/20/solid';
+import {NavLink} from 'react-router';
 
-import {NavLink} from '@remix-run/react';
 import cx from '~/lib/cx';
 
 interface ResultCardProps {

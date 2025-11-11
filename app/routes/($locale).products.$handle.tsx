@@ -1,10 +1,3 @@
-import {redirect, type LoaderFunctionArgs} from '@shopify/remix-oxygen';
-import {
-  useLoaderData,
-  useParams,
-  useSearchParams,
-  type MetaFunction,
-} from '@remix-run/react';
 import type {ProductFragment} from 'storefrontapi.generated';
 import {
   getSelectedProductOptions,
@@ -28,6 +21,14 @@ import {
   ServerSideNavigatorContextProvider,
 } from '~/lib/navigator.provider';
 import {colorToShorthand} from '~/lib/map.coveo.shopify';
+import {
+  redirect,
+  useLoaderData,
+  useParams,
+  useSearchParams,
+  type LoaderFunctionArgs,
+  type MetaFunction,
+} from 'react-router';
 
 export const meta: MetaFunction<typeof loader> = ({data}) => {
   return [{title: `Hydrogen | ${data?.product.title ?? ''}`}];

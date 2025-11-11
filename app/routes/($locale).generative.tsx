@@ -5,9 +5,7 @@ import {
   type GeneratedAnswerState,
   type Result,
 } from '@coveo/headless';
-import {NavLink, useFetcher, useLoaderData} from '@remix-run/react';
 import {useEffect, useState} from 'react';
-import {type LoaderFunctionArgs} from '@shopify/remix-oxygen';
 import {BookOpenIcon} from '@heroicons/react/24/outline';
 import cx from '~/lib/cx';
 import type {AnswerToArticlesData} from './answer-to-articles';
@@ -17,6 +15,12 @@ import {Skeleton} from '~/components/Generative/Skeleton';
 import {Answer} from '~/components/Generative/Answer';
 import type {AnswerToProductsData} from './answer-to-products';
 import '~/types/gtm';
+import {
+  NavLink,
+  useFetcher,
+  useLoaderData,
+  type LoaderFunctionArgs,
+} from 'react-router';
 
 // Global tracking to ensure analytics only fire once per search query
 const trackedSearchQueries = new Set<string>();
@@ -311,17 +315,20 @@ function useRelatedProducts(basicExpression: string) {
     if (!products) {
       return {};
     }
-    return products?.reduce((acc, product) => {
-      const slug = (product.raw['ec_category_slug'] as string)
-        .split(';')
-        .pop() as string;
-      if (acc[slug]) {
-        acc[slug].push(product);
-      } else {
-        acc[slug] = [product];
-      }
-      return acc;
-    }, {} as Record<string, Result[]>);
+    return products?.reduce(
+      (acc, product) => {
+        const slug = (product.raw['ec_category_slug'] as string)
+          .split(';')
+          .pop() as string;
+        if (acc[slug]) {
+          acc[slug].push(product);
+        } else {
+          acc[slug] = [product];
+        }
+        return acc;
+      },
+      {} as Record<string, Result[]>,
+    );
   };
 
   const answerToProduct = useFetcher<AnswerToProductsData>();
