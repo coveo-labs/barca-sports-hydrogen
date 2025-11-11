@@ -1,3 +1,11 @@
+import dayjs from 'dayjs/esm';
+import customParseFormat from 'dayjs/esm/plugin/customParseFormat/index.js';
+import timezone from 'dayjs/esm/plugin/timezone/index.js';
+import utc from 'dayjs/esm/plugin/utc/index.js';
+dayjs.extend(utc);
+dayjs.extend(timezone);
+dayjs.extend(customParseFormat);
+
 import {ServerRouter} from 'react-router';
 import {isbot} from 'isbot';
 import {renderToReadableStream} from 'react-dom/server';
