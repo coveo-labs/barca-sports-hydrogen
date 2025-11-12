@@ -1,5 +1,8 @@
-import {useLoaderData, type MetaFunction} from '@remix-run/react';
-import type {LoaderFunctionArgs} from '@remix-run/server-runtime';
+import {Await, useLoaderData, Link} from 'react-router';
+import type {Route} from './+types/_index';
+import {Suspense} from 'react';
+import {Image} from '@shopify/hydrogen';
+
 import {Hero} from '~/components/Homepage/Hero';
 import {FeaturedCategories} from '~/components/Homepage/FeaturedCategories';
 import {engineDefinition} from '~/lib/coveo.engine';

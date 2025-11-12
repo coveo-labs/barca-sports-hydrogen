@@ -1,9 +1,9 @@
+import {CartForm, type OptimisticCartLineInput} from '@shopify/hydrogen';
 import {
   useParams,
   useSearchParams,
   type FetcherWithComponents,
-} from '@remix-run/react';
-import {CartForm, type OptimisticCartLineInput} from '@shopify/hydrogen';
+} from 'react-router';
 import {useCart} from '~/lib/coveo.engine';
 import {colorToShorthand} from '~/lib/map.coveo.shopify';
 import type {CartReturn} from '~/routes/($locale).cart';

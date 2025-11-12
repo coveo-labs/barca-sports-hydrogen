@@ -1,5 +1,3 @@
-import {type LoaderFunctionArgs} from '@shopify/remix-oxygen';
-import {useLoaderData, type MetaFunction} from '@remix-run/react';
 import {
   searchEngineDefinition,
   type SearchStaticState,
@@ -14,6 +12,11 @@ import {FullSearch} from '~/components/Search/FullSearch';
 import ParameterManager from '~/components/ParameterManager';
 import {buildParameterSerializer} from '@coveo/headless-react/ssr-commerce';
 import {useEffect, useState} from 'react';
+import {
+  useLoaderData,
+  type LoaderFunctionArgs,
+  type MetaFunction,
+} from 'react-router';
 
 export const meta: MetaFunction = () => {
   return [{title: `Coveo | Search`}];
@@ -47,7 +50,7 @@ export default function SearchPage() {
   const [currentUrl, setCurrentUrl] = useState(url);
 
   useEffect(() => {
-    setCurrentUrl(window.location.href);
+    setCurrentUrl(new URL(window.location.href));
   }, []);
 
   return (
@@ -55,7 +58,7 @@ export default function SearchPage() {
       navigatorContext={new ClientSideNavigatorContextProvider()}
       staticState={staticState as SearchStaticState}
     >
-      <ParameterManager url={currentUrl} />
+      <ParameterManager url={currentUrl.toString()} />
       <FullSearch
         headline={`Browse ${q}`}
         tagline="Find Your Perfect Splash! Dive into our collection and search for the water sports gear that takes your adventure to the next level. Your journey starts with a click!"

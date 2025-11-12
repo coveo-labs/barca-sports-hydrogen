@@ -4,11 +4,7 @@ import type {
   CartBuyerIdentityInput,
   Cart,
 } from '@shopify/hydrogen/storefront-api-types';
-import {
-  redirect,
-  type AppLoadContext,
-  type ActionFunction,
-} from '@shopify/remix-oxygen';
+import {redirect, type ActionFunction, type AppLoadContext} from 'react-router';
 
 export const action: ActionFunction = async ({request, context}) => {
   const {session} = context;

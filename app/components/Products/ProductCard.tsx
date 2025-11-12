@@ -2,10 +2,10 @@ import type {Product} from '@coveo/headless-react/ssr-commerce';
 import {Money} from '@shopify/hydrogen';
 
 import {StarIcon} from '@heroicons/react/20/solid';
-import {NavLink, useRouteLoaderData} from '@remix-run/react';
 import type {RootLoader} from '~/root';
 import {Colors} from './Colors';
 import {useState} from 'react';
+import {NavLink, useRouteLoaderData} from 'react-router';
 
 interface ProductCardProps {
   product: Product;

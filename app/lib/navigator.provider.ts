@@ -7,7 +7,7 @@ export class ServerSideNavigatorContextProvider implements NavigatorContext {
     this.request = request;
   }
   get referrer() {
-    return this.request.referrer;
+    return this.request.referrer || '';
   }
 
   get userAgent() {

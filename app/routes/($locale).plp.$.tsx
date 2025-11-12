@@ -1,5 +1,6 @@
-import {type LoaderFunctionArgs} from '@shopify/remix-oxygen';
-import {useLoaderData, useParams, type MetaFunction} from '@remix-run/react';
+import {Await, useLoaderData, Link, useParams} from 'react-router';
+import type {Route} from './+types/_index';
+
 import {
   ClientSideNavigatorContextProvider,
   ServerSideNavigatorContextProvider,
@@ -11,6 +12,7 @@ import {FullSearch} from '~/components/Search/FullSearch';
 import {buildParameterSerializer} from '@coveo/headless-react/ssr-commerce';
 import {useEffect, useState} from 'react';
 import ParameterManager from '~/components/ParameterManager';
+import type {LoaderFunctionArgs, MetaFunction} from 'react-router';
 
 export const meta: MetaFunction<typeof loader> = ({data}) => {
   return [{title: `Coveo ProductListingPage Work in progress`}];
@@ -41,7 +43,7 @@ export default function PLP() {
   const [currentUrl, setCurrentUrl] = useState(url);
 
   useEffect(() => {
-    setCurrentUrl(window.location.href);
+    setCurrentUrl(new URL(window.location.href));
   }, []);
 
   const headline = useParams()['*']!.toUpperCase().replaceAll('/', ' / ');
@@ -55,7 +57,7 @@ export default function PLP() {
       navigatorContext={new ClientSideNavigatorContextProvider()}
       staticState={staticState as ListingStaticState}
     >
-      <ParameterManager url={currentUrl} />
+      <ParameterManager url={currentUrl.toString()} />
       <FullSearch headline={headline} tagline={tagline} />
     </ListingProvider>
   );

@@ -1,16 +1,17 @@
 import {useNonce, getShopAnalytics, Analytics, Script} from '@shopify/hydrogen';
-import {defer, type LoaderFunctionArgs} from '@shopify/remix-oxygen';
 import {
+  data,
+  isRouteErrorResponse,
   Links,
   Meta,
   Outlet,
   Scripts,
+  ScrollRestoration,
   useRouteError,
   useRouteLoaderData,
-  ScrollRestoration,
-  isRouteErrorResponse,
+  type LoaderFunctionArgs,
   type ShouldRevalidateFunction,
-} from '@remix-run/react';
+} from 'react-router';
 import favicon from '~/assets/favicon.ico';
 import tailwindCss from './styles/tailwind.css?url';
 import {PageLayout} from '~/components/PageLayout';
@@ -34,7 +35,6 @@ export const shouldRevalidate: ShouldRevalidateFunction = ({
   formMethod,
   currentUrl,
   nextUrl,
-  defaultShouldRevalidate,
 }) => {
   // revalidate when a mutation is performed e.g add to cart, login...
   if (formMethod && formMethod !== 'GET') return true;
@@ -42,12 +42,26 @@ export const shouldRevalidate: ShouldRevalidateFunction = ({
   // revalidate when manually revalidating via useRevalidator
   if (currentUrl.toString() === nextUrl.toString()) return true;
 
-  return defaultShouldRevalidate;
+  // Defaulting to no revalidation for root loader data to improve performance.
+  // When using this feature, you risk your UI getting out of sync with your server.
+  // Use with caution. If you are uncomfortable with this optimization, update the
+  // line below to `return defaultShouldRevalidate` instead.
+  // For more details see: https://remix.run/docs/en/main/route/should-revalidate
+  return false;
 };
 
+/**
+ * The main and reset stylesheets are added in the Layout component
+ * to prevent a bug in development HMR updates.
+ *
+ * This avoids the "failed to execute 'insertBefore' on 'Node'" error
+ * that occurs after editing and navigating to another page.
+ *
+ * It's a temporary fix until the issue is resolved.
+ * https://github.com/remix-run/remix/issues/9242
+ */
 export function links() {
   return [
-    {rel: 'stylesheet', href: tailwindCss},
     {
       rel: 'preconnect',
       href: 'https://cdn.shopify.com',
@@ -82,7 +96,7 @@ export async function loader(args: LoaderFunctionArgs) {
     'coveo_visitorId',
   );
 
-  return defer(
+  return data(
     {
       ...deferredData,
       ...criticalData,
@@ -206,6 +220,7 @@ export function Layout({children}: {children?: React.ReactNode}) {
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width,initial-scale=1" />
+        <link rel="stylesheet" href={tailwindCss}></link>
         <Meta />
         <Links />
         <Script waitForHydration src="/scripts/google-tag-manager.js" />

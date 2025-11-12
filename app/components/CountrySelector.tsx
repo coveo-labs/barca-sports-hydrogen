@@ -1,7 +1,7 @@
 import {Popover, PopoverButton, PopoverPanel} from '@headlessui/react';
 import {ChevronDownIcon} from '@heroicons/react/20/solid';
-import {Form, useLocation, useRouteLoaderData} from '@remix-run/react';
 import type {CountryCode} from '@shopify/hydrogen/customer-account-api-types';
+import {Form, useLocation, useRouteLoaderData} from 'react-router';
 import {type I18nLocale, SupportedMarkets} from '~/lib/i18n';
 import type {RootLoader} from '~/root';
 

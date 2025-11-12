@@ -1,4 +1,4 @@
-import {createCookie} from '@shopify/remix-oxygen';
+import { createCookie } from "react-router";
 
 export const accessTokenCookie = createCookie('coveo_accessToken', {
   httpOnly: true,

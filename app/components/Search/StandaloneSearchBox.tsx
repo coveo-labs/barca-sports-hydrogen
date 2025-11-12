@@ -12,9 +12,9 @@ import {
   ChatBubbleBottomCenterIcon,
 } from '@heroicons/react/24/outline';
 import {ProductCard} from '../Products/ProductCard';
-import {useNavigate} from '@remix-run/react';
 import {createProductWithConsistentId} from '~/lib/map.coveo.shopify';
 import '~/types/gtm';
+import {useNavigate} from 'react-router';
 
 const redirectToGenerative = [
   'what',

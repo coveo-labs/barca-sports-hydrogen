@@ -1,18 +1,16 @@
-import {
-  Await,
-  useLoaderData,
-  useRouteLoaderData,
-  type MetaFunction,
-} from '@remix-run/react';
 import type {CartQueryDataReturn} from '@shopify/hydrogen';
 import {CartForm} from '@shopify/hydrogen';
 import type {Cart} from '@shopify/hydrogen/storefront-api-types';
-import {
-  json,
-  type LoaderFunctionArgs,
-  type ActionFunctionArgs,
-} from '@shopify/remix-oxygen';
 import {Suspense} from 'react';
+import {
+  Await,
+  data,
+  useLoaderData,
+  useRouteLoaderData,
+  type ActionFunctionArgs,
+  type LoaderFunctionArgs,
+  type MetaFunction,
+} from 'react-router';
 import {CartEmpty} from '~/components/Cart/CartEmpty';
 import {CartMain} from '~/components/Cart/CartMain';
 import {CartRecommendations} from '~/components/Cart/CartRecommendations';
@@ -99,7 +97,7 @@ export async function action({request, context}: ActionFunctionArgs) {
   const headers = cartId ? cart.setCartId(result.cart.id) : new Headers();
   const {cart: cartResult, errors, warnings} = result;
 
-  return json(
+  return data(
     {
       cart: cartResult,
       errors,
