@@ -1,11 +1,15 @@
 import {Menu, MenuButton, MenuItems} from '@headlessui/react';
 import {ChevronDownIcon} from '@heroicons/react/20/solid';
+import {AgenticProductSearch} from './AgenticProductSearch';
 import {Facets} from './Facets';
 import {PaginationFooter} from './Pagination';
 import {ProductList} from './ProductList';
+import {NoProductsFound} from './NoProductsFound';
 import {Sorts} from './Sorts';
 import {Breadcrumbs} from './Breadcrumbs';
 import {useEffect, useRef, useState} from 'react';
+import {engineDefinition} from '~/lib/coveo.engine';
+import type {ProductListState} from '@coveo/headless/ssr-commerce';
 
 interface SearchPageProps {
   headline: string;
@@ -42,6 +46,11 @@ function useNumFacetsInline() {
 export function FullSearch({headline, tagline}: SearchPageProps) {
   const facetsContainer = useRef<HTMLDivElement>(null);
   const numFacetsInline = useNumFacetsInline();
+  const productList = engineDefinition.controllers.useProductList() as {
+    state: ProductListState;
+  };
+
+  const hasResults = productList.state.products.length > 0;
 
   return (
     <main className="bg-gray-50">
@@ -98,8 +107,15 @@ export function FullSearch({headline, tagline}: SearchPageProps) {
         <h2 id="products-heading" className="sr-only">
           Products
         </h2>
-        <ProductList />
-        <PaginationFooter />
+        {hasResults && <AgenticProductSearch />}
+        {hasResults ? (
+          <>
+            <ProductList />
+            <PaginationFooter />
+          </>
+        ) : (
+          <NoProductsFound />
+        )}
       </section>
     </main>
   );

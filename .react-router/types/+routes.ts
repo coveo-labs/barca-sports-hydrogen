@@ -13,6 +13,18 @@ type Pages = {
   "/": {
     params: {};
   };
+  "/api/agentic/related-questions": {
+    params: {};
+  };
+  "/api/agentic/conversation": {
+    params: {};
+  };
+  "/api/agentic/understand": {
+    params: {};
+  };
+  "/api/agentic/compare": {
+    params: {};
+  };
   "/account/authorize": {
     params: {};
   };
@@ -20,6 +32,9 @@ type Pages = {
     params: {};
   };
   "/answer-to-products": {
+    params: {};
+  };
+  "/api/agentic/intent": {
     params: {};
   };
   "/:locale?/account": {
@@ -103,7 +118,23 @@ type Pages = {
 type RouteFiles = {
   "root.tsx": {
     id: "root";
-    page: "/" | "/account/authorize" | "/answer-to-articles" | "/answer-to-products" | "/:locale?/account" | "/account/logout" | "/account/login" | "/robots.txt" | "/:locale?" | "/:locale?/sitemap/:type/:page.xml" | "/:locale?/products/:handle" | "/:locale?/sitemap.xml" | "/:locale?/generative" | "/:locale?/search" | "/:locale?/plp/*" | "/:locale?/cart" | "/:locale?/*" | "/token" | "/graphiql" | "/subrequest-profiler" | "/.well-known/appspecific/com.chrome.devtools.json";
+    page: "/" | "/api/agentic/related-questions" | "/api/agentic/conversation" | "/api/agentic/understand" | "/api/agentic/compare" | "/account/authorize" | "/answer-to-articles" | "/answer-to-products" | "/api/agentic/intent" | "/:locale?/account" | "/account/logout" | "/account/login" | "/robots.txt" | "/:locale?" | "/:locale?/sitemap/:type/:page.xml" | "/:locale?/products/:handle" | "/:locale?/sitemap.xml" | "/:locale?/generative" | "/:locale?/search" | "/:locale?/plp/*" | "/:locale?/cart" | "/:locale?/*" | "/token" | "/graphiql" | "/subrequest-profiler" | "/.well-known/appspecific/com.chrome.devtools.json";
+  };
+  "routes/api.agentic.related-questions.ts": {
+    id: "routes/api.agentic.related-questions";
+    page: "/api/agentic/related-questions";
+  };
+  "routes/api.agentic.conversation.ts": {
+    id: "routes/api.agentic.conversation";
+    page: "/api/agentic/conversation";
+  };
+  "routes/api.agentic.understand.ts": {
+    id: "routes/api.agentic.understand";
+    page: "/api/agentic/understand";
+  };
+  "routes/api.agentic.compare.ts": {
+    id: "routes/api.agentic.compare";
+    page: "/api/agentic/compare";
   };
   "routes/account_.authorize.tsx": {
     id: "routes/account_.authorize";
@@ -116,6 +147,10 @@ type RouteFiles = {
   "routes/answer-to-products.tsx": {
     id: "routes/answer-to-products";
     page: "/answer-to-products";
+  };
+  "routes/api.agentic.intent.ts": {
+    id: "routes/api.agentic.intent";
+    page: "/api/agentic/intent";
   };
   "routes/$(locale).account.tsx": {
     id: "routes/$(locale).account";

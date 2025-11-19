@@ -26,6 +26,7 @@ import {StandaloneProvider} from './components/Search/Context';
 import {GlobalLoading} from './components/ProgressBar';
 import {getLocaleFromRequest} from './lib/i18n';
 import {getCookieFromRequest} from './lib/session';
+import type {Route} from './+types/root';
 export type RootLoader = typeof loader;
 
 /**
@@ -85,7 +86,7 @@ export async function loader(args: LoaderFunctionArgs) {
 
   const {country, currency, language} = getLocaleFromRequest(args.request);
 
-  args.context.customerAccount.UNSTABLE_getBuyer().then((buyer) => {
+  args.context.customerAccount.getBuyer().then((buyer) => {
     args.context.cart.updateBuyerIdentity({
       customerAccessToken: buyer.customerAccessToken,
     });
@@ -132,7 +133,7 @@ export async function loader(args: LoaderFunctionArgs) {
  * Load data necessary for rendering content above the fold. This is the critical data
  * needed to render the page. If it's unavailable, the whole page should 400 or 500 error.
  */
-async function loadCriticalData({context, request}: LoaderFunctionArgs) {
+async function loadCriticalData({context, request}: Route.LoaderArgs) {
   const {storefront, customerAccount, cart} = context;
 
   const loggedIn = await customerAccount.isLoggedIn();
@@ -167,9 +168,11 @@ async function loadCriticalData({context, request}: LoaderFunctionArgs) {
     fetchStaticState({
       context,
       k: 'standaloneEngineDefinition',
-      query: '',
       url: 'https://shop.barca.group',
       request,
+      parameters: {
+        q: '',
+      },
     }),
   ]);
 
@@ -199,7 +202,7 @@ function loadDeferredData({context}: LoaderFunctionArgs) {
         footerMenuHandle: 'footer', // Adjust to your footer menu handle
       },
     })
-    .catch((error) => {
+    .catch((error: Error) => {
       // Log query errors, but don't throw them so the page can still render
       console.error(error);
       return null;
