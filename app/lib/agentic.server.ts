@@ -1,9 +1,9 @@
 // Server-side utilities for Coveo Agentic API calls
 
 const AGENTIC_BASE_URL =
-  'http://localhost:8100/rest/organizations/barcasportsmcy01fvu/commerce/v2/agentic';
+  'http://localhost:8100/rest/organizations/barcasportsmcy01fvu/commerce/unstable/agentic';
 const AGENTIC_ACCESS_TOKEN =
-  'xcd5978d5-9dbf-40b5-9fc6-5542cb840bb6';
+  'x22eb90c4-6fe5-4874-991d-ed005eaddb3b';
 
 /**
  * Build a URL for a Coveo Agentic API endpoint
