@@ -28,13 +28,18 @@ import {
   generateId,
   limitMessages,
 } from '~/lib/generative-chat';
-import {useAssistantStreaming} from '~/lib/use-assistant-streaming';
+import {
+  useAssistantStreaming,
+  type ThinkingUpdateSnapshot,
+} from '~/lib/use-assistant-streaming';
 import {useConversationState} from '~/lib/use-conversation-state';
 import {EmptyState} from '~/components/Generative/EmptyState';
 import {MessageBubble} from '~/components/Generative/MessageBubble';
+import {ThinkingStatusPanel} from '~/components/Generative/ThinkingStatusPanel';
 import {logDebug} from '~/lib/logger';
 
 const STREAM_ENDPOINT = '/api/agentic/conversation';
+const PENDING_THINKING_KEY = '__pending_thinking__';
 
 export async function loader({request}: LoaderFunctionArgs) {
   const url = new URL(request.url);
@@ -113,6 +118,23 @@ export default function GenerativeShoppingAssistant() {
   const [inputValue, setInputValue] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamError, setStreamError] = useState<string | null>(null);
+  const [activeThinkingSnapshot, setActiveThinkingSnapshot] =
+    useState<ThinkingUpdateSnapshot | null>(null);
+  const [thinkingExpandedByMessage, setThinkingExpandedByMessage] = useState<
+    Record<string, boolean>
+  >({});
+  const clearThinkingUpdates = useCallback(() => {
+    setActiveThinkingSnapshot(null);
+  }, []);
+  const pendingScrollMessageIdRef = useRef<string | null>(null);
+  const suspendAutoScrollRef = useRef<boolean>(false);
+
+  useEffect(() => {
+    setActiveThinkingSnapshot(null);
+    setThinkingExpandedByMessage({});
+    pendingScrollMessageIdRef.current = null;
+    suspendAutoScrollRef.current = false;
+  }, [activeConversationId]);
 
   const {streamAssistantResponse, abortStream} = useAssistantStreaming({
     locale,
@@ -120,6 +142,9 @@ export default function GenerativeShoppingAssistant() {
     setIsStreaming,
     setStreamError,
     endpoint: STREAM_ENDPOINT,
+    onThinkingUpdate: (snapshot) => {
+      setActiveThinkingSnapshot(snapshot);
+    },
   });
 
   useEffect(() => () => abortStream(), [abortStream]);
@@ -133,18 +158,278 @@ export default function GenerativeShoppingAssistant() {
   );
 
   const messages = activeConversation?.messages ?? [];
-
-  const latestStreamingAssistantIndex = useMemo(() => {
-    if (!isStreaming) {
-      return -1;
-    }
-    for (let index = messages.length - 1; index >= 0; index -= 1) {
-      if (messages[index]?.role === 'assistant') {
-        return index;
+  const visibleMessages = useMemo(
+    () =>
+      messages.filter(
+        (message) =>
+          !message.ephemeral ||
+          (message.kind !== 'status' && message.kind !== 'tool'),
+      ),
+    [messages],
+  );
+  const hasVisibleMessages = visibleMessages.length > 0;
+  const pendingThinkingSnapshot =
+    activeThinkingSnapshot &&
+    (!activeThinkingSnapshot.messageId ||
+      !visibleMessages.some(
+        (message) => message.id === activeThinkingSnapshot.messageId,
+      ))
+      ? activeThinkingSnapshot
+      : null;
+  const latestUserMessageId = useMemo(() => {
+    for (let index = visibleMessages.length - 1; index >= 0; index -= 1) {
+      const candidate = visibleMessages[index];
+      if (!candidate) {
+        continue;
+      }
+      if (candidate.role === 'user') {
+        return candidate.id;
       }
     }
-    return -1;
+    return null;
+  }, [visibleMessages]);
+
+  const latestStreamingAssistantId = useMemo(() => {
+    if (!isStreaming) {
+      return null;
+    }
+    for (let index = messages.length - 1; index >= 0; index -= 1) {
+      const candidate = messages[index];
+      if (!candidate) {
+        continue;
+      }
+      if (candidate.role !== 'assistant') {
+        continue;
+      }
+      if (candidate.kind === 'status' || candidate.kind === 'tool') {
+        continue;
+      }
+      return candidate.id;
+    }
+    return null;
   }, [isStreaming, messages]);
+
+  useEffect(() => {
+    if (!isStreaming) {
+      setActiveThinkingSnapshot(null);
+    }
+  }, [isStreaming]);
+
+  useEffect(() => {
+    if (!isStreaming) {
+      return;
+    }
+    if (!latestStreamingAssistantId) {
+      return;
+    }
+    setThinkingExpandedByMessage((prev) => {
+      if (prev[latestStreamingAssistantId]) {
+        return prev;
+      }
+      return {
+        ...prev,
+        [latestStreamingAssistantId]: true,
+      };
+    });
+  }, [isStreaming, latestStreamingAssistantId]);
+
+  useEffect(() => {
+    if (!activeThinkingSnapshot) {
+      return;
+    }
+
+    const messageId = activeThinkingSnapshot.messageId;
+    if (!messageId) {
+      setThinkingExpandedByMessage((prev) => {
+        if (Object.prototype.hasOwnProperty.call(prev, PENDING_THINKING_KEY)) {
+          return prev;
+        }
+        return {
+          ...prev,
+          [PENDING_THINKING_KEY]: true,
+        };
+      });
+      return;
+    }
+
+    setThinkingExpandedByMessage((prev) => {
+      const hasMessageEntry = Object.prototype.hasOwnProperty.call(
+        prev,
+        messageId,
+      );
+
+      if (hasMessageEntry) {
+        if (Object.prototype.hasOwnProperty.call(prev, PENDING_THINKING_KEY)) {
+          const {[PENDING_THINKING_KEY]: _ignored, ...rest} = prev;
+          return rest;
+        }
+        return prev;
+      }
+
+      const {[PENDING_THINKING_KEY]: _ignored, ...rest} = prev;
+      return {
+        ...rest,
+        [messageId]: true,
+      };
+    });
+  }, [activeThinkingSnapshot]);
+
+  useEffect(() => {
+    if (activeThinkingSnapshot) {
+      return;
+    }
+    setThinkingExpandedByMessage((prev) => {
+      if (!(PENDING_THINKING_KEY in prev)) {
+        return prev;
+      }
+      const {[PENDING_THINKING_KEY]: _ignored, ...rest} = prev;
+      return rest;
+    });
+  }, [activeThinkingSnapshot]);
+
+  const renderedConversationItems = useMemo(() => {
+    const items: JSX.Element[] = [];
+    const queuedProductItems: JSX.Element[] = [];
+
+    const flushQueuedProducts = () => {
+      if (!queuedProductItems.length) {
+        return;
+      }
+      items.push(...queuedProductItems.splice(0, queuedProductItems.length));
+    };
+
+    visibleMessages.forEach((message) => {
+      const isAssistant = message.role === 'assistant';
+      const isProductList = message.kind === 'products';
+      const kind = message.kind ?? 'text';
+      const isLatestAssistant =
+        isAssistant && message.id === latestStreamingAssistantId;
+      const isStreamingMessage = isLatestAssistant;
+      const showTrailingSpinner = isStreamingMessage && kind === 'text';
+
+      const metadataUpdates = message.metadata?.thinkingUpdates ?? [];
+      const isActiveSnapshotForMessage =
+        activeThinkingSnapshot?.messageId === message.id;
+      const updatesForMessage = isActiveSnapshotForMessage
+        ? (activeThinkingSnapshot?.updates ?? [])
+        : metadataUpdates;
+      const hasThinkingUpdates = isAssistant && updatesForMessage.length > 0;
+      const storedExpansion = thinkingExpandedByMessage[message.id];
+      const isExpanded =
+        storedExpansion !== undefined
+          ? storedExpansion
+          : Boolean(
+              isActiveSnapshotForMessage && !activeThinkingSnapshot?.isComplete,
+            );
+      const messageDomId = `message-${message.id}`;
+
+      const messageBlock = (
+        <div
+          key={message.id}
+          id={messageDomId}
+          className="flex w-full flex-col gap-3"
+        >
+          {hasThinkingUpdates ? (
+            <div className="flex w-full">
+              <ThinkingStatusPanel
+                updates={updatesForMessage}
+                isStreaming={Boolean(
+                  isActiveSnapshotForMessage &&
+                    !activeThinkingSnapshot?.isComplete,
+                )}
+                isExpanded={isExpanded}
+                onToggle={() =>
+                  setThinkingExpandedByMessage((prev) => ({
+                    ...prev,
+                    [message.id]: !isExpanded,
+                  }))
+                }
+              />
+            </div>
+          ) : null}
+          <MessageBubble
+            message={message}
+            isStreaming={isStreamingMessage}
+            showTrailingSpinner={showTrailingSpinner}
+          />
+        </div>
+      );
+
+      if (isAssistant && isProductList) {
+        queuedProductItems.push(messageBlock);
+        return;
+      }
+
+      items.push(messageBlock);
+
+      if (
+        pendingThinkingSnapshot &&
+        latestUserMessageId &&
+        message.id === latestUserMessageId
+      ) {
+        const pendingExpanded =
+          thinkingExpandedByMessage[PENDING_THINKING_KEY] ?? true;
+        items.push(
+          <div key="thinking-pending" className="flex w-full flex-col gap-3">
+            <div className="flex w-full">
+              <ThinkingStatusPanel
+                updates={pendingThinkingSnapshot.updates}
+                isStreaming={!pendingThinkingSnapshot.isComplete}
+                isExpanded={pendingExpanded}
+                onToggle={() =>
+                  setThinkingExpandedByMessage((prev) => ({
+                    ...prev,
+                    [PENDING_THINKING_KEY]: !pendingExpanded,
+                  }))
+                }
+              />
+            </div>
+          </div>,
+        );
+      }
+
+      if (isAssistant) {
+        flushQueuedProducts();
+      }
+    });
+
+    flushQueuedProducts();
+
+    if (
+      pendingThinkingSnapshot &&
+      latestUserMessageId === null &&
+      visibleMessages.length === 0
+    ) {
+      const pendingExpanded =
+        thinkingExpandedByMessage[PENDING_THINKING_KEY] ?? true;
+      items.push(
+        <div key="thinking-pending" className="flex w-full flex-col gap-3">
+          <div className="flex w-full">
+            <ThinkingStatusPanel
+              updates={pendingThinkingSnapshot.updates}
+              isStreaming={!pendingThinkingSnapshot.isComplete}
+              isExpanded={pendingExpanded}
+              onToggle={() =>
+                setThinkingExpandedByMessage((prev) => ({
+                  ...prev,
+                  [PENDING_THINKING_KEY]: !pendingExpanded,
+                }))
+              }
+            />
+          </div>
+        </div>,
+      );
+    }
+
+    return items;
+  }, [
+    visibleMessages,
+    latestStreamingAssistantId,
+    activeThinkingSnapshot,
+    pendingThinkingSnapshot,
+    latestUserMessageId,
+    thinkingExpandedByMessage,
+  ]);
 
   useEffect(() => {
     if (!isHydrated) {
@@ -163,11 +448,55 @@ export default function GenerativeShoppingAssistant() {
   ]);
 
   const messageContainerRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
-    const node = messageContainerRef.current;
-    if (!node) return;
-    node.scrollTop = node.scrollHeight;
+    const container = messageContainerRef.current;
+    if (!container) {
+      return;
+    }
+
+    const targetId = pendingScrollMessageIdRef.current;
+    if (targetId) {
+      const element = document.getElementById(`message-${targetId}`);
+      if (element instanceof HTMLElement) {
+        element.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start',
+          inline: 'nearest',
+        });
+        pendingScrollMessageIdRef.current = null;
+      } else if (typeof window !== 'undefined') {
+        window.requestAnimationFrame(() => {
+          const retryElement = document.getElementById(`message-${targetId}`);
+          if (retryElement instanceof HTMLElement) {
+            retryElement.scrollIntoView({
+              behavior: 'smooth',
+              block: 'start',
+              inline: 'nearest',
+            });
+            pendingScrollMessageIdRef.current = null;
+          }
+        });
+      }
+    }
+
+    if (suspendAutoScrollRef.current) {
+      return;
+    }
+
+    container.scrollTop = container.scrollHeight;
   }, [messages]);
+
+  useEffect(() => {
+    if (suspendAutoScrollRef.current) {
+      return;
+    }
+    const container = messageContainerRef.current;
+    if (!container) {
+      return;
+    }
+    container.scrollTop = container.scrollHeight;
+  }, [activeThinkingSnapshot]);
 
   const sendMessage = useCallback(
     async (messageText: string, options: {forceNew?: boolean} = {}) => {
@@ -176,6 +505,7 @@ export default function GenerativeShoppingAssistant() {
         return;
       }
 
+      clearThinkingUpdates();
       setStreamError(null);
 
       const {forceNew = false} = options;
@@ -211,6 +541,10 @@ export default function GenerativeShoppingAssistant() {
         createdAt: now,
         kind: 'text',
       };
+
+      // Hold auto-scroll so the new user turn stays pinned while the assistant replies.
+      pendingScrollMessageIdRef.current = userMessage.id;
+      suspendAutoScrollRef.current = true;
 
       const title =
         base.messages.length === 0
@@ -264,6 +598,7 @@ export default function GenerativeShoppingAssistant() {
     },
     [
       activeConversationId,
+      clearThinkingUpdates,
       conversations,
       streamAssistantResponse,
       setActiveConversationId,
@@ -338,6 +673,7 @@ export default function GenerativeShoppingAssistant() {
     abortStream();
     setStreamError(null);
     setInputValue('');
+    clearThinkingUpdates();
 
     const timestamp = new Date().toISOString();
     const freshConversation = createEmptyConversation(
@@ -355,6 +691,7 @@ export default function GenerativeShoppingAssistant() {
     setActiveConversationId(freshConversation.localId);
   }, [
     abortStream,
+    clearThinkingUpdates,
     setActiveConversationId,
     setConversations,
     setInputValue,
@@ -504,7 +841,7 @@ export default function GenerativeShoppingAssistant() {
           ref={messageContainerRef}
           className={cx(
             'relative flex-1 overflow-y-auto bg-slate-50 px-4 pt-6 sm:px-6 lg:px-10',
-            messages.length > 0 ? 'pb-32' : 'pb-24',
+            hasVisibleMessages ? 'pb-32' : 'pb-24',
           )}
         >
           {messages.length === 0 ? (
@@ -518,28 +855,15 @@ export default function GenerativeShoppingAssistant() {
               }}
             />
           ) : (
-            <div className="mx-auto flex max-w-5xl flex-col gap-4">
-              {messages.map((message, index) => {
-                const isAssistant = message.role === 'assistant';
-                const kind = message.kind ?? 'text';
-                const isLatestAssistant =
-                  isAssistant && index === latestStreamingAssistantIndex;
-                const isStreamingMessage = isLatestAssistant;
-                const showTrailingSpinner =
-                  isStreamingMessage && kind === 'text';
-
-                return (
-                  <MessageBubble
-                    key={message.id}
-                    message={message}
-                    isStreaming={isStreamingMessage}
-                    showTrailingSpinner={showTrailingSpinner}
-                  />
-                );
-              })}
+            <div className="mx-auto flex w-full max-w-5xl flex-col gap-4">
+              {hasVisibleMessages ? (
+                <div className="flex w-full flex-col gap-5">
+                  {renderedConversationItems}
+                </div>
+              ) : null}
             </div>
           )}
-          {messages.length > 0 ? (
+          {hasVisibleMessages ? (
             <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-24 bg-gradient-to-t from-slate-50 via-slate-50/80 to-transparent backdrop-blur-sm" />
           ) : null}
         </div>

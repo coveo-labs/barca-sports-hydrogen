@@ -3,7 +3,7 @@
 const AGENTIC_BASE_URL =
   'http://localhost:8100/rest/organizations/barcasportsmcy01fvu/commerce/unstable/agentic';
 const AGENTIC_ACCESS_TOKEN =
-  'x22eb90c4-6fe5-4874-991d-ed005eaddb3b';
+  'x82dbbeb7-ca54-4304-a6d7-1e0524086968';
 
 /**
  * Build a URL for a Coveo Agentic API endpoint

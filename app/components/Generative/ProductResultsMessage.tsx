@@ -2,7 +2,6 @@ import {memo} from 'react';
 import cx from '~/lib/cx';
 import {ProductCard} from '~/components/Products/ProductCard';
 import type {ConversationMessage} from '~/types/conversation';
-import {getProductGridClass} from '~/lib/generative-chat';
 
 type ProductResultsMessageProps = {
   message: ConversationMessage;
@@ -27,7 +26,6 @@ function ProductResultsMessageComponent({
     );
   }
 
-  const gridClass = getProductGridClass(products.length);
   const hasHeadline = Boolean(message.content);
   const showProgress = isStreaming;
 
@@ -60,9 +58,8 @@ function ProductResultsMessageComponent({
         ) : null}
         <div
           className={cx(
-            'grid gap-4',
+            'grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 xl:gap-x-8',
             hasHeadline || showProgress ? 'mt-4' : undefined,
-            gridClass,
           )}
         >
           {products.map((product, index) => (

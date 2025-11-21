@@ -9,8 +9,18 @@ export type ConversationMessageKind =
   | 'products'
   | 'error';
 
+export type ConversationThinkingUpdateKind = 'status' | 'tool';
+
+export interface ConversationThinkingUpdate {
+  id: string;
+  text: string;
+  kind: ConversationThinkingUpdateKind;
+  timestamp: string;
+}
+
 export interface ConversationMessageMetadata {
   products?: Product[];
+  thinkingUpdates?: ConversationThinkingUpdate[];
 }
 
 export interface ConversationMessage {

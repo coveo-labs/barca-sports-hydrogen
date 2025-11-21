@@ -1,6 +1,9 @@
 import {useCallback, useRef} from 'react';
 import type {Dispatch, SetStateAction} from 'react';
-import type {ConversationMessage} from '~/types/conversation';
+import type {
+  ConversationMessage,
+  ConversationThinkingUpdate,
+} from '~/types/conversation';
 import {
   type ConversationRecord,
   extractAssistantChunk,
@@ -28,11 +31,18 @@ const INTERRUPTED_ERROR_MESSAGE =
 const GENERIC_ERROR_MESSAGE =
   'The assistant ran into a problem. Please try again in a moment.';
 
+export type ThinkingUpdateSnapshot = {
+  updates: ConversationThinkingUpdate[];
+  isComplete: boolean;
+  messageId: string | null;
+};
+
 type StreamArgs = {
   conversationLocalId: string;
   conversationSessionId: string | null;
   userMessage: string;
   showInitialStatus?: boolean;
+  onThinkingUpdate?: (snapshot: ThinkingUpdateSnapshot) => void;
 };
 
 type UseAssistantStreamingOptions = {
@@ -41,6 +51,7 @@ type UseAssistantStreamingOptions = {
   setIsStreaming: Dispatch<SetStateAction<boolean>>;
   setStreamError: Dispatch<SetStateAction<string | null>>;
   endpoint: string;
+  onThinkingUpdate?: (snapshot: ThinkingUpdateSnapshot) => void;
 };
 
 type SessionIdentifiers = {
@@ -87,6 +98,7 @@ export function useAssistantStreaming({
   setIsStreaming,
   setStreamError,
   endpoint,
+  onThinkingUpdate,
 }: UseAssistantStreamingOptions) {
   const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -103,9 +115,12 @@ export function useAssistantStreaming({
       conversationSessionId,
       userMessage,
       showInitialStatus,
+      onThinkingUpdate: streamCallback,
     }: StreamArgs) => {
       const controller = new AbortController();
       abortControllerRef.current = controller;
+
+      const updateCallback = streamCallback ?? onThinkingUpdate;
 
       const view =
         typeof window !== 'undefined'
@@ -124,6 +139,7 @@ export function useAssistantStreaming({
       let turnCompleted = false;
       const seenStatusTraces = new Set<string>();
       const seenStatusMessages = new Set<string>();
+      let thinkingUpdates: ConversationThinkingUpdate[] = [];
 
       const applyUpdate = (
         mutator: (conversation: ConversationRecord) => ConversationRecord,
@@ -148,6 +164,71 @@ export function useAssistantStreaming({
             }),
           ),
         );
+      };
+
+      const emitThinkingSnapshot = () => {
+        if (!updateCallback) {
+          return;
+        }
+        updateCallback({
+          updates: [...thinkingUpdates],
+          isComplete: turnCompleted,
+          messageId: assistantMessageId,
+        });
+      };
+
+      const resetThinkingState = () => {
+        thinkingUpdates = [];
+        turnCompleted = false;
+        emitThinkingSnapshot();
+      };
+
+      const syncThinkingMetadata = () => {
+        if (!assistantMessageId) {
+          emitThinkingSnapshot();
+          return;
+        }
+        const snapshot = [...thinkingUpdates];
+        applyUpdate((conversation) => {
+          const messages = [...conversation.messages];
+          const index = messages.findIndex(
+            (message) => message.id === assistantMessageId,
+          );
+          if (index === -1) {
+            return conversation;
+          }
+          messages[index] = {
+            ...messages[index],
+            metadata: {
+              ...(messages[index].metadata ?? {}),
+              thinkingUpdates: snapshot,
+            },
+          };
+          return {...conversation, messages};
+        });
+        emitThinkingSnapshot();
+      };
+
+      const recordThinkingUpdate = (
+        text: string,
+        kind: ConversationThinkingUpdate['kind'],
+      ) => {
+        const trimmed = text.trim();
+        if (!trimmed) {
+          return;
+        }
+        const last = thinkingUpdates[thinkingUpdates.length - 1];
+        if (last && last.text === trimmed && last.kind === kind) {
+          return;
+        }
+        const update: ConversationThinkingUpdate = {
+          id: generateId(),
+          text: trimmed,
+          kind,
+          timestamp: new Date().toISOString(),
+        };
+        thinkingUpdates = [...thinkingUpdates.slice(-24), update];
+        syncThinkingMetadata();
       };
 
       const pushAssistantMessage = (
@@ -203,15 +284,16 @@ export function useAssistantStreaming({
           endpoint,
         });
 
-        if (showInitialStatus) {
-          pushAssistantMessage(CONNECTING_STATUS_MESSAGE, 'status', {
-            ephemeral: true,
-          });
-        } else {
-          pushAssistantMessage(DEFAULT_STATUS_MESSAGE, 'status', {
-            ephemeral: true,
-          });
-        }
+        resetThinkingState();
+
+        const initialStatusMessage = showInitialStatus
+          ? CONNECTING_STATUS_MESSAGE
+          : DEFAULT_STATUS_MESSAGE;
+
+        pushAssistantMessage(initialStatusMessage, 'status', {
+          ephemeral: true,
+        });
+        recordThinkingUpdate(initialStatusMessage, 'status');
         const response = await fetch(endpoint, {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
@@ -232,6 +314,9 @@ export function useAssistantStreaming({
           const errorText = await response.text().catch(() => '');
           const message = errorText || CONNECTION_ERROR_MESSAGE;
           capturedErrorMessage = message;
+          recordThinkingUpdate(message, 'status');
+          turnCompleted = true;
+          syncThinkingMetadata();
           pushErrorBubble(message);
           setStreamError(message);
           throw new Error(message);
@@ -259,10 +344,6 @@ export function useAssistantStreaming({
             case 'status_update': {
               updateSessionFromPayload(parsedEvent.payload);
 
-              if (assistantMessageId) {
-                return;
-              }
-
               const statusText = parsedEvent.payload.text ?? '';
               if (!statusText) {
                 return;
@@ -281,15 +362,17 @@ export function useAssistantStreaming({
                 seenStatusMessages.add(statusText);
               }
 
+              recordThinkingUpdate(statusText, 'status');
+
+              if (assistantMessageId) {
+                return;
+              }
+
               pushAssistantMessage(statusText, 'status', {ephemeral: true});
               return;
             }
             case 'tool_invocation': {
               updateSessionFromPayload(parsedEvent.payload);
-
-              if (assistantMessageId) {
-                return;
-              }
 
               const toolText = parsedEvent.payload.text ?? '';
               if (!toolText) {
@@ -299,16 +382,18 @@ export function useAssistantStreaming({
                 return;
               }
               seenStatusMessages.add(toolText);
-              pushAssistantMessage(toolText, 'tool', {ephemeral: true});
-              return;
-            }
-            case 'tool_result': {
-              updateSessionFromPayload(parsedEvent.payload);
+
+              recordThinkingUpdate(toolText, 'tool');
 
               if (assistantMessageId) {
                 return;
               }
 
+              pushAssistantMessage(toolText, 'tool', {ephemeral: true});
+              return;
+            }
+            case 'tool_result': {
+              updateSessionFromPayload(parsedEvent.payload);
               const successNote =
                 parsedEvent.payload.message ??
                 resolveDisplayText(
@@ -316,7 +401,11 @@ export function useAssistantStreaming({
                   TOOL_RESULT_FALLBACK_MESSAGE,
                 );
 
-              pushAssistantMessage(successNote, 'tool', {ephemeral: true});
+              recordThinkingUpdate(successNote, 'tool');
+
+              if (!assistantMessageId) {
+                pushAssistantMessage(successNote, 'tool', {ephemeral: true});
+              }
 
               const productList = parsedEvent.payload.products ?? [];
               if (productList.length > 0) {
@@ -368,6 +457,9 @@ export function useAssistantStreaming({
 
               const errorText = parsedEvent.payload.message;
               capturedErrorMessage = errorText;
+              recordThinkingUpdate(errorText, 'status');
+              turnCompleted = true;
+              syncThinkingMetadata();
               pushErrorBubble(errorText);
               setStreamError(errorText);
               controller.abort();
@@ -376,6 +468,7 @@ export function useAssistantStreaming({
             case 'turn_complete': {
               updateSessionFromPayload(parsedEvent.payload);
               turnCompleted = true;
+              syncThinkingMetadata();
               setIsStreaming(false);
               return;
             }
@@ -388,17 +481,23 @@ export function useAssistantStreaming({
 
               accumulatedContent += chunk;
               const contentSnapshot = accumulatedContent;
+              let createdAssistantMessage = false;
 
               applyUpdate((conversation) => {
                 const messages = [...conversation.messages];
                 if (!assistantMessageId) {
                   assistantMessageId = generateId();
+                  createdAssistantMessage = true;
                   messages.push({
                     id: assistantMessageId,
                     role: 'assistant',
                     content: contentSnapshot,
                     createdAt: new Date().toISOString(),
                     kind: 'text',
+                    metadata:
+                      thinkingUpdates.length > 0
+                        ? {thinkingUpdates: [...thinkingUpdates]}
+                        : undefined,
                   });
                 } else {
                   const index = messages.findIndex(
@@ -428,6 +527,9 @@ export function useAssistantStreaming({
                   messages,
                 };
               });
+              if (createdAssistantMessage) {
+                syncThinkingMetadata();
+              }
               return;
             }
             case 'unknown': {
@@ -512,6 +614,9 @@ export function useAssistantStreaming({
         if (!turnCompleted && !capturedErrorMessage) {
           const interruptionMessage = INTERRUPTED_ERROR_MESSAGE;
           capturedErrorMessage = interruptionMessage;
+          recordThinkingUpdate(interruptionMessage, 'status');
+          turnCompleted = true;
+          syncThinkingMetadata();
           pushErrorBubble(interruptionMessage);
           setStreamError(interruptionMessage);
         }
@@ -555,6 +660,7 @@ export function useAssistantStreaming({
       setConversations,
       setIsStreaming,
       setStreamError,
+      onThinkingUpdate,
     ],
   );
 
