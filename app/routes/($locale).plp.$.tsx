@@ -28,7 +28,7 @@ export async function loader({context, params, request}: LoaderFunctionArgs) {
   );
 
   const staticState = await fetchStaticState({
-    url: `https://shop.barca.group/plp/${params['*']}`,
+    url: `https://shop.barca.group/plp/${params['*']}${url.search}`,
     context,
     parameters,
     k: 'listingEngineDefinition',
