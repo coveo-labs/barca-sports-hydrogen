@@ -24,22 +24,21 @@ import {
   MAX_CONVERSATIONS,
   type ConversationRecord,
   createEmptyConversation,
-  formatRelativeTime,
   generateId,
   limitMessages,
 } from '~/lib/generative-chat';
-import {
-  useAssistantStreaming,
-  type ThinkingUpdateSnapshot,
-} from '~/lib/use-assistant-streaming';
+import {useAssistantStreaming} from '~/lib/use-assistant-streaming';
 import {useConversationState} from '~/lib/use-conversation-state';
 import {EmptyState} from '~/components/Generative/EmptyState';
-import {MessageBubble} from '~/components/Generative/MessageBubble';
-import {ThinkingStatusPanel} from '~/components/Generative/ThinkingStatusPanel';
+import {AssistantHeader} from '~/components/Generative/AssistantHeader';
+import {ChatInputFooter} from '~/components/Generative/ChatInputFooter';
+import {ConversationSidebar} from '~/components/Generative/ConversationSidebar';
+import {ConversationTranscript} from '~/components/Generative/ConversationTranscript';
+import {useConversationScroll} from '~/lib/use-conversation-scroll';
+import {useThinkingState} from '~/lib/use-thinking-state';
 import {logDebug} from '~/lib/logger';
 
 const STREAM_ENDPOINT = '/api/agentic/conversation';
-const PENDING_THINKING_KEY = '__pending_thinking__';
 
 export async function loader({request}: LoaderFunctionArgs) {
   const url = new URL(request.url);
@@ -118,23 +117,6 @@ export default function GenerativeShoppingAssistant() {
   const [inputValue, setInputValue] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamError, setStreamError] = useState<string | null>(null);
-  const [activeThinkingSnapshot, setActiveThinkingSnapshot] =
-    useState<ThinkingUpdateSnapshot | null>(null);
-  const [thinkingExpandedByMessage, setThinkingExpandedByMessage] = useState<
-    Record<string, boolean>
-  >({});
-  const clearThinkingUpdates = useCallback(() => {
-    setActiveThinkingSnapshot(null);
-  }, []);
-  const pendingScrollMessageIdRef = useRef<string | null>(null);
-  const suspendAutoScrollRef = useRef<boolean>(false);
-
-  useEffect(() => {
-    setActiveThinkingSnapshot(null);
-    setThinkingExpandedByMessage({});
-    pendingScrollMessageIdRef.current = null;
-    suspendAutoScrollRef.current = false;
-  }, [activeConversationId]);
 
   const {streamAssistantResponse, abortStream} = useAssistantStreaming({
     locale,
@@ -143,7 +125,7 @@ export default function GenerativeShoppingAssistant() {
     setStreamError,
     endpoint: STREAM_ENDPOINT,
     onThinkingUpdate: (snapshot) => {
-      setActiveThinkingSnapshot(snapshot);
+      setActiveSnapshot(snapshot);
     },
   });
 
@@ -168,14 +150,6 @@ export default function GenerativeShoppingAssistant() {
     [messages],
   );
   const hasVisibleMessages = visibleMessages.length > 0;
-  const pendingThinkingSnapshot =
-    activeThinkingSnapshot &&
-    (!activeThinkingSnapshot.messageId ||
-      !visibleMessages.some(
-        (message) => message.id === activeThinkingSnapshot.messageId,
-      ))
-      ? activeThinkingSnapshot
-      : null;
   const latestUserMessageId = useMemo(() => {
     for (let index = visibleMessages.length - 1; index >= 0; index -= 1) {
       const candidate = visibleMessages[index];
@@ -209,227 +183,47 @@ export default function GenerativeShoppingAssistant() {
     return null;
   }, [isStreaming, messages]);
 
-  useEffect(() => {
-    if (!isStreaming) {
-      setActiveThinkingSnapshot(null);
-    }
-  }, [isStreaming]);
-
-  useEffect(() => {
-    if (!isStreaming) {
-      return;
-    }
-    if (!latestStreamingAssistantId) {
-      return;
-    }
-    setThinkingExpandedByMessage((prev) => {
-      if (prev[latestStreamingAssistantId]) {
-        return prev;
-      }
-      return {
-        ...prev,
-        [latestStreamingAssistantId]: true,
-      };
-    });
-  }, [isStreaming, latestStreamingAssistantId]);
-
-  useEffect(() => {
-    if (!activeThinkingSnapshot) {
-      return;
-    }
-
-    const messageId = activeThinkingSnapshot.messageId;
-    if (!messageId) {
-      setThinkingExpandedByMessage((prev) => {
-        if (Object.prototype.hasOwnProperty.call(prev, PENDING_THINKING_KEY)) {
-          return prev;
-        }
-        return {
-          ...prev,
-          [PENDING_THINKING_KEY]: true,
-        };
-      });
-      return;
-    }
-
-    setThinkingExpandedByMessage((prev) => {
-      const hasMessageEntry = Object.prototype.hasOwnProperty.call(
-        prev,
-        messageId,
-      );
-
-      if (hasMessageEntry) {
-        if (Object.prototype.hasOwnProperty.call(prev, PENDING_THINKING_KEY)) {
-          const {[PENDING_THINKING_KEY]: _ignored, ...rest} = prev;
-          return rest;
-        }
-        return prev;
-      }
-
-      const {[PENDING_THINKING_KEY]: _ignored, ...rest} = prev;
-      return {
-        ...rest,
-        [messageId]: true,
-      };
-    });
-  }, [activeThinkingSnapshot]);
-
-  useEffect(() => {
-    if (activeThinkingSnapshot) {
-      return;
-    }
-    setThinkingExpandedByMessage((prev) => {
-      if (!(PENDING_THINKING_KEY in prev)) {
-        return prev;
-      }
-      const {[PENDING_THINKING_KEY]: _ignored, ...rest} = prev;
-      return rest;
-    });
-  }, [activeThinkingSnapshot]);
-
-  const renderedConversationItems = useMemo(() => {
-    const items: JSX.Element[] = [];
-    const queuedProductItems: JSX.Element[] = [];
-
-    const flushQueuedProducts = () => {
-      if (!queuedProductItems.length) {
-        return;
-      }
-      items.push(...queuedProductItems.splice(0, queuedProductItems.length));
-    };
-
-    visibleMessages.forEach((message) => {
-      const isAssistant = message.role === 'assistant';
-      const isProductList = message.kind === 'products';
-      const kind = message.kind ?? 'text';
-      const isLatestAssistant =
-        isAssistant && message.id === latestStreamingAssistantId;
-      const isStreamingMessage = isLatestAssistant;
-      const showTrailingSpinner = isStreamingMessage && kind === 'text';
-
-      const metadataUpdates = message.metadata?.thinkingUpdates ?? [];
-      const isActiveSnapshotForMessage =
-        activeThinkingSnapshot?.messageId === message.id;
-      const updatesForMessage = isActiveSnapshotForMessage
-        ? (activeThinkingSnapshot?.updates ?? [])
-        : metadataUpdates;
-      const hasThinkingUpdates = isAssistant && updatesForMessage.length > 0;
-      const storedExpansion = thinkingExpandedByMessage[message.id];
-      const isExpanded =
-        storedExpansion !== undefined
-          ? storedExpansion
-          : Boolean(
-              isActiveSnapshotForMessage && !activeThinkingSnapshot?.isComplete,
-            );
-      const messageDomId = `message-${message.id}`;
-
-      const messageBlock = (
-        <div
-          key={message.id}
-          id={messageDomId}
-          className="flex w-full flex-col gap-3"
-        >
-          {hasThinkingUpdates ? (
-            <div className="flex w-full">
-              <ThinkingStatusPanel
-                updates={updatesForMessage}
-                isStreaming={Boolean(
-                  isActiveSnapshotForMessage &&
-                    !activeThinkingSnapshot?.isComplete,
-                )}
-                isExpanded={isExpanded}
-                onToggle={() =>
-                  setThinkingExpandedByMessage((prev) => ({
-                    ...prev,
-                    [message.id]: !isExpanded,
-                  }))
-                }
-              />
-            </div>
-          ) : null}
-          <MessageBubble
-            message={message}
-            isStreaming={isStreamingMessage}
-            showTrailingSpinner={showTrailingSpinner}
-          />
-        </div>
-      );
-
-      if (isAssistant && isProductList) {
-        queuedProductItems.push(messageBlock);
-        return;
-      }
-
-      items.push(messageBlock);
-
-      if (
-        pendingThinkingSnapshot &&
-        latestUserMessageId &&
-        message.id === latestUserMessageId
-      ) {
-        const pendingExpanded =
-          thinkingExpandedByMessage[PENDING_THINKING_KEY] ?? true;
-        items.push(
-          <div key="thinking-pending" className="flex w-full flex-col gap-3">
-            <div className="flex w-full">
-              <ThinkingStatusPanel
-                updates={pendingThinkingSnapshot.updates}
-                isStreaming={!pendingThinkingSnapshot.isComplete}
-                isExpanded={pendingExpanded}
-                onToggle={() =>
-                  setThinkingExpandedByMessage((prev) => ({
-                    ...prev,
-                    [PENDING_THINKING_KEY]: !pendingExpanded,
-                  }))
-                }
-              />
-            </div>
-          </div>,
-        );
-      }
-
-      if (isAssistant) {
-        flushQueuedProducts();
-      }
-    });
-
-    flushQueuedProducts();
-
-    if (
-      pendingThinkingSnapshot &&
-      latestUserMessageId === null &&
-      visibleMessages.length === 0
-    ) {
-      const pendingExpanded =
-        thinkingExpandedByMessage[PENDING_THINKING_KEY] ?? true;
-      items.push(
-        <div key="thinking-pending" className="flex w-full flex-col gap-3">
-          <div className="flex w-full">
-            <ThinkingStatusPanel
-              updates={pendingThinkingSnapshot.updates}
-              isStreaming={!pendingThinkingSnapshot.isComplete}
-              isExpanded={pendingExpanded}
-              onToggle={() =>
-                setThinkingExpandedByMessage((prev) => ({
-                  ...prev,
-                  [PENDING_THINKING_KEY]: !pendingExpanded,
-                }))
-              }
-            />
-          </div>
-        </div>,
-      );
-    }
-
-    return items;
-  }, [
+  const {
+    activeSnapshot: activeThinkingSnapshot,
+    pendingSnapshot: pendingThinkingSnapshot,
+    expandedByMessage: thinkingExpandedByMessage,
+    setActiveSnapshot,
+    clearActiveSnapshot,
+    toggleMessageExpansion,
+    togglePendingExpansion,
+  } = useThinkingState({
     visibleMessages,
+    isStreaming,
     latestStreamingAssistantId,
+    activeConversationId,
+  });
+
+  const {
+    containerRef: messageContainerRef,
+    queueScrollToMessage,
+    resetScrollState,
+  } = useConversationScroll({
+    messages,
     activeThinkingSnapshot,
-    pendingThinkingSnapshot,
-    latestUserMessageId,
-    thinkingExpandedByMessage,
-  ]);
+  });
+
+  useEffect(() => {
+    resetScrollState();
+  }, [activeConversationId, resetScrollState]);
+
+  const handleToggleThinking = useCallback(
+    (messageId: string, next: boolean) => {
+      toggleMessageExpansion(messageId, next);
+    },
+    [toggleMessageExpansion],
+  );
+
+  const handleTogglePendingThinking = useCallback(
+    (next: boolean) => {
+      togglePendingExpansion(next);
+    },
+    [togglePendingExpansion],
+  );
 
   useEffect(() => {
     if (!isHydrated) {
@@ -447,57 +241,6 @@ export default function GenerativeShoppingAssistant() {
     updateConversationQuery,
   ]);
 
-  const messageContainerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const container = messageContainerRef.current;
-    if (!container) {
-      return;
-    }
-
-    const targetId = pendingScrollMessageIdRef.current;
-    if (targetId) {
-      const element = document.getElementById(`message-${targetId}`);
-      if (element instanceof HTMLElement) {
-        element.scrollIntoView({
-          behavior: 'smooth',
-          block: 'start',
-          inline: 'nearest',
-        });
-        pendingScrollMessageIdRef.current = null;
-      } else if (typeof window !== 'undefined') {
-        window.requestAnimationFrame(() => {
-          const retryElement = document.getElementById(`message-${targetId}`);
-          if (retryElement instanceof HTMLElement) {
-            retryElement.scrollIntoView({
-              behavior: 'smooth',
-              block: 'start',
-              inline: 'nearest',
-            });
-            pendingScrollMessageIdRef.current = null;
-          }
-        });
-      }
-    }
-
-    if (suspendAutoScrollRef.current) {
-      return;
-    }
-
-    container.scrollTop = container.scrollHeight;
-  }, [messages]);
-
-  useEffect(() => {
-    if (suspendAutoScrollRef.current) {
-      return;
-    }
-    const container = messageContainerRef.current;
-    if (!container) {
-      return;
-    }
-    container.scrollTop = container.scrollHeight;
-  }, [activeThinkingSnapshot]);
-
   const sendMessage = useCallback(
     async (messageText: string, options: {forceNew?: boolean} = {}) => {
       const trimmed = messageText.trim();
@@ -505,7 +248,7 @@ export default function GenerativeShoppingAssistant() {
         return;
       }
 
-      clearThinkingUpdates();
+      clearActiveSnapshot();
       setStreamError(null);
 
       const {forceNew = false} = options;
@@ -543,8 +286,7 @@ export default function GenerativeShoppingAssistant() {
       };
 
       // Hold auto-scroll so the new user turn stays pinned while the assistant replies.
-      pendingScrollMessageIdRef.current = userMessage.id;
-      suspendAutoScrollRef.current = true;
+      queueScrollToMessage(userMessage.id);
 
       const title =
         base.messages.length === 0
@@ -598,7 +340,7 @@ export default function GenerativeShoppingAssistant() {
     },
     [
       activeConversationId,
-      clearThinkingUpdates,
+      clearActiveSnapshot,
       conversations,
       streamAssistantResponse,
       setActiveConversationId,
@@ -669,11 +411,26 @@ export default function GenerativeShoppingAssistant() {
     abortStream();
   }, [abortStream]);
 
+  const handleSelectConversation = useCallback(
+    (conversation: ConversationRecord) => {
+      setActiveConversationId(conversation.localId);
+      setStreamError(null);
+    },
+    [setActiveConversationId, setStreamError],
+  );
+
+  const handleSendMessage = useCallback(
+    (message: string) => {
+      void sendMessage(message);
+    },
+    [sendMessage],
+  );
+
   const handleNewConversation = useCallback(() => {
     abortStream();
     setStreamError(null);
     setInputValue('');
-    clearThinkingUpdates();
+    clearActiveSnapshot();
 
     const timestamp = new Date().toISOString();
     const freshConversation = createEmptyConversation(
@@ -691,7 +448,7 @@ export default function GenerativeShoppingAssistant() {
     setActiveConversationId(freshConversation.localId);
   }, [
     abortStream,
-    clearThinkingUpdates,
+    clearActiveSnapshot,
     setActiveConversationId,
     setConversations,
     setInputValue,
@@ -738,104 +495,19 @@ export default function GenerativeShoppingAssistant() {
 
   return (
     <div className="flex w-full flex-1 min-h-0 bg-slate-100">
-      <aside className="hidden w-80 min-h-0 flex-col border-r border-slate-200 bg-white/80 backdrop-blur lg:flex">
-        <div className="flex items-center justify-between px-6 py-5">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
-            Conversations
-          </h2>
-          <button
-            type="button"
-            className="rounded-full border border-transparent bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-indigo-500"
-            onClick={handleNewConversation}
-          >
-            New chat
-          </button>
-        </div>
-        <nav className="flex-1 overflow-y-auto px-2 pb-6 pt-4">
-          {conversations.length === 0 ? (
-            <p className="px-4 text-sm text-slate-500">
-              Start a conversation to see it here.
-            </p>
-          ) : (
-            <ul className="flex flex-col gap-2">
-              {conversations.map((conversation) => {
-                const isActive = conversation.localId === activeConversationId;
-                return (
-                  <li key={conversation.localId}>
-                    <div
-                      className={cx(
-                        'group flex w-full items-start gap-2 rounded-xl transition',
-                        isActive
-                          ? 'bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200'
-                          : 'bg-white text-slate-700 hover:bg-slate-100 hover:text-slate-900',
-                      )}
-                    >
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setActiveConversationId(conversation.localId);
-                          setStreamError(null);
-                        }}
-                        className="flex min-w-0 flex-1 flex-col gap-1 rounded-xl px-4 py-3 text-left"
-                      >
-                        <span className="break-words text-sm font-medium leading-snug">
-                          {conversation.title || 'Untitled conversation'}
-                        </span>
-                        <span className="text-xs text-slate-400">
-                          {formatRelativeTime(conversation.updatedAt)}
-                        </span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          void handleDeleteConversation(conversation)
-                        }
-                        className="mr-2 mt-2 self-start rounded-full p-1 text-xs text-slate-400 transition hover:bg-rose-50 hover:text-rose-500"
-                        aria-label="Delete conversation"
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </nav>
-      </aside>
+      <ConversationSidebar
+        conversations={conversations}
+        activeConversationId={activeConversationId}
+        onNewConversation={handleNewConversation}
+        onSelectConversation={handleSelectConversation}
+        onDeleteConversation={handleDeleteConversation}
+      />
       <main className="flex flex-1 min-h-0 flex-col">
-        <header className="border-b border-slate-200 bg-white px-4 py-4 shadow-sm sm:px-6 lg:px-10">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <h1 className="text-2xl font-semibold text-slate-900">
-                Barca water sports assistant
-              </h1>
-              <p className="text-sm text-slate-500">
-                Find surf, paddle, and kayak accessories tailored to your next
-                session.
-              </p>
-            </div>
-            <div className="flex items-center gap-3">
-              {isStreaming ? (
-                <button
-                  type="button"
-                  onClick={handleStop}
-                  className="rounded-full border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-100"
-                >
-                  Stop generating
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  className="rounded-full border border-transparent bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-indigo-500"
-                  onClick={handleNewConversation}
-                >
-                  New chat
-                </button>
-              )}
-            </div>
-          </div>
-        </header>
+        <AssistantHeader
+          isStreaming={isStreaming}
+          onStop={handleStop}
+          onNewConversation={handleNewConversation}
+        />
 
         <div
           ref={messageContainerRef}
@@ -858,7 +530,16 @@ export default function GenerativeShoppingAssistant() {
             <div className="mx-auto flex w-full max-w-5xl flex-col gap-4">
               {hasVisibleMessages ? (
                 <div className="flex w-full flex-col gap-5">
-                  {renderedConversationItems}
+                  <ConversationTranscript
+                    visibleMessages={visibleMessages}
+                    latestStreamingAssistantId={latestStreamingAssistantId}
+                    activeThinkingSnapshot={activeThinkingSnapshot}
+                    pendingThinkingSnapshot={pendingThinkingSnapshot}
+                    latestUserMessageId={latestUserMessageId}
+                    thinkingExpandedByMessage={thinkingExpandedByMessage}
+                    onToggleThinking={handleToggleThinking}
+                    onTogglePendingThinking={handleTogglePendingThinking}
+                  />
                 </div>
               ) : null}
             </div>
@@ -868,61 +549,14 @@ export default function GenerativeShoppingAssistant() {
           ) : null}
         </div>
 
-        <footer className="sticky bottom-0 z-20 border-t border-slate-200 bg-white px-4 py-4 shadow-lg sm:px-6 lg:px-10">
-          {streamError && (
-            <div className="mb-3 rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
-              {streamError}
-            </div>
-          )}
-          <form
-            onSubmit={handleSubmit}
-            className="mx-auto flex max-w-5xl flex-col gap-3"
-          >
-            <div className="rounded-2xl border border-slate-300 bg-white px-4 py-2 shadow-sm focus-within:border-indigo-500 focus-within:shadow-md">
-              <textarea
-                value={inputValue}
-                onChange={(event) => setInputValue(event.target.value)}
-                placeholder="Ask about boards, fins, safety gear, or travel prep..."
-                className="h-14 w-full resize-none border-0 bg-transparent text-base text-slate-900 outline-none focus:ring-0"
-                rows={1}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter' && !event.shiftKey) {
-                    event.preventDefault();
-                    if (isStreaming) {
-                      return;
-                    }
-                    const value = inputValue.trim();
-                    if (!value) {
-                      return;
-                    }
-                    setInputValue('');
-                    void sendMessage(value);
-                  }
-                }}
-              />
-            </div>
-            <div className="flex items-center justify-between text-xs text-slate-500">
-              <span>Powered by Coveo agentic commerce</span>
-              <div className="flex items-center gap-3">
-                <span>
-                  {isStreaming ? 'Generating...' : 'Press Enter to send'}
-                </span>
-                <button
-                  type="submit"
-                  disabled={isStreaming || !inputValue.trim()}
-                  className={cx(
-                    'inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-sm font-medium shadow-sm transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600',
-                    isStreaming || !inputValue.trim()
-                      ? 'cursor-not-allowed bg-slate-200 text-slate-500'
-                      : 'bg-indigo-600 text-white hover:bg-indigo-500',
-                  )}
-                >
-                  Send
-                </button>
-              </div>
-            </div>
-          </form>
-        </footer>
+        <ChatInputFooter
+          streamError={streamError}
+          inputValue={inputValue}
+          isStreaming={isStreaming}
+          onInputChange={setInputValue}
+          onSubmit={handleSubmit}
+          onSendMessage={handleSendMessage}
+        />
       </main>
     </div>
   );
