@@ -1,6 +1,5 @@
 import {Menu, MenuButton, MenuItems} from '@headlessui/react';
 import {ChevronDownIcon} from '@heroicons/react/20/solid';
-import {AgenticProductSearch} from './AgenticProductSearch';
 import {Facets} from './Facets';
 import {PaginationFooter} from './Pagination';
 import {ProductList} from './ProductList';
@@ -107,7 +106,6 @@ export function FullSearch({headline, tagline}: SearchPageProps) {
         <h2 id="products-heading" className="sr-only">
           Products
         </h2>
-        {hasResults && <AgenticProductSearch />}
         {hasResults ? (
           <>
             <ProductList />

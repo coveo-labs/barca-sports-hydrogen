@@ -338,6 +338,13 @@ export function useAssistantStreaming({
           switch (parsedEvent.type) {
             case 'turn_started': {
               updateSessionFromPayload(parsedEvent.payload);
+
+              if (thinkingUpdates.length === 0) {
+                recordThinkingUpdate(DEFAULT_STATUS_MESSAGE, 'status');
+              } else {
+                emitThinkingSnapshot();
+              }
+
               return;
             }
             case 'status':
