@@ -48,12 +48,12 @@ export function useThinkingState({
       return;
     }
     setExpandedByMessage((prev) => {
-      if (prev[latestStreamingAssistantId]) {
+      if (Object.hasOwn(prev, latestStreamingAssistantId)) {
         return prev;
       }
       return {
         ...prev,
-        [latestStreamingAssistantId]: true,
+        [latestStreamingAssistantId]: false,
       };
     });
   }, [isStreaming, latestStreamingAssistantId]);
@@ -66,25 +66,22 @@ export function useThinkingState({
     const messageId = activeSnapshot.messageId;
     if (!messageId) {
       setExpandedByMessage((prev) => {
-        if (Object.prototype.hasOwnProperty.call(prev, PENDING_THINKING_KEY)) {
+        if (Object.hasOwn(prev, PENDING_THINKING_KEY)) {
           return prev;
         }
         return {
           ...prev,
-          [PENDING_THINKING_KEY]: true,
+          [PENDING_THINKING_KEY]: false,
         };
       });
       return;
     }
 
     setExpandedByMessage((prev) => {
-      const hasMessageEntry = Object.prototype.hasOwnProperty.call(
-        prev,
-        messageId,
-      );
+      const hasMessageEntry = Object.hasOwn(prev, messageId);
 
       if (hasMessageEntry) {
-        if (Object.prototype.hasOwnProperty.call(prev, PENDING_THINKING_KEY)) {
+        if (Object.hasOwn(prev, PENDING_THINKING_KEY)) {
           const {[PENDING_THINKING_KEY]: _ignored, ...rest} = prev;
           return rest;
         }
@@ -94,7 +91,7 @@ export function useThinkingState({
       const {[PENDING_THINKING_KEY]: _ignored, ...rest} = prev;
       return {
         ...rest,
-        [messageId]: true,
+        [messageId]: false,
       };
     });
   }, [activeSnapshot]);

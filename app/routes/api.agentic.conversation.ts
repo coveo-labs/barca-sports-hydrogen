@@ -15,7 +15,7 @@ const DEFAULT_TRACKING_ID = 'sports';
 export async function action({request, context}: ActionFunctionArgs) {
   if (request.method === 'POST') {
     console.info('[api.agentic.conversation] POST received');
-    return handleStreamConversation(request);
+    return handleStreamConversation(request, context);
   }
 
   if (request.method === 'PUT') {
@@ -36,7 +36,10 @@ export async function action({request, context}: ActionFunctionArgs) {
   });
 }
 
-async function handleStreamConversation(request: Request) {
+async function handleStreamConversation(
+  request: Request,
+  context: ActionFunctionArgs['context'],
+) {
   const body = (await request.json().catch(() => null)) as
     | ConversationStreamPayload
     | null;
@@ -83,6 +86,7 @@ async function handleStreamConversation(request: Request) {
 
   const agenticResponse = await streamAgenticConversation(payload, {
     signal: abortController.signal,
+    accessToken: extractAgenticAccessToken(context),
   });
 
   console.info('[api.agentic.conversation] upstream response', {
@@ -151,7 +155,7 @@ async function handlePersistConversation(
     | PersistConversationPayload
     | null;
 
-  if (!body || !body.conversation) {
+  if (!body?.conversation) {
     return Response.json({error: 'Conversation payload is required.'}, {
       status: 400,
     });
@@ -185,7 +189,7 @@ async function handleDeleteConversation(
     | DeleteConversationPayload
     | null;
 
-  if (!body || !body.id) {
+  if (!body?.id) {
     return Response.json({error: 'Conversation id is required.'}, {
       status: 400,
     });
@@ -268,6 +272,20 @@ function sanitizeMessage(message: ConversationMessage): ConversationMessage {
     kind,
     metadata,
   };
+}
+
+function extractAgenticAccessToken(
+  context: ActionFunctionArgs['context'],
+): string | undefined {
+  const token =
+    (context as {env?: {AGENTIC_ACCESS_TOKEN?: string}})?.env
+      ?.AGENTIC_ACCESS_TOKEN;
+
+  if (typeof token === 'string' && token.trim()) {
+    return token;
+  }
+
+  return undefined;
 }
 
 function upsertConversation(

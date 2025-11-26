@@ -1,4 +1,5 @@
 import {useCallback, useRef} from 'react';
+import type {Product} from '@coveo/headless-react/ssr-commerce';
 import type {Dispatch, SetStateAction} from 'react';
 import type {
   ConversationMessage,
@@ -134,7 +135,7 @@ export function useAssistantStreaming({
       let assistantMessageId: string | null = null;
       let accumulatedContent = '';
       let latestSnapshot: ConversationRecord | null = null;
-      let productMessageId: string | null = null;
+      let collectedProducts: Product[] = [];
       let capturedErrorMessage: string | null = null;
       let turnCompleted = false;
       const seenStatusTraces = new Set<string>();
@@ -209,6 +210,73 @@ export function useAssistantStreaming({
         emitThinkingSnapshot();
       };
 
+      const upsertCollectedProducts = (incoming: Product[]) => {
+        if (!incoming.length) {
+          return;
+        }
+        const nextProducts = [...collectedProducts];
+        const indexByKey = new Map<string, number>();
+        for (const [index, product] of nextProducts.entries()) {
+          const key = resolveProductKey(product);
+          if (key) {
+            indexByKey.set(key, index);
+          }
+        }
+        for (const product of incoming) {
+          const key = resolveProductKey(product);
+          if (!key) {
+            nextProducts.push(product);
+            continue;
+          }
+          const existingIndex = indexByKey.get(key);
+          if (existingIndex === undefined) {
+            indexByKey.set(key, nextProducts.length);
+            nextProducts.push(product);
+            continue;
+          }
+          nextProducts[existingIndex] = product;
+        }
+        collectedProducts = nextProducts;
+      };
+
+      const syncProductMetadata = () => {
+        if (!assistantMessageId || collectedProducts.length === 0) {
+          return;
+        }
+        applyUpdate((conversation) => {
+          const messages = [...conversation.messages];
+          const index = messages.findIndex(
+            (message) => message.id === assistantMessageId,
+          );
+          if (index === -1) {
+            return conversation;
+          }
+          const existingMetadata = messages[index].metadata ?? {};
+          messages[index] = {
+            ...messages[index],
+            metadata: {
+              ...existingMetadata,
+              products: [...collectedProducts],
+            },
+          };
+          return {...conversation, messages};
+        });
+      };
+
+      const getAssistantMetadataSnapshot = (): ConversationMessage['metadata'] | undefined => {
+        const hasThinking = thinkingUpdates.length > 0;
+        const hasProducts = collectedProducts.length > 0;
+        if (!hasThinking && !hasProducts) {
+          return undefined;
+        }
+        return {
+          ...(hasThinking
+            ? {thinkingUpdates: [...thinkingUpdates]}
+            : {}),
+          ...(hasProducts ? {products: [...collectedProducts]} : {}),
+        } satisfies ConversationMessage['metadata'];
+      };
+
       const recordThinkingUpdate = (
         text: string,
         kind: ConversationThinkingUpdate['kind'],
@@ -217,8 +285,8 @@ export function useAssistantStreaming({
         if (!trimmed) {
           return;
         }
-        const last = thinkingUpdates[thinkingUpdates.length - 1];
-        if (last && last.text === trimmed && last.kind === kind) {
+        const last = thinkingUpdates.at(-1);
+        if (last?.text === trimmed && last.kind === kind) {
           return;
         }
         const update: ConversationThinkingUpdate = {
@@ -416,45 +484,10 @@ export function useAssistantStreaming({
 
               const productList = parsedEvent.payload.products ?? [];
               if (productList.length > 0) {
-                if (!productMessageId) {
-                  productMessageId = generateId();
+                upsertCollectedProducts(productList);
+                if (assistantMessageId) {
+                  syncProductMetadata();
                 }
-
-                const createdAt = new Date().toISOString();
-                const metadata = {products: productList};
-
-                applyUpdate((conversation) => {
-                  const messages = [...conversation.messages];
-                  const index = messages.findIndex(
-                    (message) => message.id === productMessageId,
-                  );
-
-                  const nextMessage: ConversationMessage = {
-                    id: productMessageId!,
-                    role: 'assistant',
-                    content: '',
-                    createdAt:
-                      index >= 0 ? messages[index].createdAt : createdAt,
-                    kind: 'products',
-                    metadata,
-                  };
-
-                  if (index >= 0) {
-                    messages[index] = {
-                      ...messages[index],
-                      ...nextMessage,
-                      metadata,
-                    };
-                  } else {
-                    messages.push(nextMessage);
-                  }
-
-                  return {
-                    ...conversation,
-                    updatedAt: new Date().toISOString(),
-                    messages,
-                  };
-                });
               }
 
               return;
@@ -501,10 +534,7 @@ export function useAssistantStreaming({
                     content: contentSnapshot,
                     createdAt: new Date().toISOString(),
                     kind: 'text',
-                    metadata:
-                      thinkingUpdates.length > 0
-                        ? {thinkingUpdates: [...thinkingUpdates]}
-                        : undefined,
+                    metadata: getAssistantMetadataSnapshot(),
                   });
                 } else {
                   const index = messages.findIndex(
@@ -523,6 +553,7 @@ export function useAssistantStreaming({
                       content: contentSnapshot,
                       createdAt: new Date().toISOString(),
                       kind: 'text',
+                      metadata: getAssistantMetadataSnapshot(),
                     });
                   }
                 }
@@ -536,6 +567,7 @@ export function useAssistantStreaming({
               });
               if (createdAssistantMessage) {
                 syncThinkingMetadata();
+                syncProductMetadata();
               }
               return;
             }
@@ -800,5 +832,34 @@ function extractTraceId(value: unknown): string | null {
       return candidate.trim();
     }
   }
+  return null;
+}
+
+function resolveProductKey(product: Product): string | null {
+  const record = product as unknown as Record<string, unknown>;
+  const candidates: unknown[] = [
+    record.ec_product_id,
+    record.ec_productId,
+    record.ec_item_id,
+    record.permanentid,
+    record.permanentId,
+    record.permanentID,
+    record.permanent_url,
+    record.permanentUrl,
+    record.clickUri,
+    record.productId,
+    record.id,
+    record.sku,
+  ];
+
+  for (const candidate of candidates) {
+    if (typeof candidate === 'string' && candidate.trim()) {
+      return candidate.trim();
+    }
+    if (typeof candidate === 'number' && Number.isFinite(candidate)) {
+      return String(candidate);
+    }
+  }
+
   return null;
 }
