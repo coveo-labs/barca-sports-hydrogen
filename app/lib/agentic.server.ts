@@ -13,12 +13,13 @@ export async function streamAgenticConversation(
   options: StreamAgenticConversationOptions = {},
 ): Promise<Response> {
   const accessToken = pickAccessToken(options.accessToken);
-  const url = new URL(`${AGENTIC_BASE_URL}/converse`);
-  url.searchParams.set('access_token', accessToken);
+  
+  const url = new URL(`${AGENTIC_BASE_URL}/converse-agentcore`);
 
   return fetch(url, {
     method: 'POST',
     headers: {
+      Authorization: `Bearer ${accessToken}`,
       Accept: 'text/event-stream',
       'Content-Type': 'application/json',
     },

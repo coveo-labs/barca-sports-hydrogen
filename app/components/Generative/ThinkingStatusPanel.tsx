@@ -1,4 +1,4 @@
-import {memo} from 'react';
+import {memo, useEffect, useMemo, useRef, useState} from 'react';
 import cx from '~/lib/cx';
 import type {ConversationThinkingUpdate} from '~/types/conversation';
 
@@ -14,12 +14,87 @@ function ThinkingStatusPanelComponent({
   isStreaming,
   isExpanded,
   onToggle,
-}: ThinkingStatusPanelProps) {
-  if (!updates.length) {
+}: Readonly<ThinkingStatusPanelProps>) {
+  const [syntheticUpdate, setSyntheticUpdate] =
+    useState<ConversationThinkingUpdate | null>(null);
+  const lastActivityRef = useRef<number>(Date.now());
+  const lastUpdateIdRef = useRef<string | null>(null);
+  const phraseIndexRef = useRef(0);
+
+  useEffect(() => {
+    if (isStreaming) {
+      lastActivityRef.current = Date.now();
+      return;
+    }
+    setSyntheticUpdate(null);
+    lastActivityRef.current = Date.now();
+  }, [isStreaming]);
+
+  useEffect(() => {
+    const latestUpdate = updates.at(-1);
+    const latestId = latestUpdate?.id ?? null;
+    const knownId = lastUpdateIdRef.current;
+
+    if (latestId && latestId !== knownId) {
+      lastUpdateIdRef.current = latestId;
+      lastActivityRef.current = Date.now();
+      phraseIndexRef.current = 0;
+      setSyntheticUpdate(null);
+      return;
+    }
+
+    if (!latestId && updates.length === 0 && knownId !== null) {
+      lastUpdateIdRef.current = null;
+      lastActivityRef.current = Date.now();
+      phraseIndexRef.current = 0;
+      setSyntheticUpdate(null);
+    }
+  }, [updates]);
+
+  useEffect(() => {
+    const globalWithWindow = globalThis as typeof globalThis & {
+      window?: Window;
+    };
+    const win = globalWithWindow.window;
+    if (isStreaming === false || win === undefined) {
+      return;
+    }
+
+    const tick = () => {
+      const now = Date.now();
+      if (now - lastActivityRef.current < HEARTBEAT_DELAY_MS) {
+        return;
+      }
+      lastActivityRef.current = now;
+      setSyntheticUpdate(
+        createSyntheticUpdate(nextHeartbeatMessage(phraseIndexRef)),
+      );
+    };
+
+    const intervalId = win.setInterval(tick, HEARTBEAT_POLL_INTERVAL_MS);
+    return () => {
+      win.clearInterval(intervalId);
+    };
+  }, [isStreaming]);
+
+  useEffect(() => {
+    if (syntheticUpdate) {
+      lastActivityRef.current = Date.now();
+    }
+  }, [syntheticUpdate]);
+
+  const displayedUpdates = useMemo(() => {
+    if (!syntheticUpdate) {
+      return updates;
+    }
+    return [...updates, syntheticUpdate];
+  }, [updates, syntheticUpdate]);
+
+  if (!displayedUpdates.length) {
     return null;
   }
 
-  const latestUpdate = updates[updates.length - 1];
+  const latestUpdate = displayedUpdates.at(-1);
   const latestText = latestUpdate?.text ?? '';
   const updateCount = updates.length;
   const isDone = !isStreaming;
@@ -117,7 +192,7 @@ function ThinkingStatusPanelComponent({
       {isExpanded ? (
         <div id={panelId} className="mt-4">
           <ul className="space-y-3 break-words text-sm text-slate-600">
-            {updates.map((update) => {
+            {displayedUpdates.map((update) => {
               const bulletClass =
                 update.kind === 'tool' ? 'bg-sky-400' : 'bg-indigo-400';
               return (
@@ -143,3 +218,29 @@ function ThinkingStatusPanelComponent({
 }
 
 export const ThinkingStatusPanel = memo(ThinkingStatusPanelComponent);
+
+const HEARTBEAT_DELAY_MS = 2000;
+const HEARTBEAT_POLL_INTERVAL_MS = 500;
+const HEARTBEAT_MESSAGES = [
+  'Still gathering the latest details...',
+  'Comparing options behind the scenes...',
+  'Cross-checking specs for the best fit...',
+  'Almost ready - polishing the summary...',
+];
+
+function nextHeartbeatMessage(phraseIndexRef: {current: number}) {
+  const index = phraseIndexRef.current % HEARTBEAT_MESSAGES.length;
+  phraseIndexRef.current += 1;
+  return HEARTBEAT_MESSAGES[index];
+}
+
+function createSyntheticUpdate(text: string): ConversationThinkingUpdate {
+  return {
+    id: `heartbeat-${Date.now().toString(36)}-${Math.random()
+      .toString(36)
+      .slice(2, 6)}`,
+    text,
+    kind: 'status',
+    timestamp: new Date().toISOString(),
+  };
+}

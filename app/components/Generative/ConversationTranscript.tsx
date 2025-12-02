@@ -1,9 +1,11 @@
 import {useMemo} from 'react';
+import type {Product} from '@coveo/headless-react/ssr-commerce';
 import {MessageBubble} from '~/components/Generative/MessageBubble';
 import {ThinkingStatusPanel} from '~/components/Generative/ThinkingStatusPanel';
 import type {ThinkingUpdateSnapshot} from '~/lib/use-assistant-streaming';
 import type {ConversationMessage} from '~/types/conversation';
 import {PENDING_THINKING_KEY} from '~/lib/thinking-constants';
+import {registerProducts} from '~/lib/product-index';
 
 export {PENDING_THINKING_KEY} from '~/lib/thinking-constants';
 
@@ -78,6 +80,7 @@ function buildConversationItems({
 }: BuildConversationItemsArgs) {
   const items: JSX.Element[] = [];
   const queuedProductItems: JSX.Element[] = [];
+  const knownProducts = new Map<string, Product>();
 
   for (const message of visibleMessages) {
     processMessage({
@@ -91,6 +94,7 @@ function buildConversationItems({
       onTogglePendingThinking,
       items,
       queuedProductItems,
+      knownProducts,
     });
   }
 
@@ -157,6 +161,7 @@ type ProcessMessageArgs = {
   onTogglePendingThinking: (next: boolean) => void;
   items: JSX.Element[];
   queuedProductItems: JSX.Element[];
+  knownProducts: Map<string, Product>;
 };
 
 function processMessage({
@@ -170,6 +175,7 @@ function processMessage({
   onTogglePendingThinking,
   items,
   queuedProductItems,
+  knownProducts,
 }: ProcessMessageArgs) {
   const isAssistant = message.role === 'assistant';
   const isProductList = message.kind === 'products';
@@ -177,6 +183,8 @@ function processMessage({
   const isStreamingMessage =
     isAssistant && message.id === latestStreamingAssistantId;
   const showTrailingSpinner = isStreamingMessage && kind === 'text';
+
+  registerProducts(knownProducts, message.metadata?.products);
 
   const metadataUpdates = message.metadata?.thinkingUpdates ?? [];
   const isActiveSnapshotForMessage =
@@ -210,6 +218,7 @@ function processMessage({
         message={message}
         isStreaming={isStreamingMessage}
         showTrailingSpinner={showTrailingSpinner}
+        productLookup={knownProducts}
       />
     </div>
   );

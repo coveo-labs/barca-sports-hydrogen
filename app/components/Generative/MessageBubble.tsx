@@ -5,17 +5,23 @@ import cx from '~/lib/cx';
 import type {ConversationMessage} from '~/types/conversation';
 import {ProductResultsMessage} from '~/components/Generative/ProductResultsMessage';
 import {ProductCard} from '~/components/Products/ProductCard';
+import {
+  normalizeProductIdentifier,
+  registerProducts,
+} from '~/lib/product-index';
 
 type MessageBubbleProps = {
   message: ConversationMessage;
   isStreaming: boolean;
   showTrailingSpinner: boolean;
+  productLookup?: ReadonlyMap<string, Product>;
 };
 
 function MessageBubbleComponent({
   message,
   isStreaming,
   showTrailingSpinner,
+  productLookup,
 }: Readonly<MessageBubbleProps>) {
   const isUser = message.role === 'user';
   const kind = message.kind ?? 'text';
@@ -57,7 +63,7 @@ function MessageBubbleComponent({
     : 'max-w-xl bg-indigo-600 text-white';
 
   const contentBody = isAssistant
-    ? renderAssistantMessageContent(message)
+    ? renderAssistantMessageContent(message, productLookup)
     : message.content;
 
   return (
@@ -111,6 +117,9 @@ function arePropsEqual(
   if (prev.showTrailingSpinner !== next.showTrailingSpinner) {
     return false;
   }
+  if (prev.productLookup !== next.productLookup) {
+    return false;
+  }
   const prevMessage = prev.message;
   const nextMessage = next.message;
   return (
@@ -129,7 +138,10 @@ export const MessageBubble = memo(MessageBubbleComponent, arePropsEqual);
 const PRODUCT_REF_PATTERN = /<product_ref\b([^>]*)\s*\/>/gi;
 const ATTRIBUTE_PATTERN = /([^\s=]+)\s*=\s*("([^"]*)"|'([^']*)')/g;
 
-function renderAssistantMessageContent(message: ConversationMessage) {
+function renderAssistantMessageContent(
+  message: ConversationMessage,
+  productLookup?: ReadonlyMap<string, Product>,
+) {
   const {content = ''} = message;
   if ((message.kind ?? 'text') !== 'text') {
     return content;
@@ -144,8 +156,7 @@ function renderAssistantMessageContent(message: ConversationMessage) {
     return content;
   }
 
-  const products = message.metadata?.products ?? [];
-  const productIndex = buildProductIndex(products);
+  const productIndex = ensureProductLookup(message, productLookup);
   const segments: ReactNode[] = [];
   let cursor = 0;
   let segmentId = 0;
@@ -233,7 +244,7 @@ function resolveProductRefIdentifier(attributes: Record<string, string>) {
   ];
 
   for (const candidate of candidates) {
-    const normalized = normalizeIdentifier(candidate);
+    const normalized = normalizeProductIdentifier(candidate);
     if (normalized) {
       return normalized;
     }
@@ -242,49 +253,14 @@ function resolveProductRefIdentifier(attributes: Record<string, string>) {
   return null;
 }
 
-function buildProductIndex(products: Product[]) {
-  const index = new Map<string, Product>();
-
-  for (const product of products) {
-    const record = product as unknown as Record<string, unknown>;
-    const candidates: unknown[] = [
-      record.ec_product_id,
-      record.ec_productId,
-      record.ec_item_id,
-      record.permanentid,
-      record.permanentId,
-      record.permanentID,
-      record.permanent_url,
-      record.permanentUrl,
-      record.clickUri,
-      record.sku,
-    ];
-
-    for (const candidate of candidates) {
-      const normalized = normalizeIdentifier(candidate);
-      if (!normalized) {
-        continue;
-      }
-      if (!index.has(normalized)) {
-        index.set(normalized, product);
-      }
-      const lowered = normalized.toLowerCase();
-      if (!index.has(lowered)) {
-        index.set(lowered, product);
-      }
-    }
+function ensureProductLookup(
+  message: ConversationMessage,
+  explicitLookup?: ReadonlyMap<string, Product>,
+) {
+  if (explicitLookup) {
+    return explicitLookup;
   }
-
-  return index;
-}
-
-function normalizeIdentifier(value: unknown): string | null {
-  if (typeof value === 'string') {
-    const trimmed = value.trim();
-    return trimmed.length > 0 ? trimmed : null;
-  }
-  if (typeof value === 'number' && Number.isFinite(value)) {
-    return String(value);
-  }
-  return null;
+  const fallback = new Map<string, Product>();
+  registerProducts(fallback, message.metadata?.products);
+  return fallback;
 }
