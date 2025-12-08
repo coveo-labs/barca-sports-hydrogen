@@ -1,5 +1,11 @@
 # skeleton
 
+## 2025.12.4
+
+### Patch Changes
+
+- Updated `AddToCartButton` in the `Product` route to simplify the `disabled` logic and replaced the conditional label with a static "Add to cart" text.
+
 ## 2025.10.1
 
 ### Patch Changes
