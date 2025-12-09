@@ -15,7 +15,7 @@ import {CartEmpty} from '~/components/Cart/CartEmpty';
 import {CartMain} from '~/components/Cart/CartMain';
 import {CartRecommendations} from '~/components/Cart/CartRecommendations';
 import {RecommendationProvider} from '~/components/Search/Context';
-import {engineDefinition} from '~/lib/coveo.engine';
+import {engineConfig, engineDefinition} from '~/lib/coveo.engine';
 import {fetchRecommendationStaticState} from '~/lib/coveo.engine.server';
 import {
   ClientSideNavigatorContextProvider,
@@ -29,6 +29,73 @@ export const meta: MetaFunction = () => {
 
 export interface CartReturn {
   cart: Cart;
+}
+
+// Helper function to ensure the Web Pixel receives what it needs to emit Coveo cart events in the checkout page.
+async function setCoveoConfigAttributes(
+  context: any,
+  request: Request,
+  cartResult: CartQueryDataReturn,
+) {
+  const {cart: cartHandler} = context;
+  const cart = cartResult.cart;
+
+  if (!cart) return cartResult;
+
+  const attributes = cart.attributes ?? [];
+  const attributesToUpdate = [];
+
+  const navigatorProvider = new ServerSideNavigatorContextProvider(request);
+
+  const {clientId} = navigatorProvider;
+  const {
+    configuration: {
+      analytics: {trackingId},
+      organizationId,
+      accessToken,
+    },
+  } = engineConfig;
+
+  const attributesToFind = [
+    'coveoClientId',
+    'coveoTrackingId',
+    'coveoOrganizationId',
+    'coveoAccessToken',
+  ];
+
+  const foundAttributes = (cart.attributes ?? []).reduce((acc, item) => {
+  if (attributesToFind.includes(item.key)) {
+    acc[item.key] = {key: item.key, value: item.value};
+  }
+    return acc;
+  }, {} as Record<string, {key: string; value: string}>);
+
+  if (!foundAttributes.coveoClientId) {
+    attributesToUpdate.push({key: 'coveoClientId', value: clientId});
+  }
+  if (!foundAttributes.coveoTrackingId) {
+    attributesToUpdate.push({key: 'coveoTrackingId', value: trackingId});
+  }
+  if (!foundAttributes.coveoOrganizationId) {
+    attributesToUpdate.push({
+      key: 'coveoOrganizationId',
+      value: organizationId,
+    });
+  }
+  if (!foundAttributes.coveoAccessToken) {
+    attributesToUpdate.push({key: 'coveoAccessToken', value: accessToken});
+  }
+
+  let updatedResult = cartResult;
+  if (attributesToUpdate.length > 0) {
+    try {
+      updatedResult = await cartHandler.updateAttributes(attributesToUpdate);
+    } catch (error) {
+      console.warn('Failed to set Coveo attributes:', error);
+    }
+  }
+
+  return updatedResult;
 }
 
 export async function action({request, context}: ActionFunctionArgs) {
@@ -57,29 +124,19 @@ export async function action({request, context}: ActionFunctionArgs) {
       break;
     case CartForm.ACTIONS.DiscountCodesUpdate: {
       const formDiscountCode = inputs.discountCode;
-
-      // User inputted discount code
       const discountCodes = (
         formDiscountCode ? [formDiscountCode] : []
       ) as string[];
-
-      // Combine discount codes already applied on cart
       discountCodes.push(...inputs.discountCodes);
-
       result = await cart.updateDiscountCodes(discountCodes);
       break;
     }
     case CartForm.ACTIONS.GiftCardCodesUpdate: {
       const formGiftCardCode = inputs.giftCardCode;
-
-      // User inputted gift card code
       const giftCardCodes = (
         formGiftCardCode ? [formGiftCardCode] : []
       ) as string[];
-
-      // Combine gift card codes already applied on cart
       giftCardCodes.push(...inputs.giftCardCodes);
-
       result = await cart.updateGiftCardCodes(giftCardCodes);
       break;
     }
@@ -95,6 +152,9 @@ export async function action({request, context}: ActionFunctionArgs) {
 
   const cartId = result?.cart?.id;
   const headers = cartId ? cart.setCartId(result.cart.id) : new Headers();
+
+  result = await setCoveoConfigAttributes(context, request, result);
+
   const {cart: cartResult, errors, warnings} = result;
 
   return data(
@@ -111,6 +171,8 @@ export async function action({request, context}: ActionFunctionArgs) {
 }
 
 export async function loader({request, context}: LoaderFunctionArgs) {
+  const {cart} = context;
+
   engineDefinition.recommendationEngineDefinition.setNavigatorContextProvider(
     () => new ServerSideNavigatorContextProvider(request),
   );
@@ -119,6 +181,12 @@ export async function loader({request, context}: LoaderFunctionArgs) {
     k: ['cartRecommendations'],
     context,
   });
+
+  // Get current cart and ensure Coveo client ID is set
+  const cartData = await cart.get();
+  if (cartData) {
+    await setCoveoConfigAttributes(context, request, {cart: cartData});
+  }
 
   return {recommendationStaticState};
 }
