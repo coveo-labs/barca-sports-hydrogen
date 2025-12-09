@@ -85,7 +85,7 @@ export async function loader(args: LoaderFunctionArgs) {
 
   const {country, currency, language} = getLocaleFromRequest(args.request);
 
-  args.context.customerAccount.UNSTABLE_getBuyer().then((buyer) => {
+  args.context.customerAccount.getBuyer().then((buyer) => {
     args.context.cart.updateBuyerIdentity({
       customerAccessToken: buyer.customerAccessToken,
     });
