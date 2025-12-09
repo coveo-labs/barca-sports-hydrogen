@@ -18,6 +18,17 @@ export class ServerSideNavigatorContextProvider implements NavigatorContext {
     return this.request.url;
   }
 
+  get forwardedFor() {
+    const forwardedHeader =
+      this.request.headers.get('x-forwarded-for') ||
+      this.request.headers.get('x-real-ip') ||
+      this.request.headers.get('cf-connecting-ip') ||
+      this.request.headers.get('true-client-ip') ||
+      '127.0.0.1';
+
+    return forwardedHeader.split(',')[0]?.trim();
+  }
+
   get clientId() {
     const idFromRequest = getCookieFromRequest(this.request, 'coveo_visitorId');
     if (idFromRequest) {
@@ -34,6 +45,7 @@ export class ServerSideNavigatorContextProvider implements NavigatorContext {
   get marshal(): NavigatorContext {
     return {
       clientId: this.clientId,
+      forwardedFor: this.forwardedFor,
       location: this.location,
       referrer: this.referrer,
       userAgent: this.userAgent,
