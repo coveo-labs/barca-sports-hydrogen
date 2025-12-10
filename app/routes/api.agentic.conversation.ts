@@ -52,7 +52,7 @@ async function handleStreamConversation(
   }
 
   console.info('[api.agentic.conversation] streaming conversation', {
-    hasConversationSessionId: Boolean(body.conversationSessionId),
+    hasSessionId: Boolean(body.sessionId),
   });
 
   const navigatorContext = new ServerSideNavigatorContextProvider(request);
@@ -78,7 +78,8 @@ async function handleStreamConversation(
       },
       cart: Array.isArray(body.cart) ? body.cart : [],
     },
-    conversationSessionId: body.conversationSessionId || undefined,
+    conversationSessionId: body.sessionId || undefined,
+    targetEngine: 'AGENT_CORE'
   } satisfies Record<string, unknown>;
 
   const abortController = new AbortController();
@@ -328,7 +329,7 @@ type HydrogenSessionWithPending = {
 type ConversationStreamPayload = {
   message?: string;
   trackingId?: string;
-  conversationSessionId?: string;
+  sessionId?: string;
   locale?: {
     language?: string;
     country?: string;

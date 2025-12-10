@@ -1,7 +1,7 @@
 // Server-side helper for streaming Coveo Agentic conversations
 
 const AGENTIC_BASE_URL =
-  'http://localhost:8100/rest/organizations/barcasportsmcy01fvu/commerce/unstable/agentic';
+  'https://platformdev.cloud.coveo.com/rest/organizations/barcasportsmcy01fvu/commerce/unstable/agentic';
 
 type StreamAgenticConversationOptions = {
   signal?: AbortSignal;
@@ -14,13 +14,12 @@ export async function streamAgenticConversation(
 ): Promise<Response> {
   const accessToken = pickAccessToken(options.accessToken);
   
-  const url = new URL(`${AGENTIC_BASE_URL}/converse-agentcore`);
+  const url = new URL(`${AGENTIC_BASE_URL}/converse`);
 
   return fetch(url, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${accessToken}`,
-      Accept: 'text/event-stream',
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(payload),

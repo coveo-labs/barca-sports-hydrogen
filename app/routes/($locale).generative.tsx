@@ -333,7 +333,7 @@ export default function GenerativeShoppingAssistant() {
 
       await streamAssistantResponse({
         conversationLocalId: updated.localId,
-        conversationSessionId: updated.sessionId,
+        sessionId: updated.sessionId,
         userMessage: trimmed,
         showInitialStatus: shouldShowInitialStatus,
       });

@@ -40,7 +40,7 @@ export type ThinkingUpdateSnapshot = {
 
 type StreamArgs = {
   conversationLocalId: string;
-  conversationSessionId: string | null;
+  sessionId: string | null;
   userMessage: string;
   showInitialStatus?: boolean;
   onThinkingUpdate?: (snapshot: ThinkingUpdateSnapshot) => void;
@@ -55,43 +55,37 @@ type UseAssistantStreamingOptions = {
   onThinkingUpdate?: (snapshot: ThinkingUpdateSnapshot) => void;
 };
 
-type SessionIdentifiers = {
-  conversationSessionId: string | null;
+type SessionIdentifier = {
   sessionId: string | null;
 };
 
-type StatusPayload = SessionIdentifiers & {
-  text: string | null;
-  traceId: string | null;
-  raw: unknown;
-};
-
-type ToolResultPayload = SessionIdentifiers & {
-  message: string | null;
-  products: ReturnType<typeof parseToolResultPayload>['products'];
-  raw: unknown;
-};
-
-type ErrorPayload = SessionIdentifiers & {
+type StatusPayload = SessionIdentifier & {
   message: string;
-  raw: unknown;
 };
 
-type MessagePayload = SessionIdentifiers & {
-  value: unknown;
-  raw: unknown;
+type ToolResultPayload = SessionIdentifier & {
+  message: string;
+  products: ReturnType<typeof parseToolResultPayload>['products'];
+};
+
+type ErrorPayload = SessionIdentifier & {
+  message: string;
+};
+
+type MessagePayload = SessionIdentifier & {
+  message: string;
 };
 
 type AssistantStreamEvent =
-  | {type: 'turn_started'; payload: SessionIdentifiers & {raw: unknown}}
-  | {type: 'turn_complete'; payload: SessionIdentifiers & {raw: unknown}}
+  | {type: 'turn_started'; payload: SessionIdentifier}
+  | {type: 'turn_complete'; payload: SessionIdentifier}
   | {type: 'status'; payload: StatusPayload}
   | {type: 'status_update'; payload: StatusPayload}
   | {type: 'tool_invocation'; payload: StatusPayload}
   | {type: 'tool_result'; payload: ToolResultPayload}
   | {type: 'error'; payload: ErrorPayload}
   | {type: 'message'; payload: MessagePayload}
-  | {type: 'unknown'; event: string; payload: SessionIdentifiers & {raw: unknown}};
+  | {type: 'unknown'; event: string; payload: SessionIdentifier & {message: unknown}};
 
 export function useAssistantStreaming({
   locale,
@@ -113,7 +107,7 @@ export function useAssistantStreaming({
   const streamAssistantResponse = useCallback(
     async ({
       conversationLocalId,
-      conversationSessionId,
+      sessionId,
       userMessage,
       showInitialStatus,
       onThinkingUpdate: streamCallback,
@@ -131,14 +125,13 @@ export function useAssistantStreaming({
             }
           : undefined;
 
-      let resolvedSessionId = conversationSessionId;
+      let resolvedSessionId = sessionId;
       let assistantMessageId: string | null = null;
       let accumulatedContent = '';
       let latestSnapshot: ConversationRecord | null = null;
       let collectedProducts: Product[] = [];
       let capturedErrorMessage: string | null = null;
       let turnCompleted = false;
-      const seenStatusTraces = new Set<string>();
       const seenStatusMessages = new Set<string>();
       let thinkingUpdates: ConversationThinkingUpdate[] = [];
 
@@ -332,9 +325,8 @@ export function useAssistantStreaming({
         pushAssistantMessage(text, 'error');
       };
 
-      const updateResolvedSession = (payload: SessionIdentifiers) => {
-        const sessionValue =
-          payload.conversationSessionId ?? payload.sessionId ?? null;
+      const updateResolvedSession = (payload: SessionIdentifier) => {
+        const sessionValue = payload.sessionId ?? null;
         if (!sessionValue || sessionValue === resolvedSessionId) {
           return;
         }
@@ -348,7 +340,7 @@ export function useAssistantStreaming({
       try {
         logInfo('streaming request start', {
           conversationLocalId,
-          conversationSessionId,
+          sessionId,
           endpoint,
         });
 
@@ -364,11 +356,14 @@ export function useAssistantStreaming({
         recordThinkingUpdate(initialStatusMessage, 'status');
         const response = await fetch(endpoint, {
           method: 'POST',
-          headers: {'Content-Type': 'application/json'},
+          headers: {
+            'Content-Type': 'application/json; charset=UTF-8',
+            Accept: 'text/event-stream;charset=UTF-8',
+          },
           signal: controller.signal,
           body: JSON.stringify({
             message: userMessage,
-            conversationSessionId: conversationSessionId ?? undefined,
+            sessionId: sessionId ?? undefined,
             locale,
             view,
           }),
@@ -377,7 +372,7 @@ export function useAssistantStreaming({
           logError('streaming response missing body', {
             status: response.status,
             conversationLocalId,
-            conversationSessionId,
+            sessionId,
           });
           const errorText = await response.text().catch(() => '');
           const message = errorText || CONNECTION_ERROR_MESSAGE;
@@ -399,7 +394,7 @@ export function useAssistantStreaming({
 
           const parsedEvent = parseAssistantStreamEvent(event);
 
-          const updateSessionFromPayload = (payload: SessionIdentifiers) => {
+          const updateSessionFromPayload = (payload: SessionIdentifier) => {
             updateResolvedSession(payload);
           };
 
@@ -419,23 +414,15 @@ export function useAssistantStreaming({
             case 'status_update': {
               updateSessionFromPayload(parsedEvent.payload);
 
-              const statusText = parsedEvent.payload.text ?? '';
+              const statusText = parsedEvent.payload.message;
               if (!statusText) {
                 return;
               }
 
-              const traceId = parsedEvent.payload.traceId;
-              if (traceId) {
-                if (seenStatusTraces.has(traceId)) {
-                  return;
-                }
-                seenStatusTraces.add(traceId);
-              } else {
-                if (seenStatusMessages.has(statusText)) {
-                  return;
-                }
-                seenStatusMessages.add(statusText);
+              if (seenStatusMessages.has(statusText)) {
+                return;
               }
+              seenStatusMessages.add(statusText);
 
               recordThinkingUpdate(statusText, 'status');
 
@@ -449,7 +436,7 @@ export function useAssistantStreaming({
             case 'tool_invocation': {
               updateSessionFromPayload(parsedEvent.payload);
 
-              const toolText = parsedEvent.payload.text ?? '';
+              const toolText = parsedEvent.payload.message;
               if (!toolText) {
                 return;
               }
@@ -470,11 +457,7 @@ export function useAssistantStreaming({
             case 'tool_result': {
               updateSessionFromPayload(parsedEvent.payload);
               const successNote =
-                parsedEvent.payload.message ??
-                resolveDisplayText(
-                  parsedEvent.payload.raw,
-                  TOOL_RESULT_FALLBACK_MESSAGE,
-                );
+                parsedEvent.payload.message ?? TOOL_RESULT_FALLBACK_MESSAGE;
 
               recordThinkingUpdate(successNote, 'tool');
 
@@ -514,8 +497,8 @@ export function useAssistantStreaming({
             }
             case 'message': {
               updateSessionFromPayload(parsedEvent.payload);
-              const chunk = extractAssistantChunk(parsedEvent.payload.value);
-              if (chunk === null) {
+              const chunk = parsedEvent.payload.message;
+              if (!chunk) {
                 return;
               }
 
@@ -574,7 +557,7 @@ export function useAssistantStreaming({
             case 'unknown': {
               logWarn('unknown SSE event', {
                 event: parsedEvent.event,
-                payload: parsedEvent.payload.raw,
+                payload: parsedEvent.payload.message,
               });
               return;
             }
@@ -664,12 +647,12 @@ export function useAssistantStreaming({
           if (capturedErrorMessage) {
             logWarn('streaming request aborted after server-side error', {
               conversationLocalId,
-              conversationSessionId: resolvedSessionId ?? conversationSessionId,
+              sessionId: resolvedSessionId ?? sessionId,
             });
           } else {
             logInfo('streaming request aborted', {
               conversationLocalId,
-              conversationSessionId: resolvedSessionId ?? conversationSessionId,
+              sessionId: resolvedSessionId ?? sessionId,
             });
           }
           return;
@@ -677,7 +660,7 @@ export function useAssistantStreaming({
         logError('streaming request error', {
           error,
           conversationLocalId,
-          conversationSessionId: resolvedSessionId ?? conversationSessionId,
+          sessionId: resolvedSessionId ?? sessionId,
         });
         if (!capturedErrorMessage) {
           setStreamError(GENERIC_ERROR_MESSAGE);
@@ -689,7 +672,7 @@ export function useAssistantStreaming({
         setIsStreaming(false);
         logDebug('streaming request finished', {
           conversationLocalId,
-          conversationSessionId: resolvedSessionId ?? conversationSessionId,
+          sessionId: resolvedSessionId ?? sessionId,
         });
       }
     },
@@ -713,32 +696,34 @@ function parseAssistantStreamEvent({
   event: string;
   data: string;
 }): AssistantStreamEvent {
-  const name = event || 'message';
-  let payload: unknown = data;
+  const rawEventName = event || 'message';
+  let parsedPayload: unknown = data;
   if (data) {
     try {
-      payload = JSON.parse(data);
+      parsedPayload = JSON.parse(data);
     } catch {
-      payload = data;
+      parsedPayload = data;
     }
   }
 
-  const session = extractSessionIdentifiers(payload);
+  const {name, payload, reportedEvent} = normalizeAssistantStreamEvent(
+    rawEventName,
+    parsedPayload,
+  );
+  const session = extractSessionIdentifier(payload);
 
   switch (name) {
     case 'turn_started':
-      return {type: 'turn_started', payload: {...session, raw: payload}};
+      return {type: 'turn_started', payload: {...session}};
     case 'turn_complete':
-      return {type: 'turn_complete', payload: {...session, raw: payload}};
+      return {type: 'turn_complete', payload: {...session}};
     case 'status':
     case 'status_update':
       return {
         type: name,
         payload: {
           ...session,
-          text: resolveDisplayText(payload, DEFAULT_STATUS_MESSAGE),
-          traceId: extractTraceId(payload),
-          raw: payload,
+          message: resolveDisplayText(payload, DEFAULT_STATUS_MESSAGE),
         },
       };
     case 'tool_invocation':
@@ -746,20 +731,19 @@ function parseAssistantStreamEvent({
         type: 'tool_invocation',
         payload: {
           ...session,
-          text: resolveDisplayText(payload, DEFAULT_TOOL_PROGRESS_MESSAGE),
-          traceId: extractTraceId(payload),
-          raw: payload,
+          message: resolveDisplayText(payload, DEFAULT_TOOL_PROGRESS_MESSAGE),
         },
       };
     case 'tool_result': {
       const result = parseToolResultPayload(payload);
+      const resolvedMessage =
+        result.message ?? resolveDisplayText(payload, TOOL_RESULT_FALLBACK_MESSAGE);
       return {
         type: 'tool_result',
         payload: {
           ...session,
-          message: result.message,
+          message: resolvedMessage,
           products: result.products,
-          raw: payload,
         },
       };
     }
@@ -769,7 +753,6 @@ function parseAssistantStreamEvent({
         payload: {
           ...session,
           message: resolveDisplayText(payload, GENERIC_ERROR_MESSAGE),
-          raw: payload,
         },
       };
     case 'message':
@@ -777,28 +760,83 @@ function parseAssistantStreamEvent({
         type: 'message',
         payload: {
           ...session,
-          value: payload,
-          raw: payload,
+          message: extractMessageChunkString(payload),
         },
       };
     default:
-      return {type: 'unknown', event: name, payload: {...session, raw: payload}};
+      return {
+        type: 'unknown',
+        event: reportedEvent,
+        payload: {
+          ...session,
+          message: stringifyUnknownPayload(payload),
+        },
+      };
   }
 }
 
-function extractSessionIdentifiers(value: unknown): SessionIdentifiers {
+function normalizeAssistantStreamEvent(
+  fallbackName: string,
+  payload: unknown,
+) {
+  const baseName = fallbackName || 'message';
+  if (!payload || typeof payload !== 'object') {
+    return {name: baseName, payload, reportedEvent: baseName};
+  }
+
+  const record = payload as Record<string, unknown>;
+  const nestedType = readTrimmedString(record.type);
+  const nestedEvent = readTrimmedString(record.event);
+  const normalizedName = nestedType ?? baseName;
+  const normalizedPayload = nestedType
+    ? resolveNestedPayload(record, payload)
+    : payload;
+
+  return {
+    name: normalizedName,
+    payload: normalizedPayload,
+    reportedEvent: nestedEvent ?? baseName,
+  };
+}
+
+function readTrimmedString(value: unknown): string | null {
+  if (typeof value !== 'string') {
+    return null;
+  }
+  const trimmed = value.trim();
+  return trimmed || null;
+}
+
+function resolveNestedPayload(
+  record: Record<string, unknown>,
+  fallback: unknown,
+) {
+  if ('payload' in record && record.payload !== undefined) {
+    return record.payload;
+  }
+  if ('data' in record && record.data !== undefined) {
+    return record.data;
+  }
+  return fallback;
+}
+
+function extractSessionIdentifier(value: unknown): SessionIdentifier {
   if (value && typeof value === 'object') {
     const record = value as Record<string, unknown>;
-    return {
-      conversationSessionId:
-        typeof record.conversationSessionId === 'string'
-          ? record.conversationSessionId
-          : null,
-      sessionId:
-        typeof record.sessionId === 'string' ? record.sessionId : null,
-    };
+    const direct = typeof record.sessionId === 'string' ? record.sessionId : null;
+    if (direct?.trim()) {
+      return {sessionId: direct.trim()};
+    }
+    const legacy =
+      typeof record.conversationSessionId === 'string'
+        ? record.conversationSessionId
+        : null;
+    if (legacy?.trim()) {
+      return {sessionId: legacy.trim()};
+    }
+    return {sessionId: null};
   }
-  return {conversationSessionId: null, sessionId: null};
+  return {sessionId: null};
 }
 
 function resolveDisplayText(value: unknown, fallback: string): string {
@@ -824,15 +862,26 @@ function resolveDisplayText(value: unknown, fallback: string): string {
   return fallback;
 }
 
-function extractTraceId(value: unknown): string | null {
-  if (value && typeof value === 'object') {
-    const record = value as Record<string, unknown>;
-    const candidate = record.traceId;
-    if (typeof candidate === 'string' && candidate.trim()) {
-      return candidate.trim();
-    }
+function extractMessageChunkString(value: unknown): string {
+  const chunk = extractAssistantChunk(value);
+  if (typeof chunk === 'string') {
+    return chunk;
   }
-  return null;
+  if (typeof value === 'string') {
+    return value;
+  }
+  return resolveDisplayText(value, '');
+}
+
+function stringifyUnknownPayload(value: unknown): string {
+  if (typeof value === 'string') {
+    return value;
+  }
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return '';
+  }
 }
 
 function resolveProductKey(product: Product): string | null {
