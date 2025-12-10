@@ -42,7 +42,7 @@ export default async function handleRequest(
   });
 
   const body = await renderToReadableStream(
-    <NonceProvider>
+    <NonceProvider value={nonce}>
       <ServerRouter
         context={reactRouterContext}
         url={request.url}

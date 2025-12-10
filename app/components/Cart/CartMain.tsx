@@ -1,19 +1,84 @@
 import {Money, useOptimisticCart} from '@shopify/hydrogen';
 import type {CartApiQueryFragment} from 'storefrontapi.generated';
 import {CheckIcon, QuestionMarkCircleIcon} from '@heroicons/react/20/solid';
-import {CartLineRemoveButton} from './CartLineItem';
+import {CartLineRemoveButton, CartLineUpdateButton} from './CartLineItem';
 import {useCart} from '~/lib/coveo.engine';
 import cx from '~/lib/cx';
 import type {CartLine} from '@shopify/hydrogen/storefront-api-types';
 import {mapShopifyMerchandiseToCoveoCartItem} from '~/lib/map.coveo.shopify';
 import '~/types/gtm';
 import {NavLink} from 'react-router';
+import {useEffect, useRef, useState} from 'react';
 
 export type CartLayout = 'page' | 'aside';
 
 export type CartMainProps = {
   cart: CartApiQueryFragment | null;
 };
+
+/**
+ * A quantity selector that updates the cart line quantity when changed.
+ * Uses standard CartForm API with a controlled select element and form submission.
+ */
+function CartLineQuantitySelector({
+  lineId,
+  quantity,
+  productIdx,
+}: {
+  lineId: string;
+  quantity: number;
+  productIdx: number;
+}) {
+  const [selectedQuantity, setSelectedQuantity] = useState(quantity);
+  const [pendingSubmit, setPendingSubmit] = useState(false);
+  const formRef = useRef<HTMLFormElement | null>(null);
+
+  // Sync state with prop when quantity changes externally (e.g., optimistic updates)
+  useEffect(() => {
+    setSelectedQuantity(quantity);
+  }, [quantity]);
+
+  // Submit form after state update completes
+  useEffect(() => {
+    if (pendingSubmit && formRef.current) {
+      formRef.current.requestSubmit();
+      setPendingSubmit(false);
+    }
+  }, [pendingSubmit, selectedQuantity]);
+
+  const handleQuantityChange = (newQuantity: number) => {
+    // Validate the parsed quantity
+    if (!Number.isInteger(newQuantity) || newQuantity < 1 || newQuantity > 10) {
+      console.error('Invalid quantity:', newQuantity);
+      return;
+    }
+    setSelectedQuantity(newQuantity);
+    setPendingSubmit(true);
+  };
+
+  return (
+    <CartLineUpdateButton
+      lines={[{id: lineId, quantity: selectedQuantity}]}
+    >
+      <select
+        ref={(el) => {
+          formRef.current = el?.form || null;
+        }}
+        value={selectedQuantity}
+        id={`quantity-${productIdx}`}
+        name={`quantity-${productIdx}`}
+        className="max-w-full rounded-md border border-gray-300 py-1.5 text-left text-base/5 font-medium text-gray-700 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm"
+        onChange={(e) => handleQuantityChange(parseInt(e.target.value, 10))}
+      >
+        {Array.from({length: 10}, (_, i) => i).map((i) => (
+          <option key={i + 1} value={i + 1}>
+            {i + 1}
+          </option>
+        ))}
+      </select>
+    </CartLineUpdateButton>
+  );
+}
 
 export function CartMain({cart: originalCart}: CartMainProps) {
   // The useOptimisticCart hook applies pending actions to the cart
@@ -128,18 +193,11 @@ export function CartMain({cart: originalCart}: CartMainProps) {
                       >
                         Quantity, {cartLine.quantity}
                       </label>
-                      <select
-                        defaultValue={cartLine.quantity}
-                        id={`quantity-${productIdx}`}
-                        name={`quantity-${productIdx}`}
-                        className="max-w-full rounded-md border border-gray-300 py-1.5 text-left text-base/5 font-medium text-gray-700 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm"
-                      >
-                        {Array.from({length: 10}, (_, i) => i).map((i) => (
-                          <option key={i + 1} value={i + 1}>
-                            {i + 1}
-                          </option>
-                        ))}
-                      </select>
+                      <CartLineQuantitySelector
+                        lineId={cartLine.id}
+                        quantity={cartLine.quantity}
+                        productIdx={productIdx}
+                      />
 
                       <div className="absolute right-0 top-0">
                         <CartLineRemoveButton
