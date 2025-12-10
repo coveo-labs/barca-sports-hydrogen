@@ -235,7 +235,7 @@ export default function Product() {
               <div className="mt-10 flex">
                 <AddToCartButton
                   disabled={
-                    !selectedVariant || !selectedVariant.availableForSale
+                    !selectedVariant
                   }
                   product={product}
                   redirectTo={`/products/${useParams().handle}`}
@@ -251,9 +251,7 @@ export default function Product() {
                       : []
                   }
                 >
-                  {selectedVariant?.availableForSale
-                    ? 'Add to cart'
-                    : 'Sold out'}
+                  Add to cart
                 </AddToCartButton>
                 <button
                   type="button"
