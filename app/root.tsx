@@ -229,7 +229,6 @@ export function Layout({children}: {children?: React.ReactNode}) {
 
 export default function App() {
   const nonce = useNonce();
-  /** @type {RootLoader} */
   const data = useRouteLoaderData<RootLoader>('root');
 
   if (!data) {
