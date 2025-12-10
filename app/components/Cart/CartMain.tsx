@@ -8,12 +8,54 @@ import type {CartLine} from '@shopify/hydrogen/storefront-api-types';
 import {mapShopifyMerchandiseToCoveoCartItem} from '~/lib/map.coveo.shopify';
 import '~/types/gtm';
 import {NavLink} from 'react-router';
+import {useState} from 'react';
 
 export type CartLayout = 'page' | 'aside';
 
 export type CartMainProps = {
   cart: CartApiQueryFragment | null;
 };
+
+/**
+ * A quantity selector that updates the cart line quantity when changed.
+ * Uses standard CartForm API with a controlled select element and form submission.
+ */
+function CartLineQuantitySelector({
+  lineId,
+  quantity,
+  productIdx,
+}: {
+  lineId: string;
+  quantity: number;
+  productIdx: number;
+}) {
+  const [selectedQuantity, setSelectedQuantity] = useState(quantity);
+
+  return (
+    <CartLineUpdateButton
+      lines={[{id: lineId, quantity: selectedQuantity}]}
+    >
+      <select
+        value={selectedQuantity}
+        id={`quantity-${productIdx}`}
+        name={`quantity-${productIdx}`}
+        className="max-w-full rounded-md border border-gray-300 py-1.5 text-left text-base/5 font-medium text-gray-700 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm"
+        onChange={(e) => {
+          const newQuantity = parseInt(e.target.value, 10);
+          setSelectedQuantity(newQuantity);
+          // Use standard form submission via the closest form element
+          e.currentTarget.form?.requestSubmit();
+        }}
+      >
+        {Array.from({length: 10}, (_, i) => i).map((i) => (
+          <option key={i + 1} value={i + 1}>
+            {i + 1}
+          </option>
+        ))}
+      </select>
+    </CartLineUpdateButton>
+  );
+}
 
 export function CartMain({cart: originalCart}: CartMainProps) {
   // The useOptimisticCart hook applies pending actions to the cart
@@ -128,39 +170,11 @@ export function CartMain({cart: originalCart}: CartMainProps) {
                       >
                         Quantity, {cartLine.quantity}
                       </label>
-                      <CartLineUpdateButton
-                        lines={[{id: cartLine.id, quantity: cartLine.quantity}]}
-                      >
-                        <select
-                          defaultValue={cartLine.quantity}
-                          id={`quantity-${productIdx}`}
-                          name={`quantity-${productIdx}`}
-                          className="max-w-full rounded-md border border-gray-300 py-1.5 text-left text-base/5 font-medium text-gray-700 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm"
-                          onChange={(e) => {
-                            const quantity = parseInt(e.target.value, 10);
-                            try {
-                              if (e.target.form) {
-                                let v: any = JSON.parse(
-                                  e.target.form.cartFormInput.value,
-                                );
-                                v.inputs.lines[0].quantity = quantity;
-                                e.target.form.cartFormInput.value =
-                                  JSON.stringify(v);
-
-                                e.target.form.requestSubmit();
-                              }
-                            } catch (error) {
-                              console.error('Error updating quantity:', error);
-                            }
-                          }}
-                        >
-                          {Array.from({length: 10}, (_, i) => i).map((i) => (
-                            <option key={i + 1} value={i + 1}>
-                              {i + 1}
-                            </option>
-                          ))}
-                        </select>
-                      </CartLineUpdateButton>
+                      <CartLineQuantitySelector
+                        lineId={cartLine.id}
+                        quantity={cartLine.quantity}
+                        productIdx={productIdx}
+                      />
 
                       <div className="absolute right-0 top-0">
                         <CartLineRemoveButton
