@@ -86,8 +86,8 @@ export function CartLineUpdateButton({
  * Returns a unique key for the update action. This is used to make sure actions modifying the same line
  * items are not run concurrently, but cancel each other. For example, if the user clicks "Increase quantity"
  * and "Decrease quantity" in rapid succession, the actions will cancel each other and only the last one will run.
- * @returns
  * @param {string[]} lineIds - line ids affected by the update
+ * @returns {string} A unique key string for the update action, composed of the action type and line IDs.
  */
 function getUpdateKey(lineIds: string[]) {
   return [CartForm.ACTIONS.LinesUpdate, ...lineIds].join('-');
