@@ -47,6 +47,11 @@ jobs:
           AGENTIC_ACCESS_TOKEN=${{ secrets.AGENTIC_ACCESS_TOKEN }}
           EOF
 
+      - name: Push environment variables to Preview
+        run: npx shopify hydrogen env push --environment preview
+        env:
+          SHOPIFY_HYDROGEN_DEPLOYMENT_TOKEN: ${{ secrets.OXYGEN_DEPLOYMENT_TOKEN_1000027091 }}
+
       - name: Build and Publish to Oxygen
         run: npx shopify hydrogen deploy --force
         env:
