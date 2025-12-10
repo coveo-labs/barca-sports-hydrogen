@@ -4,7 +4,10 @@ import {CheckIcon, QuestionMarkCircleIcon} from '@heroicons/react/20/solid';
 import {CartLineRemoveButton, CartLineUpdateButton} from './CartLineItem';
 import {useCart} from '~/lib/coveo.engine';
 import cx from '~/lib/cx';
-import type {CartLine} from '@shopify/hydrogen/storefront-api-types';
+import type {
+  CartLine,
+  CartLineUpdateInput,
+} from '@shopify/hydrogen/storefront-api-types';
 import {mapShopifyMerchandiseToCoveoCartItem} from '~/lib/map.coveo.shopify';
 import '~/types/gtm';
 import {NavLink} from 'react-router';
@@ -13,6 +16,13 @@ export type CartLayout = 'page' | 'aside';
 
 export type CartMainProps = {
   cart: CartApiQueryFragment | null;
+};
+
+type CartFormInputValue = {
+  action: string;
+  inputs: {
+    lines: CartLineUpdateInput[];
+  };
 };
 
 export function CartMain({cart: originalCart}: CartMainProps) {
@@ -140,12 +150,12 @@ export function CartMain({cart: originalCart}: CartMainProps) {
                             const quantity = parseInt(e.target.value, 10);
                             try {
                               if (e.target.form) {
-                                let v: any = JSON.parse(
+                                const formValue = JSON.parse(
                                   e.target.form.cartFormInput.value,
-                                );
-                                v.inputs.lines[0].quantity = quantity;
+                                ) as CartFormInputValue;
+                                formValue.inputs.lines[0].quantity = quantity;
                                 e.target.form.cartFormInput.value =
-                                  JSON.stringify(v);
+                                  JSON.stringify(formValue);
 
                                 e.target.form.requestSubmit();
                               }
