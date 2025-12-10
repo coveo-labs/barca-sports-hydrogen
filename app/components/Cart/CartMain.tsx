@@ -8,7 +8,7 @@ import type {CartLine} from '@shopify/hydrogen/storefront-api-types';
 import {mapShopifyMerchandiseToCoveoCartItem} from '~/lib/map.coveo.shopify';
 import '~/types/gtm';
 import {NavLink} from 'react-router';
-import {useState} from 'react';
+import {useEffect, useRef, useState} from 'react';
 
 export type CartLayout = 'page' | 'aside';
 
@@ -30,22 +30,34 @@ function CartLineQuantitySelector({
   productIdx: number;
 }) {
   const [selectedQuantity, setSelectedQuantity] = useState(quantity);
+  const formRef = useRef<HTMLFormElement | null>(null);
+
+  // Sync state with prop when quantity changes externally (e.g., optimistic updates)
+  useEffect(() => {
+    setSelectedQuantity(quantity);
+  }, [quantity]);
+
+  const handleQuantityChange = (newQuantity: number) => {
+    setSelectedQuantity(newQuantity);
+    // Use requestAnimationFrame to ensure state update is applied before form submission
+    requestAnimationFrame(() => {
+      formRef.current?.requestSubmit();
+    });
+  };
 
   return (
     <CartLineUpdateButton
       lines={[{id: lineId, quantity: selectedQuantity}]}
     >
       <select
+        ref={(el) => {
+          formRef.current = el?.form || null;
+        }}
         value={selectedQuantity}
         id={`quantity-${productIdx}`}
         name={`quantity-${productIdx}`}
         className="max-w-full rounded-md border border-gray-300 py-1.5 text-left text-base/5 font-medium text-gray-700 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm"
-        onChange={(e) => {
-          const newQuantity = parseInt(e.target.value, 10);
-          setSelectedQuantity(newQuantity);
-          // Use standard form submission via the closest form element
-          e.currentTarget.form?.requestSubmit();
-        }}
+        onChange={(e) => handleQuantityChange(parseInt(e.target.value, 10))}
       >
         {Array.from({length: 10}, (_, i) => i).map((i) => (
           <option key={i + 1} value={i + 1}>
