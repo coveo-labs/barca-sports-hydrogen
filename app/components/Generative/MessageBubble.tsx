@@ -135,8 +135,13 @@ function arePropsEqual(
 
 export const MessageBubble = memo(MessageBubbleComponent, arePropsEqual);
 
-const PRODUCT_REF_PATTERN = /<product_ref\b([^>]*)\s*\/>/gi;
+const PRODUCT_REF_PATTERN_SOURCE = '<product_ref\\b([^>]*)\\s*\/>';
+const CAROUSEL_PATTERN_SOURCE = '<carousel>([\\s\\S]*?)<\\/carousel>';
 const ATTRIBUTE_PATTERN = /([^\s=]+)\s*=\s*("([^"]*)"|'([^']*)')/g;
+
+type AssistantMessageSegment =
+  | {type: 'text'; value: string}
+  | {type: 'carousel'; identifiers: string[]};
 
 function renderAssistantMessageContent(
   message: ConversationMessage,
@@ -147,26 +152,106 @@ function renderAssistantMessageContent(
     return content;
   }
 
-  if (!content.includes('<product_ref')) {
+  if (!content.includes('<product_ref') && !content.includes('<carousel')) {
     return content;
   }
 
-  const matches = [...content.matchAll(PRODUCT_REF_PATTERN)];
-  if (!matches.length) {
+  const segments = splitContentByCarousels(content);
+  if (segments.length === 0) {
     return content;
   }
 
   const productIndex = ensureProductLookup(message, productLookup);
-  const segments: ReactNode[] = [];
+  return segments.map((segment, index) => {
+    const key = `${message.id}-${index}`;
+    if (segment.type === 'carousel') {
+      return renderCarouselSegment(segment.identifiers, productIndex, key);
+    }
+    return renderTextSegmentWithInlineProducts(
+      segment.value,
+      productIndex,
+      key,
+    );
+  });
+}
+
+function splitContentByCarousels(content: string): AssistantMessageSegment[] {
+  const segments: AssistantMessageSegment[] = [];
+  let cursor = 0;
+  let match: RegExpExecArray | null;
+  const carouselPattern = new RegExp(CAROUSEL_PATTERN_SOURCE, 'gi');
+
+  while ((match = carouselPattern.exec(content)) !== null) {
+    const matchIndex = match.index ?? 0;
+    if (matchIndex > cursor) {
+      segments.push({type: 'text', value: content.slice(cursor, matchIndex)});
+    }
+
+    const rawCarousel = match[0] ?? '';
+    const innerMarkup = match[1] ?? '';
+    const identifiers = extractProductRefsFromMarkup(innerMarkup);
+    if (identifiers.length > 0) {
+      segments.push({type: 'carousel', identifiers});
+    } else {
+      segments.push({type: 'text', value: rawCarousel});
+    }
+
+    cursor = matchIndex + rawCarousel.length;
+  }
+
+  if (cursor < content.length) {
+    segments.push({type: 'text', value: content.slice(cursor)});
+  }
+
+  return segments;
+}
+
+function extractProductRefsFromMarkup(markup: string) {
+  const identifiers: string[] = [];
+  let match: RegExpExecArray | null;
+  const productPattern = new RegExp(PRODUCT_REF_PATTERN_SOURCE, 'gi');
+
+  while ((match = productPattern.exec(markup)) !== null) {
+    const rawAttributes = match[1] ?? '';
+    const attributes = parseProductRefAttributes(rawAttributes);
+    const identifier = resolveProductRefIdentifier(attributes);
+    if (identifier) {
+      identifiers.push(identifier);
+    }
+  }
+
+  return identifiers;
+}
+
+function renderTextSegmentWithInlineProducts(
+  text: string,
+  productIndex: ReadonlyMap<string, Product>,
+  key: string,
+) {
+  if (!text) {
+    return null;
+  }
+
+  if (!text.includes('<product_ref')) {
+    return <span key={key}>{text}</span>;
+  }
+
+  const inlinePattern = new RegExp(PRODUCT_REF_PATTERN_SOURCE, 'gi');
+  const matches = [...text.matchAll(inlinePattern)];
+  if (!matches.length) {
+    return <span key={key}>{text}</span>;
+  }
+
+  const nodes: ReactNode[] = [];
   let cursor = 0;
   let segmentId = 0;
 
   for (const match of matches) {
     const matchIndex = match.index ?? 0;
     if (matchIndex > cursor) {
-      segments.push(
-        <span key={`text-${segmentId}`}>
-          {content.slice(cursor, matchIndex)}
+      nodes.push(
+        <span key={`${key}-text-${segmentId}`}>
+          {text.slice(cursor, matchIndex)}
         </span>,
       );
       segmentId += 1;
@@ -175,42 +260,126 @@ function renderAssistantMessageContent(
     const rawAttributes = match[1] ?? '';
     const attributes = parseProductRefAttributes(rawAttributes);
     const productIdentifier = resolveProductRefIdentifier(attributes);
-    const product =
-      productIdentifier &&
-      (productIndex.get(productIdentifier) ??
-        productIndex.get(productIdentifier.toLowerCase()));
-
-    if (product) {
-      segments.push(
-        <div key={`product-${segmentId}`} className="my-3 w-full max-w-[18rem]">
-          <ProductCard product={product} className="w-full text-sm" />
-        </div>,
-      );
-    } else {
-      const fallbackLabel = productIdentifier?.length
-        ? `Product ${productIdentifier} unavailable`
-        : 'Product unavailable';
-      segments.push(
-        <span
-          key={`missing-${segmentId}`}
-          className="inline-flex items-center rounded bg-amber-100 px-2 py-1 text-xs font-medium text-amber-900"
-        >
-          {fallbackLabel}
-        </span>,
-      );
-    }
+    nodes.push(
+      renderInlineProductSegment(
+        productIdentifier,
+        productIndex,
+        `${key}-product-${segmentId}`,
+      ),
+    );
 
     segmentId += 1;
     cursor = matchIndex + match[0].length;
   }
 
-  if (cursor < content.length) {
-    segments.push(
-      <span key={`text-${segmentId}`}>{content.slice(cursor)}</span>,
+  if (cursor < text.length) {
+    nodes.push(
+      <span key={`${key}-text-${segmentId}`}>{text.slice(cursor)}</span>,
     );
   }
 
-  return segments;
+  return (
+    <span key={key} className="contents">
+      {nodes}
+    </span>
+  );
+}
+
+function renderInlineProductSegment(
+  productIdentifier: string | null,
+  productIndex: ReadonlyMap<string, Product>,
+  key: string,
+) {
+  const product = lookupProduct(productIdentifier, productIndex);
+  if (product) {
+    return (
+      <div key={key} className="my-3 w-full max-w-[18rem]">
+        <ProductCard product={product} className="w-full text-sm" />
+      </div>
+    );
+  }
+
+  const fallbackLabel = productIdentifier?.length
+    ? `Product ${productIdentifier} unavailable`
+    : 'Product unavailable';
+  return (
+    <span
+      key={key}
+      className="inline-flex items-center rounded bg-amber-100 px-2 py-1 text-xs font-medium text-amber-900"
+    >
+      {fallbackLabel}
+    </span>
+  );
+}
+
+function renderCarouselSegment(
+  identifiers: string[],
+  productIndex: ReadonlyMap<string, Product>,
+  key: string,
+) {
+  if (identifiers.length === 0) {
+    return null;
+  }
+
+  return (
+    <div
+      key={key}
+      className="my-4 rounded-2xl bg-gray-50 px-4 py-5 shadow-sm ring-1 ring-slate-200/70"
+    >
+      <div
+        className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-3 lg:grid lg:grid-cols-3 lg:gap-6 lg:overflow-visible lg:snap-none"
+        role="list"
+        aria-label="Product carousel"
+      >
+        {identifiers.map((identifier, index) => {
+          const product = lookupProduct(identifier, productIndex);
+          if (product) {
+            return (
+              <div
+                key={`${key}-product-${identifier ?? index}`}
+                className="min-w-[11.25rem] max-w-[11.25rem] flex-shrink-0 snap-center lg:min-w-0 lg:max-w-none"
+                role="listitem"
+              >
+                <div className="rounded-2xl bg-white p-3 shadow-sm ring-1 ring-slate-200">
+                  <ProductCard
+                    product={product}
+                    className="block w-full text-sm"
+                  />
+                </div>
+              </div>
+            );
+          }
+
+          const fallbackLabel = identifier?.length
+            ? `Product ${identifier} unavailable`
+            : 'Product unavailable';
+          return (
+            <div
+              key={`${key}-missing-${index}`}
+              className="min-w-[11.25rem] max-w-[11.25rem] flex-shrink-0 rounded-2xl border border-dashed border-amber-200 bg-amber-50/80 px-4 py-6 text-sm font-medium text-amber-900 snap-center lg:min-w-0 lg:max-w-none"
+              role="listitem"
+            >
+              {fallbackLabel}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function lookupProduct(
+  identifier: string | null,
+  productIndex: ReadonlyMap<string, Product>,
+) {
+  if (!identifier) {
+    return null;
+  }
+  return (
+    productIndex.get(identifier) ??
+    productIndex.get(identifier.toLowerCase()) ??
+    null
+  );
 }
 
 function parseProductRefAttributes(raw: string) {
