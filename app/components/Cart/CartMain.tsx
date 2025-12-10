@@ -30,6 +30,7 @@ function CartLineQuantitySelector({
   productIdx: number;
 }) {
   const [selectedQuantity, setSelectedQuantity] = useState(quantity);
+  const [pendingSubmit, setPendingSubmit] = useState(false);
   const formRef = useRef<HTMLFormElement | null>(null);
 
   // Sync state with prop when quantity changes externally (e.g., optimistic updates)
@@ -37,12 +38,22 @@ function CartLineQuantitySelector({
     setSelectedQuantity(quantity);
   }, [quantity]);
 
+  // Submit form after state update completes
+  useEffect(() => {
+    if (pendingSubmit && formRef.current) {
+      formRef.current.requestSubmit();
+      setPendingSubmit(false);
+    }
+  }, [pendingSubmit, selectedQuantity]);
+
   const handleQuantityChange = (newQuantity: number) => {
+    // Validate the parsed quantity
+    if (!Number.isInteger(newQuantity) || newQuantity < 1 || newQuantity > 10) {
+      console.error('Invalid quantity:', newQuantity);
+      return;
+    }
     setSelectedQuantity(newQuantity);
-    // Use requestAnimationFrame to ensure state update is applied before form submission
-    requestAnimationFrame(() => {
-      formRef.current?.requestSubmit();
-    });
+    setPendingSubmit(true);
   };
 
   return (
