@@ -83,7 +83,6 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
         immediate
         value={searchBox.state.value}
         onChange={(val) => {
-          console.log('Combobox onChange value:', val);
           if (val === null) {
             return;
           }
