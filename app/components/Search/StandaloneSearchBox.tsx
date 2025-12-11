@@ -195,9 +195,17 @@ function useRedirect(
       }?q=${encodeURIComponent(searchBox.state.value)}`;
 
       navigate(url);
+      // Reset the redirectTo state to prevent re-triggering on popover reopen
+      searchBox.methods?.afterRedirection();
       close?.();
     }
-  }, [searchBox.state.redirectTo, searchBox.state.value, navigate, close]);
+  }, [
+    searchBox.state.redirectTo,
+    searchBox.state.value,
+    searchBox.methods,
+    navigate,
+    close,
+  ]);
 }
 
 function useUpdateInstantProducts(
