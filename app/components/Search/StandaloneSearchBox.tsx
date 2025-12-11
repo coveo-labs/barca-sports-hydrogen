@@ -54,7 +54,7 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
       }
     }, 50);
     return () => clearTimeout(timer);
-  }, [searchBox.methods]);
+  }, []);
 
   useRedirect(searchBox, close);
   useUpdateInstantProducts(searchBox, instantProducts);
