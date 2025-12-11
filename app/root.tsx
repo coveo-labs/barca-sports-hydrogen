@@ -215,9 +215,6 @@ function loadDeferredData({context}: LoaderFunctionArgs) {
 }
 
 export function Layout({children}: {children?: React.ReactNode}) {
-  const nonce = useNonce();
-  const data = useRouteLoaderData<RootLoader>('root');
-
   return (
     <html lang="en">
       <head>
@@ -228,38 +225,43 @@ export function Layout({children}: {children?: React.ReactNode}) {
         <Links />
         <Script waitForHydration src="/scripts/google-tag-manager.js" />
       </head>
-      <body>
-        {data ? (
-          <Analytics.Provider
-            cart={data.cart}
-            shop={data.shop}
-            consent={data.consent}
-          >
-            <StandaloneProvider
-              navigatorContext={new ClientSideNavigatorContextProvider()}
-              staticState={data.staticStateStandalone as any}
-            >
-              <PageLayout
-                {...data}
-                key={`${data.locale.language}-${data.locale.country}`}
-              >
-                {children}
-              </PageLayout>
-            </StandaloneProvider>
-          </Analytics.Provider>
-        ) : (
-          children
-        )}
-        <GlobalLoading />
-        <ScrollRestoration nonce={nonce} />
-        <Scripts nonce={nonce} />
-      </body>
+      <body>{children}</body>
     </html>
   );
 }
 
 export default function App() {
-  return <Outlet />;
+  const nonce = useNonce();
+  const data = useRouteLoaderData<RootLoader>('root');
+
+  if (!data) {
+    return <Outlet />;
+  }
+
+  return (
+    <>
+      <Analytics.Provider
+        cart={data.cart}
+        shop={data.shop}
+        consent={data.consent}
+      >
+        <StandaloneProvider
+          navigatorContext={new ClientSideNavigatorContextProvider()}
+          staticState={data.staticStateStandalone as any}
+        >
+          <PageLayout
+            {...data}
+            key={`${data.locale.language}-${data.locale.country}`}
+          >
+            <Outlet />
+          </PageLayout>
+        </StandaloneProvider>
+      </Analytics.Provider>
+      <GlobalLoading />
+      <ScrollRestoration nonce={nonce} />
+      <Scripts nonce={nonce} />
+    </>
+  );
 }
 
 export function ErrorBoundary() {

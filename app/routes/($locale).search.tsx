@@ -53,16 +53,34 @@ export default function SearchPage() {
     setCurrentUrl(new URL(window.location.href));
   }, []);
 
+  const hasResults =
+    staticState.controllers?.productList.state?.products?.length > 0;
+
   return (
     <SearchProvider
       navigatorContext={new ClientSideNavigatorContextProvider()}
       staticState={staticState as SearchStaticState}
     >
       <ParameterManager url={currentUrl.toString()} />
-      <FullSearch
-        headline={`Browse ${q}`}
-        tagline="Find Your Perfect Splash! Dive into our collection and search for the water sports gear that takes your adventure to the next level. Your journey starts with a click!"
-      />
+      {!hasResults && (
+        <main className="bg-gray-50 noResults-container">
+          <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+            <h1 className="text-3xl font-bold tracking-tight text-gray-900">
+              No results found for "{q}"
+            </h1>
+            <p className="mt-4 max-w-xl text-base text-gray-500">
+              Please try adjusting your search or filter to find what you're
+              looking for.
+            </p>
+          </div>
+        </main>
+      )}
+      {hasResults && (
+        <FullSearch
+          headline={`Browse ${q}`}
+          tagline="Find Your Perfect Splash! Dive into our collection and search for the water sports gear that takes your adventure to the next level. Your journey starts with a click!"
+        />
+      )}
     </SearchProvider>
   );
 }
