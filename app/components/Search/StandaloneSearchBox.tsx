@@ -5,7 +5,7 @@ import {
   ComboboxOption,
   ComboboxOptions,
 } from '@headlessui/react';
-import {type RefObject, useEffect, useRef} from 'react';
+import {useCallback, useEffect, useRef} from 'react';
 import {useInstantProducts, useStandaloneSearchBox} from '~/lib/coveo.engine';
 import {
   MagnifyingGlassIcon,
@@ -43,24 +43,40 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
   const instantProducts = useInstantProducts();
   const navigate = useNavigate();
   const input = useRef<HTMLInputElement>(null);
-  useAutofocus(input);
+
+  // Focus input and show suggestions when component mounts/remounts
+  useEffect(() => {
+    // Small delay to ensure the popover is fully rendered
+    const timer = setTimeout(() => {
+      if (input.current) {
+        input.current.focus();
+        searchBox.methods?.showSuggestions();
+      }
+    }, 50);
+    return () => clearTimeout(timer);
+  }, []);
+
   useRedirect(searchBox, close);
   useUpdateInstantProducts(searchBox, instantProducts);
 
-  const onSubmit = () => {
-    if (shouldRedirectToGenerative(searchBox.state.value)) {
-      navigate('/generative?q=' + encodeURIComponent(searchBox.state.value));
-      close?.();
-    } else {
-      searchBox.methods?.submit();
-      window.dataLayer = window.dataLayer || [];
-      window.dataLayer.push({
-        event: 'search',
-        search_type: 'search_box',
-        search_term: encodeURIComponent(searchBox.state.value),
-      });
-    }
-  };
+  const onSubmit = useCallback(
+    (e?: React.FormEvent) => {
+      e?.preventDefault();
+      if (shouldRedirectToGenerative(searchBox.state.value)) {
+        navigate('/generative?q=' + encodeURIComponent(searchBox.state.value));
+        close?.();
+      } else {
+        searchBox.methods?.submit();
+        window.dataLayer = window.dataLayer || [];
+        window.dataLayer.push({
+          event: 'search',
+          search_type: 'search_box',
+          search_term: encodeURIComponent(searchBox.state.value),
+        });
+      }
+    },
+    [searchBox.state.value, searchBox.methods, navigate, close],
+  );
   return (
     <>
       <Combobox
@@ -79,7 +95,7 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
           }
         }}
       >
-        <div className="relative">
+        <form onSubmit={onSubmit} className="relative">
           <ComboboxInput
             ref={input}
             onFocus={() => {
@@ -93,8 +109,9 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
             }}
           />
           <ComboboxButton
+            as="button"
+            type="submit"
             className="group absolute inset-y-0 right-0 px-2.5"
-            onClick={searchBox.methods?.submit}
           >
             {searchBox.state.value.length > 10 ? (
               <ChatBubbleBottomCenterIcon className="size-6" />
@@ -102,7 +119,7 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
               <MagnifyingGlassIcon className="size-6" />
             )}
           </ComboboxButton>
-        </div>
+        </form>
 
         <ComboboxOptions
           transition
@@ -161,12 +178,6 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
   );
 }
 
-function useAutofocus(ref: RefObject<HTMLInputElement>) {
-  useEffect(() => {
-    ref.current?.focus();
-  }, [ref]);
-}
-
 function useRedirect(
   searchBox: ReturnType<typeof useStandaloneSearchBox>,
   close?: () => void,
@@ -182,9 +193,17 @@ function useRedirect(
       }?q=${encodeURIComponent(searchBox.state.value)}`;
 
       navigate(url);
+      // Reset the redirectTo state to prevent re-triggering on popover reopen
+      searchBox.methods?.afterRedirection();
       close?.();
     }
-  }, [searchBox.state.redirectTo, searchBox.state.value, navigate, close]);
+  }, [
+    searchBox.state.redirectTo,
+    searchBox.state.value,
+    searchBox.methods,
+    navigate,
+    close,
+  ]);
 }
 
 function useUpdateInstantProducts(
