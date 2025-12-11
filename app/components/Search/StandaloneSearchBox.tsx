@@ -83,7 +83,6 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
         immediate
         value={searchBox.state.value}
         onChange={(val) => {
-          console.log('Combobox onChange value:', val);
           if (val === null) {
             return;
           }
@@ -100,7 +99,6 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
           <ComboboxInput
             ref={input}
             onFocus={() => {
-              console.log('Input focused');
               searchBox.methods?.showSuggestions();
             }}
             className="search-box w-full h-12 border p-4"
