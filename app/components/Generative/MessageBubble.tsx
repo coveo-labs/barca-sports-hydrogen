@@ -325,8 +325,8 @@ function renderInlineProductSegment(
   const product = lookupProduct(productIdentifier, productIndex);
   if (product) {
     return (
-      <div key={key} className="my-3 w-full max-w-[18rem]">
-        <ProductCard product={product} className="w-full text-sm" />
+      <div key={key} className="my-3 w-full max-w-[14rem]">
+        <ProductCard product={product} variant="compact" className="w-full text-sm" />
       </div>
     );
   }
@@ -356,10 +356,10 @@ function renderCarouselSegment(
   return (
     <div
       key={key}
-      className="my-4 rounded-2xl bg-gray-50 px-4 py-5 shadow-sm ring-1 ring-slate-200/70"
+      className="my-4 rounded-2xl bg-gray-50 px-3 py-4 shadow-sm ring-1 ring-slate-200/70"
     >
       <div
-        className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-3 lg:grid lg:grid-cols-3 lg:gap-6 lg:overflow-visible lg:snap-none"
+        className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 lg:grid lg:grid-cols-4 lg:gap-4 lg:overflow-visible lg:snap-none"
         role="list"
         aria-label="Product carousel"
       >
@@ -369,12 +369,13 @@ function renderCarouselSegment(
             return (
               <div
                 key={`${key}-product-${identifier ?? index}`}
-                className="min-w-[11.25rem] max-w-[11.25rem] flex-shrink-0 snap-center lg:min-w-0 lg:max-w-none"
+                className="min-w-[9rem] max-w-[9rem] flex-shrink-0 snap-center lg:min-w-0 lg:max-w-none"
                 role="listitem"
               >
-                <div className="rounded-2xl bg-white p-3 shadow-sm ring-1 ring-slate-200">
+                <div className="rounded-xl bg-white p-2 shadow-sm ring-1 ring-slate-200">
                   <ProductCard
                     product={product}
+                    variant="compact"
                     className="block w-full text-sm"
                   />
                 </div>
@@ -388,7 +389,7 @@ function renderCarouselSegment(
           return (
             <div
               key={`${key}-missing-${index}`}
-              className="min-w-[11.25rem] max-w-[11.25rem] flex-shrink-0 rounded-2xl border border-dashed border-amber-200 bg-amber-50/80 px-4 py-6 text-sm font-medium text-amber-900 snap-center lg:min-w-0 lg:max-w-none"
+              className="min-w-[9rem] max-w-[9rem] flex-shrink-0 rounded-xl border border-dashed border-amber-200 bg-amber-50/80 px-3 py-4 text-xs font-medium text-amber-900 snap-center lg:min-w-0 lg:max-w-none"
               role="listitem"
             >
               {fallbackLabel}
