@@ -1,362 +1,563 @@
 import {
-  buildGeneratedAnswer,
-  buildSearchBox,
-  buildSearchEngine,
-  type GeneratedAnswerState,
-  type Result,
-} from '@coveo/headless';
-import {useEffect, useState} from 'react';
-import {BookOpenIcon} from '@heroicons/react/24/outline';
-import cx from '~/lib/cx';
-import type {AnswerToArticlesData} from './answer-to-articles';
-import {ResultCard} from '~/components/Generative/ResultCard';
-import {AnswerSection} from '~/components/Generative/Section';
-import {Skeleton} from '~/components/Generative/Skeleton';
-import {Answer} from '~/components/Generative/Answer';
-import type {AnswerToProductsData} from './answer-to-products';
-import '~/types/gtm';
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type FormEvent,
+} from 'react';
 import {
-  NavLink,
-  useFetcher,
+  data as reactRouterData,
   useLoaderData,
+  useNavigate,
+  useRouteLoaderData,
+  useLocation,
   type LoaderFunctionArgs,
 } from 'react-router';
+import cx from '~/lib/cx';
+import type {RootLoader} from '~/root';
+import {
+  type ConversationMessage,
+  type ConversationSummary,
+} from '~/types/conversation';
+import {
+  MAX_CONVERSATIONS,
+  type ConversationRecord,
+  createEmptyConversation,
+  generateId,
+  limitMessages,
+} from '~/lib/generative-chat';
+import {useAssistantStreaming} from '~/lib/use-assistant-streaming';
+import {useConversationState} from '~/lib/use-conversation-state';
+import {EmptyState} from '~/components/Generative/EmptyState';
+import {AssistantHeader} from '~/components/Generative/AssistantHeader';
+import {ChatInputFooter} from '~/components/Generative/ChatInputFooter';
+import {ConversationSidebar} from '~/components/Generative/ConversationSidebar';
+import {ConversationTranscript} from '~/components/Generative/ConversationTranscript';
+import {useConversationScroll} from '~/lib/use-conversation-scroll';
+import {useThinkingState} from '~/lib/use-thinking-state';
+import {logDebug} from '~/lib/logger';
 
-// Global tracking to ensure analytics only fire once per search query
-const trackedSearchQueries = new Set<string>();
-
-const trackGenerativeAnswering = (q: string, hasNoAnswer: boolean) => {
-  window.dataLayer = window.dataLayer || [];
-  window.dataLayer.push({
-    event: 'search',
-    search_type: 'generative_answering',
-    search_term: q,
-    has_answer: hasNoAnswer ? 'false' : 'true',
-  });
-};
-
-/**
-What to look for when buying a kayak?
-What accessories do I need for a kayak adventure?
-How do I transport and store a kayak?
-Which kayaks are best for whitewater?
-Which kayak materials offer the best balance for advanced use?
-
- */
+const STREAM_ENDPOINT = '/api/agentic/conversation';
 
 export async function loader({request}: LoaderFunctionArgs) {
   const url = new URL(request.url);
-  const q = url.searchParams.get('q') || '';
-  return {q};
+  const requestedConversationId = url.searchParams.get('conversationId');
+  const rawInitialQuestion = url.searchParams.get('q');
+  let initialQuestion: string | null = null;
+
+  if (rawInitialQuestion) {
+    const normalized = rawInitialQuestion.replace(/\+/g, ' ').trim();
+    if (normalized) {
+      initialQuestion = normalized;
+    }
+  }
+
+  return reactRouterData({
+    conversations: [] as ConversationSummary[],
+    activeConversationId: requestedConversationId ?? null,
+    initialQuestion,
+  });
 }
 
-export default function GenerativeAnswering() {
-  const {q} = useLoaderData<typeof loader>();
-  const genAnswerState = useGenAIAnswer(q);
-  const {relatedArticles, basicExpression} = useRelatedArticles(
-    q,
-    genAnswerState,
-  );
-  const relatedProducts = useRelatedProducts(basicExpression);
-  const center = 'mx-auto max-w-7xl px-4 sm:px-6 lg:px-8';
-  const hasNoAnswerAfterADelay = useHasNoAnswerAfterADelay(q, genAnswerState);
+export default function GenerativeShoppingAssistant() {
+  const {
+    conversations: initialSummaries,
+    activeConversationId: loaderActiveId,
+    initialQuestion,
+  } = useLoaderData<typeof loader>();
+  const rootData = useRouteLoaderData<RootLoader>('root');
+  const navigate = useNavigate();
+  const location = useLocation();
+  const locale = rootData?.locale;
 
-  const hasCitations =
-    genAnswerState?.citations && genAnswerState.citations.length > 0;
+  const {
+    conversations,
+    setConversations,
+    activeConversationId,
+    setActiveConversationId,
+    isHydrated,
+  } = useConversationState({
+    initialSummaries,
+    loaderActiveId,
+  });
+
+  const updateConversationQuery = useCallback(
+    (sessionId: string | null) => {
+      const searchParams = new URLSearchParams(location.search);
+      const currentValue = searchParams.get('conversationId');
+
+      if (sessionId) {
+        if (currentValue === sessionId) {
+          return;
+        }
+        searchParams.set('conversationId', sessionId);
+      } else {
+        if (!currentValue) {
+          return;
+        }
+        searchParams.delete('conversationId');
+      }
+
+      const searchString = searchParams.toString();
+      navigate(
+        {
+          pathname: location.pathname,
+          search: searchString ? `?${searchString}` : '',
+          hash: location.hash,
+        },
+        {replace: true},
+      );
+    },
+    [location.hash, location.pathname, location.search, navigate],
+  );
+
+  const initialQueryHandledRef = useRef(false);
+
+  const [inputValue, setInputValue] = useState('');
+  const [isStreaming, setIsStreaming] = useState(false);
+  const [streamError, setStreamError] = useState<string | null>(null);
+
+  const {streamAssistantResponse, abortStream} = useAssistantStreaming({
+    locale,
+    setConversations,
+    setIsStreaming,
+    setStreamError,
+    endpoint: STREAM_ENDPOINT,
+    onThinkingUpdate: (snapshot) => {
+      setActiveSnapshot(snapshot);
+    },
+  });
+
+  useEffect(() => () => abortStream(), [abortStream]);
+
+  const activeConversation = useMemo(
+    () =>
+      conversations.find(
+        (conversation) => conversation.localId === activeConversationId,
+      ) ?? null,
+    [conversations, activeConversationId],
+  );
+
+  const messages = activeConversation?.messages ?? [];
+  const visibleMessages = useMemo(
+    () =>
+      messages.filter(
+        (message) =>
+          !message.ephemeral ||
+          (message.kind !== 'status' && message.kind !== 'tool'),
+      ),
+    [messages],
+  );
+  const hasVisibleMessages = visibleMessages.length > 0;
+  const latestUserMessageId = useMemo(() => {
+    for (let index = visibleMessages.length - 1; index >= 0; index -= 1) {
+      const candidate = visibleMessages[index];
+      if (!candidate) {
+        continue;
+      }
+      if (candidate.role === 'user') {
+        return candidate.id;
+      }
+    }
+    return null;
+  }, [visibleMessages]);
+
+  const latestStreamingAssistantId = useMemo(() => {
+    if (!isStreaming) {
+      return null;
+    }
+    for (let index = messages.length - 1; index >= 0; index -= 1) {
+      const candidate = messages[index];
+      if (!candidate) {
+        continue;
+      }
+      if (candidate.role !== 'assistant') {
+        continue;
+      }
+      if (candidate.kind === 'status' || candidate.kind === 'tool') {
+        continue;
+      }
+      return candidate.id;
+    }
+    return null;
+  }, [isStreaming, messages]);
+
+  const {
+    activeSnapshot: activeThinkingSnapshot,
+    pendingSnapshot: pendingThinkingSnapshot,
+    expandedByMessage: thinkingExpandedByMessage,
+    setActiveSnapshot,
+    clearActiveSnapshot,
+    toggleMessageExpansion,
+    togglePendingExpansion,
+  } = useThinkingState({
+    visibleMessages,
+    isStreaming,
+    latestStreamingAssistantId,
+    activeConversationId,
+  });
+
+  const {
+    containerRef: messageContainerRef,
+    queueScrollToMessage,
+    resetScrollState,
+  } = useConversationScroll({
+    messages,
+    activeThinkingSnapshot,
+  });
 
   useEffect(() => {
-    // Create a unique tracking ID based on the query and answer status
-    const trackingId = `search_${q}_${
-      hasNoAnswerAfterADelay ? 'no_answer' : 'has_answer'
-    }`;
+    resetScrollState();
+  }, [activeConversationId, resetScrollState]);
 
-    // Check if we've already tracked this specific search
-    if (trackedSearchQueries.has(trackingId)) {
+  const handleToggleThinking = useCallback(
+    (messageId: string, next: boolean) => {
+      toggleMessageExpansion(messageId, next);
+    },
+    [toggleMessageExpansion],
+  );
+
+  const handleTogglePendingThinking = useCallback(
+    (next: boolean) => {
+      togglePendingExpansion(next);
+    },
+    [togglePendingExpansion],
+  );
+
+  useEffect(() => {
+    if (!isHydrated) {
+      return;
+    }
+    const active =
+      conversations.find(
+        (conversation) => conversation.localId === activeConversationId,
+      ) ?? null;
+    updateConversationQuery(active?.sessionId ?? null);
+  }, [
+    activeConversationId,
+    conversations,
+    isHydrated,
+    updateConversationQuery,
+  ]);
+
+  const sendMessage = useCallback(
+    async (messageText: string, options: {forceNew?: boolean} = {}) => {
+      const trimmed = messageText.trim();
+      if (!trimmed) {
+        return;
+      }
+
+      clearActiveSnapshot();
+      setStreamError(null);
+
+      const {forceNew = false} = options;
+
+      const now = new Date().toISOString();
+      const existing =
+        !forceNew && activeConversationId
+          ? (conversations.find(
+              (conversation) => conversation.localId === activeConversationId,
+            ) ?? null)
+          : null;
+
+      const base: ConversationRecord =
+        existing ??
+        createEmptyConversation(
+          trimmed.slice(0, 60) || 'New conversation',
+          now,
+        );
+
+      const hasAssistantHistory = existing
+        ? existing.messages.some((message) => message.role === 'assistant')
+        : false;
+      const shouldShowInitialStatus = !hasAssistantHistory;
+
+      if (!existing) {
+        logDebug('created new conversation', base);
+      }
+
+      const userMessage: ConversationMessage = {
+        id: generateId(),
+        role: 'user',
+        content: trimmed,
+        createdAt: now,
+        kind: 'text',
+      };
+
+      // Hold auto-scroll so the new user turn stays pinned while the assistant replies.
+      queueScrollToMessage(userMessage.id);
+
+      const title =
+        base.messages.length === 0
+          ? trimmed.slice(0, 60) || base.title
+          : base.title;
+
+      const updated: ConversationRecord = {
+        ...base,
+        title,
+        updatedAt: now,
+        messages: limitMessages([...base.messages, userMessage]),
+      };
+
+      logDebug('sending message', {
+        localId: updated.localId,
+        sessionId: updated.sessionId,
+        text: trimmed,
+      });
+
+      setConversations((prev) => {
+        const others = prev.filter(
+          (conversation) => conversation.localId !== updated.localId,
+        );
+        const nextState = [updated, ...others];
+        logDebug(
+          'conversation state updated',
+          nextState.map((conversation) => ({
+            localId: conversation.localId,
+            sessionId: conversation.sessionId,
+            updatedAt: conversation.updatedAt,
+            messageCount: conversation.messages.length,
+          })),
+        );
+        return nextState;
+      });
+
+      setActiveConversationId(updated.localId);
+      setIsStreaming(true);
+
+      logDebug('invoking stream', {
+        localId: updated.localId,
+        sessionId: updated.sessionId,
+      });
+
+      await streamAssistantResponse({
+        conversationLocalId: updated.localId,
+        sessionId: updated.sessionId,
+        userMessage: trimmed,
+        showInitialStatus: shouldShowInitialStatus,
+      });
+    },
+    [
+      activeConversationId,
+      clearActiveSnapshot,
+      conversations,
+      streamAssistantResponse,
+      setActiveConversationId,
+      setConversations,
+      setIsStreaming,
+      setStreamError,
+    ],
+  );
+
+  useEffect(() => {
+    if (!isHydrated) {
       return;
     }
 
-    // Mark this search as tracked
-    trackedSearchQueries.add(trackingId);
+    if (initialQueryHandledRef.current) {
+      return;
+    }
 
-    trackGenerativeAnswering(q, hasNoAnswerAfterADelay);
-  }, [hasNoAnswerAfterADelay, q]);
+    const question = initialQuestion?.trim();
+    if (!question) {
+      return;
+    }
+
+    initialQueryHandledRef.current = true;
+
+    const searchParams = new URLSearchParams(location.search);
+    if (searchParams.has('q')) {
+      searchParams.delete('q');
+      const searchString = searchParams.toString();
+      navigate(
+        {
+          pathname: location.pathname,
+          search: searchString ? `?${searchString}` : '',
+          hash: location.hash,
+        },
+        {replace: true},
+      );
+    }
+
+    void sendMessage(question, {forceNew: true});
+  }, [
+    initialQuestion,
+    isHydrated,
+    location.hash,
+    location.pathname,
+    location.search,
+    navigate,
+    sendMessage,
+  ]);
+
+  const handleSubmit = useCallback(
+    async (event: FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
+      if (isStreaming) {
+        return;
+      }
+      const value = inputValue.trim();
+      if (!value) {
+        return;
+      }
+      setInputValue('');
+      await sendMessage(value);
+    },
+    [inputValue, isStreaming, sendMessage],
+  );
+
+  const handleStop = useCallback(() => {
+    abortStream();
+  }, [abortStream]);
+
+  const handleSelectConversation = useCallback(
+    (conversation: ConversationRecord) => {
+      setActiveConversationId(conversation.localId);
+      setStreamError(null);
+    },
+    [setActiveConversationId, setStreamError],
+  );
+
+  const handleSendMessage = useCallback(
+    (message: string) => {
+      void sendMessage(message);
+    },
+    [sendMessage],
+  );
+
+  const handleNewConversation = useCallback(() => {
+    abortStream();
+    setStreamError(null);
+    setInputValue('');
+    clearActiveSnapshot();
+
+    const timestamp = new Date().toISOString();
+    const freshConversation = createEmptyConversation(
+      'New conversation',
+      timestamp,
+    );
+
+    setConversations((prev) => {
+      const keep = prev.filter(
+        (conversation) =>
+          conversation.messages.length > 0 || conversation.isPersisted,
+      );
+      return [freshConversation, ...keep].slice(0, MAX_CONVERSATIONS);
+    });
+    setActiveConversationId(freshConversation.localId);
+  }, [
+    abortStream,
+    clearActiveSnapshot,
+    setActiveConversationId,
+    setConversations,
+    setInputValue,
+    setStreamError,
+  ]);
+
+  const handleDeleteConversation = useCallback(
+    (conversation: ConversationRecord) => {
+      if (isStreaming && conversation.localId === activeConversationId) {
+        abortStream();
+      }
+
+      const meta = {nextActive: null as ConversationRecord | null};
+      setConversations((prev) => {
+        const filtered = prev.filter(
+          (item) => item.localId !== conversation.localId,
+        );
+        meta.nextActive = filtered[0] ?? null;
+        return filtered;
+      });
+
+      if (activeConversationId === conversation.localId) {
+        setActiveConversationId(meta.nextActive?.localId ?? null);
+      }
+    },
+    [
+      abortStream,
+      activeConversationId,
+      isStreaming,
+      setActiveConversationId,
+      setConversations,
+    ],
+  );
+
+  const suggestedPrompts = useMemo(
+    () => [
+      'Suggest a paddleboarding accessory kit for beginners',
+      'What safety gear do I need for a twilight kayak tour?',
+      'Compare waterproof deck bags for a weekend surf trip',
+      'Build a surf travel checklist with board protection and repairs',
+    ],
+    [],
+  );
 
   return (
-    <div className="bg-gray-50">
-      <div className="bg-white border-b border-gray-200">
-        <div className={cx(center, 'py-16 ')}>
-          <h1 className="mt-2 mb-8 text-pretty text-4xl font-semibold tracking-tight text-gray-900 sm:text-5xl capitalize">
-            {q}
-          </h1>
+    <div className="flex w-full flex-1 min-h-0 bg-slate-100">
+      <ConversationSidebar
+        conversations={conversations}
+        activeConversationId={activeConversationId}
+        onNewConversation={handleNewConversation}
+        onSelectConversation={handleSelectConversation}
+        onDeleteConversation={handleDeleteConversation}
+      />
+      <main className="flex flex-1 min-h-0 flex-col">
+        <AssistantHeader
+          isStreaming={isStreaming}
+          onStop={handleStop}
+          onNewConversation={handleNewConversation}
+        />
 
-          {hasNoAnswerAfterADelay ? (
-            <p className="text-xl/8 text-gray-500 min-h-72">
-              Unfortunately, we couldn&apos;t find an answer to your question.
-              Please try again later or consider rephrasing your question.
-            </p>
-          ) : (
-            <AnswerSection className="min-h-48">
-              {genAnswerState?.answer ? (
-                <>
-                  <Answer text={genAnswerState?.answer} />
-                  {hasCitations && (
-                    <>
-                      <h2 className="text-xl/8 font-semibold text-gray-900 mb-4">
-                        Sources
-                      </h2>
-                      <div className="flex gap-x-8">
-                        {genAnswerState.citations.map((citation) => (
-                          <div
-                            key={citation.uri}
-                            className="flex gap-x-4 rounded-xl bg-white/5 ring-1 ring-inset ring-white/10"
-                          >
-                            <BookOpenIcon
-                              aria-hidden="true"
-                              className="h-7 w-5 flex-none text-indigo-400"
-                            />
-                            <NavLink
-                              to={citation.clickUri!}
-                              className="text-base/7"
-                            >
-                              <h3 className="font-semibold text-nowrap">
-                                {citation.title}
-                              </h3>
-                              <p className="mt-2 text-gray-500">
-                                {citation.source}
-                              </p>
-                            </NavLink>
-                          </div>
-                        ))}
-                      </div>
-                    </>
-                  )}
-                </>
-              ) : (
-                <Skeleton numLines={10} tick={200} />
-              )}
-            </AnswerSection>
+        <div
+          ref={messageContainerRef}
+          className={cx(
+            'relative flex-1 overflow-y-auto bg-slate-50 px-4 pt-6 sm:px-6 lg:px-10',
+            hasVisibleMessages ? 'pb-32' : 'pb-24',
           )}
-        </div>
-      </div>
-      {hasNoAnswerAfterADelay ? null : (
-        <>
-          <div className="bg-gray-50 border-b border-gray-200 pb-8">
-            <div className={cx(center)}>
-              <AnswerSection className={cx(' mt-0 pt-8 min-h-64')}>
-                <h2 className="text-xl/8 font-semibold text-gray-900 flex mb-4">
-                  These products might interest you
-                </h2>
-                <div className="flex flex-col gap-y-10">
-                  {Object.entries(relatedProducts).map(([slug, products]) => {
-                    const slugSplit = slug.split('/');
-                    const lastLevel = slugSplit.pop()?.replaceAll('-', ' ');
-                    const parents = slugSplit.join(' / ').replaceAll('-', ' ');
-                    return (
-                      <div key={slug} className="w-full">
-                        <NavLink
-                          to={`/plp/${slug}`}
-                          className="capitalize tracking-tight text-ellipsis overflow-hidden text-nowrap"
-                        >
-                          <div className="text-sm text-gray-500 mb-2">
-                            {parents}
-                          </div>
-                          <div className="text-lg font-bold text-indigo-gray-600 mb-2">
-                            {lastLevel}
-                          </div>
-                        </NavLink>
-                        <div className="flex flex-wrap gap-4 pb-2">
-                          {products.map((product) => (
-                            <NavLink
-                              key={product.uniqueId}
-                              to={`/plp/${slug}`}
-                              className="flex-shrink-0"
-                            >
-                              <img
-                                loading="lazy"
-                                width={200}
-                                height={200}
-                                alt={product.title}
-                                src={product.raw['ec_images'] as string}
-                                className="h-48 w-48 rounded-lg bg-gray-200 object-cover group-hover:opacity-75"
-                              />
-                            </NavLink>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })}
+        >
+          {messages.length === 0 ? (
+            <EmptyState
+              prompts={suggestedPrompts}
+              isStreaming={isStreaming}
+              onPromptClick={(prompt) => {
+                if (isStreaming) return;
+                setInputValue('');
+                void sendMessage(prompt);
+              }}
+            />
+          ) : (
+            <div className="mx-auto flex w-full max-w-5xl flex-col gap-4">
+              {hasVisibleMessages ? (
+                <div className="flex w-full flex-col gap-5">
+                  <ConversationTranscript
+                    visibleMessages={visibleMessages}
+                    latestStreamingAssistantId={latestStreamingAssistantId}
+                    activeThinkingSnapshot={activeThinkingSnapshot}
+                    pendingThinkingSnapshot={pendingThinkingSnapshot}
+                    latestUserMessageId={latestUserMessageId}
+                    thinkingExpandedByMessage={thinkingExpandedByMessage}
+                    onToggleThinking={handleToggleThinking}
+                    onTogglePendingThinking={handleTogglePendingThinking}
+                  />
                 </div>
-
-                {Object.keys(relatedProducts).length == 0 && (
-                  <Skeleton numLines={10} tick={400} />
-                )}
-              </AnswerSection>
+              ) : null}
             </div>
-          </div>
+          )}
+          {hasVisibleMessages ? (
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-24 bg-gradient-to-t from-slate-50 via-slate-50/80 to-transparent backdrop-blur-sm" />
+          ) : null}
+        </div>
 
-          <div className="bg-white">
-            <div className={cx(center)}>
-              <AnswerSection className={cx(' mt-0 pt-8 min-h-64')}>
-                <h2 className="text-xl/8 font-semibold text-gray-900 flex mb-4">
-                  Related articles
-                </h2>
-                {relatedArticles.length > 0 ? (
-                  <ul className="divide-y divide-gray-300">
-                    {relatedArticles.map((r) => (
-                      <ResultCard key={r.uniqueId} result={r} />
-                    ))}
-                  </ul>
-                ) : (
-                  <Skeleton numLines={10} tick={800} />
-                )}
-              </AnswerSection>
-            </div>
-          </div>
-        </>
-      )}
+        <ChatInputFooter
+          streamError={streamError}
+          inputValue={inputValue}
+          isStreaming={isStreaming}
+          onInputChange={setInputValue}
+          onSubmit={handleSubmit}
+          onSendMessage={handleSendMessage}
+        />
+      </main>
     </div>
   );
-}
-
-function useGenAIAnswer(q: string) {
-  const {gen, searchBox} = initGenAI();
-  const [genAnswerState, setGenAnswerState] = useState<GeneratedAnswerState>();
-
-  useEffect(() => {
-    searchBox.updateText(q);
-    searchBox.submit();
-    return gen.subscribe(() => {
-      setGenAnswerState(gen.state);
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [q]);
-
-  return genAnswerState;
-}
-
-function initGenAI() {
-  const searchEngine = buildSearchEngine({
-    configuration: {
-      accessToken: 'xx697404a7-6cfd-48c6-93d1-30d73d17e07a',
-      organizationId: 'barcagroupproductionkwvdy6lp',
-      search: {
-        searchHub: 'Sports Blog GenAI',
-      },
-    },
-  });
-
-  const gen = buildGeneratedAnswer(searchEngine, {
-    initialState: {
-      responseFormat: {contentFormat: ['text/markdown']},
-      isEnabled: true,
-      isVisible: true,
-    },
-  });
-  const searchBox = buildSearchBox(searchEngine);
-  return {gen, searchBox};
-}
-
-function useRelatedArticles(q: string, genAnswerState?: GeneratedAnswerState) {
-  const answerToProduct = useFetcher<AnswerToArticlesData>();
-  const [relatedArticles, setRelatedArticles] = useState<Result[]>(
-    answerToProduct.data?.results || [],
-  );
-  const [basicExpression, setBasicExpression] = useState('');
-
-  useEffect(() => {
-    setRelatedArticles(answerToProduct.data?.results || []);
-    setBasicExpression(answerToProduct.data?.basicExpression || '');
-  }, [answerToProduct.data?.results, answerToProduct.data?.basicExpression]);
-  useEffect(() => {
-    setRelatedArticles([]);
-    setBasicExpression('');
-  }, [q]);
-
-  useEffect(() => {
-    if (genAnswerState?.isAnswerGenerated) {
-      const formData = new FormData();
-
-      formData.append('answer', genAnswerState?.answer || '');
-      answerToProduct.submit(formData, {
-        method: 'POST',
-        action: '/answer-to-articles',
-      });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [genAnswerState]);
-
-  return {relatedArticles, basicExpression};
-}
-
-function useHasNoAnswerAfterADelay(
-  q: string,
-  genAnswerState?: GeneratedAnswerState,
-) {
-  const [hasNoAnswerAfterADelay, setHasNoAnswerAfterADelay] = useState(false);
-  const delay = 5000;
-
-  useEffect(() => {
-    setHasNoAnswerAfterADelay(false);
-
-    const timer = setTimeout(() => {
-      if (!genAnswerState?.answer) {
-        setHasNoAnswerAfterADelay(true);
-      }
-    }, delay);
-
-    return () => clearTimeout(timer);
-  }, [q, genAnswerState?.answer]);
-
-  return hasNoAnswerAfterADelay;
-}
-
-function useRelatedProducts(basicExpression: string) {
-  const mapRelatedProductsToCategory = (products?: Result[]) => {
-    if (!products) {
-      return {};
-    }
-    return products?.reduce(
-      (acc, product) => {
-        const slug = (product.raw['ec_category_slug'] as string)
-          .split(';')
-          .pop() as string;
-        if (acc[slug]) {
-          acc[slug].push(product);
-        } else {
-          acc[slug] = [product];
-        }
-        return acc;
-      },
-      {} as Record<string, Result[]>,
-    );
-  };
-
-  const answerToProduct = useFetcher<AnswerToProductsData>();
-  const [relatedProducts, setRelatedProducts] = useState<
-    ReturnType<typeof mapRelatedProductsToCategory>
-  >(mapRelatedProductsToCategory(answerToProduct.data?.results));
-
-  useEffect(() => {
-    setRelatedProducts(
-      mapRelatedProductsToCategory(answerToProduct.data?.results),
-    );
-  }, [answerToProduct.data?.results]);
-
-  useEffect(() => {
-    setRelatedProducts({});
-  }, [basicExpression]);
-
-  useEffect(() => {
-    if (!basicExpression) return;
-    const formData = new FormData();
-
-    formData.append('basicExpression', basicExpression);
-    answerToProduct.submit(formData, {
-      method: 'POST',
-      action: '/answer-to-products',
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [basicExpression]);
-
-  return relatedProducts;
 }

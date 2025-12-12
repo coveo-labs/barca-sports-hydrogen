@@ -34,6 +34,7 @@ export function ProductCard({
     product.ec_images[0];
   const productLink = new URL(product.clickUri).pathname;
   const productName = (product.additionalFields?.ec_item_group_name ||
+    product.ec_name ||
     '') as string;
 
   const onColorChange = (color: string) => {

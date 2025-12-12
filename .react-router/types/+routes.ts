@@ -13,6 +13,9 @@ type Pages = {
   "/": {
     params: {};
   };
+  "/api/agentic/conversation": {
+    params: {};
+  };
   "/account/authorize": {
     params: {};
   };
@@ -103,7 +106,11 @@ type Pages = {
 type RouteFiles = {
   "root.tsx": {
     id: "root";
-    page: "/" | "/account/authorize" | "/answer-to-articles" | "/answer-to-products" | "/:locale?/account" | "/account/logout" | "/account/login" | "/robots.txt" | "/:locale?" | "/:locale?/sitemap/:type/:page.xml" | "/:locale?/products/:handle" | "/:locale?/sitemap.xml" | "/:locale?/generative" | "/:locale?/search" | "/:locale?/plp/*" | "/:locale?/cart" | "/:locale?/*" | "/token" | "/graphiql" | "/subrequest-profiler" | "/.well-known/appspecific/com.chrome.devtools.json";
+    page: "/" | "/api/agentic/conversation" | "/account/authorize" | "/answer-to-articles" | "/answer-to-products" | "/:locale?/account" | "/account/logout" | "/account/login" | "/robots.txt" | "/:locale?" | "/:locale?/sitemap/:type/:page.xml" | "/:locale?/products/:handle" | "/:locale?/sitemap.xml" | "/:locale?/generative" | "/:locale?/search" | "/:locale?/plp/*" | "/:locale?/cart" | "/:locale?/*" | "/token" | "/graphiql" | "/subrequest-profiler" | "/.well-known/appspecific/com.chrome.devtools.json";
+  };
+  "routes/api.agentic.conversation.ts": {
+    id: "routes/api.agentic.conversation";
+    page: "/api/agentic/conversation";
   };
   "routes/account_.authorize.tsx": {
     id: "routes/account_.authorize";

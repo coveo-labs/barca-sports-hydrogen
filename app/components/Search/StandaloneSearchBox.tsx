@@ -16,32 +16,12 @@ import {createProductWithConsistentId} from '~/lib/map.coveo.shopify';
 import '~/types/gtm';
 import {useNavigate} from 'react-router';
 
-const redirectToGenerative = [
-  'what',
-  'which',
-  'when',
-  'where',
-  'who',
-  'whom',
-  'whose',
-  'why',
-  'whether',
-  'how',
-];
-
-const shouldRedirectToGenerative = (query: string) => {
-  return redirectToGenerative.some((keyword) =>
-    query.toLowerCase().startsWith(keyword),
-  );
-};
-
 interface StandaloneSearchBoxProps {
   close?: () => void;
 }
 export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
   const searchBox = useStandaloneSearchBox();
   const instantProducts = useInstantProducts();
-  const navigate = useNavigate();
   const input = useRef<HTMLInputElement>(null);
 
   // Focus input and show suggestions when component mounts/remounts
@@ -62,10 +42,7 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
   const onSubmit = useCallback(
     (e?: React.FormEvent) => {
       e?.preventDefault();
-      if (shouldRedirectToGenerative(searchBox.state.value)) {
-        navigate('/generative?q=' + encodeURIComponent(searchBox.state.value));
-        close?.();
-      } else {
+
         searchBox.methods?.submit();
         window.dataLayer = window.dataLayer || [];
         window.dataLayer.push({
@@ -73,9 +50,8 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
           search_type: 'search_box',
           search_term: encodeURIComponent(searchBox.state.value),
         });
-      }
     },
-    [searchBox.state.value, searchBox.methods, navigate, close],
+    [searchBox.state.value, searchBox.methods],
   );
   return (
     <>
@@ -186,11 +162,7 @@ function useRedirect(
 
   useEffect(() => {
     if (searchBox.state.redirectTo === '/search') {
-      const url = `${
-        shouldRedirectToGenerative(searchBox.state.value)
-          ? '/generative'
-          : searchBox.state.redirectTo
-      }?q=${encodeURIComponent(searchBox.state.value)}`;
+       const url = `${searchBox.state.redirectTo}?q=${encodeURIComponent(searchBox.state.value)}`;
 
       navigate(url);
       // Reset the redirectTo state to prevent re-triggering on popover reopen

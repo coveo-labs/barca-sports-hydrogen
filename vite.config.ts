@@ -13,9 +13,16 @@ function dayjsEsmPlugin(): Plugin {
       if (id === 'dayjs' && importer?.includes('@coveo/headless')) {
         return this.resolve('dayjs/esm/index.js', importer, {skipSelf: true});
       }
-      if (id.startsWith('dayjs/plugin/') && importer?.includes('@coveo/headless')) {
+      if (
+        id.startsWith('dayjs/plugin/') &&
+        importer?.includes('@coveo/headless')
+      ) {
         const pluginName = id.replace('dayjs/plugin/', '').replace('.js', '');
-        return this.resolve(`dayjs/esm/plugin/${pluginName}/index.js`, importer, {skipSelf: true});
+        return this.resolve(
+          `dayjs/esm/plugin/${pluginName}/index.js`,
+          importer,
+          {skipSelf: true},
+        );
       }
       return null;
     },
