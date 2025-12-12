@@ -18,6 +18,158 @@ type MessageBubbleProps = {
   onFollowUpClick?: (message: string) => void;
 };
 
+function ProductCardSkeleton() {
+  return (
+    <div className="animate-pulse">
+      <div className="relative w-full pb-[100%]">
+        <div className="absolute inset-0 rounded-lg bg-slate-200" />
+      </div>
+      <div className="mt-4 h-4 w-3/4 rounded bg-slate-200" />
+      <div className="mt-1 flex gap-1">
+        {[1, 2, 3, 4, 5].map((star) => (
+          <div
+            key={`star-${star}`}
+            className="h-5 w-5 rounded-full bg-slate-200"
+          />
+        ))}
+      </div>
+      <div className="mt-1 h-6 w-16 rounded bg-slate-200" />
+    </div>
+  );
+}
+
+function CarouselSkeleton() {
+  return (
+    <div className="my-4 rounded-2xl bg-gray-50 px-4 py-5 shadow-sm ring-1 ring-slate-200/70">
+      <ul
+        className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-3 lg:grid lg:grid-cols-3 lg:gap-6 lg:overflow-visible lg:snap-none list-none"
+        aria-label="Loading products..."
+      >
+        {['slot-1', 'slot-2', 'slot-3'].map((slotId) => (
+          <li
+            key={slotId}
+            className="min-w-[11.25rem] max-w-[11.25rem] flex-shrink-0 snap-center lg:min-w-0 lg:max-w-none"
+          >
+            <div className="rounded-2xl bg-white p-3 shadow-sm ring-1 ring-slate-200">
+              <ProductCardSkeleton />
+            </div>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function InlineProductSkeleton() {
+  return (
+    <div className="my-3 w-full max-w-[18rem] animate-pulse">
+      <div className="aspect-square w-full rounded-lg bg-slate-200" />
+      <div className="mt-4 h-4 w-3/4 rounded bg-slate-200" />
+      <div className="mt-2 h-5 w-1/3 rounded bg-slate-200" />
+    </div>
+  );
+}
+
+function NextActionsSkeleton() {
+  return (
+    <div className="mt-4 flex flex-wrap gap-2 border-t border-slate-200 pt-4 animate-pulse">
+      {['action-1', 'action-2', 'action-3'].map((actionId) => (
+        <div key={actionId} className="h-7 w-24 rounded-full bg-slate-200" />
+      ))}
+    </div>
+  );
+}
+
+type PendingRichContent = {
+  type: 'carousel' | 'product_ref' | 'nextaction';
+  partialText: string;
+};
+
+const INCOMPLETE_CAROUSEL_PATTERN = /<carousel(?:>[\s\S]*)?$/;
+const INCOMPLETE_PRODUCT_REF_PATTERN = /<product_ref[^>]*$/;
+const INCOMPLETE_NEXT_ACTION_PATTERN = /<nextaction[^>]*$/;
+
+const PARTIAL_TAG_PREFIXES = [
+  {prefix: '<carousel', type: 'carousel' as const, minLength: 2},
+  {prefix: '<product_ref', type: 'product_ref' as const, minLength: 3},
+  {prefix: '<nextaction', type: 'nextaction' as const, minLength: 3},
+];
+
+function detectIncompleteCarousel(content: string): PendingRichContent | null {
+  const match = INCOMPLETE_CAROUSEL_PATTERN.exec(content);
+  if (!match || content.includes('</carousel>')) {
+    return null;
+  }
+  const lastCarouselStart = content.lastIndexOf('<carousel');
+  if (lastCarouselStart === -1) {
+    return null;
+  }
+  const afterCarousel = content.slice(lastCarouselStart);
+  if (afterCarousel.includes('<carousel>') || afterCarousel === '<carousel') {
+    return {type: 'carousel', partialText: afterCarousel};
+  }
+  return null;
+}
+
+function detectIncompleteProductRef(
+  content: string,
+): PendingRichContent | null {
+  const match = INCOMPLETE_PRODUCT_REF_PATTERN.exec(content);
+  if (match) {
+    return {type: 'product_ref', partialText: match[0]};
+  }
+  return null;
+}
+
+function detectIncompleteNextAction(
+  content: string,
+): PendingRichContent | null {
+  const match = INCOMPLETE_NEXT_ACTION_PATTERN.exec(content);
+  if (match) {
+    return {type: 'nextaction', partialText: match[0]};
+  }
+  return null;
+}
+
+function detectPartialTagStart(content: string): PendingRichContent | null {
+  const lastLtIndex = content.lastIndexOf('<');
+  if (lastLtIndex === -1) {
+    return null;
+  }
+
+  const potentialPartial = content.slice(lastLtIndex).toLowerCase();
+
+  for (const {prefix, type, minLength} of PARTIAL_TAG_PREFIXES) {
+    if (
+      prefix.startsWith(potentialPartial) &&
+      potentialPartial.length >= minLength
+    ) {
+      return {type, partialText: content.slice(lastLtIndex)};
+    }
+  }
+
+  return null;
+}
+
+function detectPendingRichContent(content: string): PendingRichContent | null {
+  const carouselResult = detectIncompleteCarousel(content);
+  if (carouselResult) {
+    return carouselResult;
+  }
+
+  const productRefResult = detectIncompleteProductRef(content);
+  if (productRefResult) {
+    return productRefResult;
+  }
+
+  const nextActionResult = detectIncompleteNextAction(content);
+  if (nextActionResult) {
+    return nextActionResult;
+  }
+
+  return detectPartialTagStart(content);
+}
+
 function MessageBubbleComponent({
   message,
   isStreaming,
@@ -65,7 +217,12 @@ function MessageBubbleComponent({
     : 'max-w-xl bg-indigo-600 text-white';
 
   const contentBody = isAssistant
-    ? renderAssistantMessageContent(message, productLookup, onFollowUpClick)
+    ? renderAssistantMessageContent(
+        message,
+        isStreaming,
+        productLookup,
+        onFollowUpClick,
+      )
     : message.content;
 
   return (
@@ -140,9 +297,9 @@ function arePropsEqual(
 
 export const MessageBubble = memo(MessageBubbleComponent, arePropsEqual);
 
-const PRODUCT_REF_PATTERN_SOURCE = '<product_ref\\b([^>]*)\\s*/>';
-const CAROUSEL_PATTERN_SOURCE = '<carousel>([\\s\\S]*?)</carousel>';
-const NEXT_ACTION_PATTERN_SOURCE = '<nextaction\\b([^>]*)\\s*/>';
+const PRODUCT_REF_PATTERN_SOURCE = String.raw`<product_ref\b([^>]*)\s*/>`;
+const CAROUSEL_PATTERN_SOURCE = String.raw`<carousel>([\s\S]*?)</carousel>`;
+const NEXT_ACTION_PATTERN_SOURCE = String.raw`<nextaction\b([^>]*)\s*/>`;
 const ATTRIBUTE_PATTERN = /([^\s=]+)\s*=\s*("([^"]*)"|'([^']*)')/g;
 
 type NextAction =
@@ -155,6 +312,7 @@ type AssistantMessageSegment =
 
 function renderAssistantMessageContent(
   message: ConversationMessage,
+  isStreaming: boolean,
   productLookup?: ReadonlyMap<string, Product>,
   onFollowUpClick?: (message: string) => void,
 ) {
@@ -168,15 +326,31 @@ function renderAssistantMessageContent(
     content.includes('<carousel') ||
     content.includes('<nextaction');
 
-  if (!hasSpecialMarkup) {
+  const hasPotentialMarkup =
+    hasSpecialMarkup ||
+    (isStreaming &&
+      (content.includes('<c') ||
+        content.includes('<p') ||
+        content.includes('<n')));
+
+  if (!hasPotentialMarkup) {
     return content;
   }
 
-  // Extract next actions from the end of the content
-  const {cleanedContent, nextActions} = extractNextActions(content);
+  const pendingContent = isStreaming ? detectPendingRichContent(content) : null;
+
+  let processableContent = content;
+  if (pendingContent) {
+    processableContent = content.slice(
+      0,
+      content.length - pendingContent.partialText.length,
+    );
+  }
+
+  const {cleanedContent, nextActions} = extractNextActions(processableContent);
 
   const segments = splitContentByCarousels(cleanedContent);
-  if (segments.length === 0 && nextActions.length === 0) {
+  if (segments.length === 0 && nextActions.length === 0 && !pendingContent) {
     return content;
   }
 
@@ -193,9 +367,15 @@ function renderAssistantMessageContent(
     );
   });
 
+  const pendingSkeleton = renderPendingContentSkeleton(
+    pendingContent,
+    message.id,
+  );
+
   return (
     <>
       {renderedSegments}
+      {pendingSkeleton}
       {nextActions.length > 0 && (
         <NextActionsBar
           actions={nextActions}
@@ -205,6 +385,29 @@ function renderAssistantMessageContent(
       )}
     </>
   );
+}
+
+function renderPendingContentSkeleton(
+  pendingContent: PendingRichContent | null,
+  messageId: string,
+): ReactNode {
+  // DEBUG: Always show carousel skeleton for testing
+  if (!pendingContent) {
+    return null;
+  }
+
+  const key = `${messageId}-pending-skeleton`;
+
+  switch (pendingContent.type) {
+    case 'carousel':
+      return <CarouselSkeleton key={key} />;
+    case 'product_ref':
+      return <InlineProductSkeleton key={key} />;
+    case 'nextaction':
+      return <NextActionsSkeleton key={key} />;
+    default:
+      return null;
+  }
 }
 
 function splitContentByCarousels(content: string): AssistantMessageSegment[] {
@@ -358,19 +561,17 @@ function renderCarouselSegment(
       key={key}
       className="my-4 rounded-2xl bg-gray-50 px-4 py-5 shadow-sm ring-1 ring-slate-200/70"
     >
-      <div
-        className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-3 lg:grid lg:grid-cols-3 lg:gap-6 lg:overflow-visible lg:snap-none"
-        role="list"
+      <ul
+        className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-3 lg:grid lg:grid-cols-3 lg:gap-6 lg:overflow-visible lg:snap-none list-none"
         aria-label="Product carousel"
       >
         {identifiers.map((identifier, index) => {
           const product = lookupProduct(identifier, productIndex);
           if (product) {
             return (
-              <div
+              <li
                 key={`${key}-product-${identifier ?? index}`}
                 className="min-w-[11.25rem] max-w-[11.25rem] flex-shrink-0 snap-center lg:min-w-0 lg:max-w-none"
-                role="listitem"
               >
                 <div className="rounded-2xl bg-white p-3 shadow-sm ring-1 ring-slate-200">
                   <ProductCard
@@ -378,7 +579,7 @@ function renderCarouselSegment(
                     className="block w-full text-sm"
                   />
                 </div>
-              </div>
+              </li>
             );
           }
 
@@ -386,16 +587,15 @@ function renderCarouselSegment(
             ? `Product ${identifier} unavailable`
             : 'Product unavailable';
           return (
-            <div
+            <li
               key={`${key}-missing-${index}`}
               className="min-w-[11.25rem] max-w-[11.25rem] flex-shrink-0 rounded-2xl border border-dashed border-amber-200 bg-amber-50/80 px-4 py-6 text-sm font-medium text-amber-900 snap-center lg:min-w-0 lg:max-w-none"
-              role="listitem"
             >
               {fallbackLabel}
-            </div>
+            </li>
           );
         })}
-      </div>
+      </ul>
     </div>
   );
 }
@@ -489,7 +689,6 @@ function extractNextActions(content: string): {
     cleanedContent = cleanedContent.replace(match[0], '');
   }
 
-  // Trim any trailing whitespace left after removing next actions
   cleanedContent = cleanedContent.trimEnd();
 
   return {cleanedContent, nextActions};
