@@ -18,6 +18,7 @@ interface ConversationTranscriptProps {
   thinkingExpandedByMessage: Record<string, boolean>;
   onToggleThinking: (messageId: string, next: boolean) => void;
   onTogglePendingThinking: (next: boolean) => void;
+  onFollowUpClick?: (message: string) => void;
 }
 
 export function ConversationTranscript({
@@ -29,6 +30,7 @@ export function ConversationTranscript({
   thinkingExpandedByMessage,
   onToggleThinking,
   onTogglePendingThinking,
+  onFollowUpClick,
 }: Readonly<ConversationTranscriptProps>) {
   const renderedConversationItems = useMemo(
     () =>
@@ -41,6 +43,7 @@ export function ConversationTranscript({
         thinkingExpandedByMessage,
         onToggleThinking,
         onTogglePendingThinking,
+        onFollowUpClick,
       }),
     [
       visibleMessages,
@@ -51,6 +54,7 @@ export function ConversationTranscript({
       thinkingExpandedByMessage,
       onToggleThinking,
       onTogglePendingThinking,
+      onFollowUpClick,
     ],
   );
 
@@ -66,6 +70,7 @@ type BuildConversationItemsArgs = {
   thinkingExpandedByMessage: Record<string, boolean>;
   onToggleThinking: (messageId: string, next: boolean) => void;
   onTogglePendingThinking: (next: boolean) => void;
+  onFollowUpClick?: (message: string) => void;
 };
 
 function buildConversationItems({
@@ -77,6 +82,7 @@ function buildConversationItems({
   thinkingExpandedByMessage,
   onToggleThinking,
   onTogglePendingThinking,
+  onFollowUpClick,
 }: BuildConversationItemsArgs) {
   const items: JSX.Element[] = [];
   const queuedProductItems: JSX.Element[] = [];
@@ -92,6 +98,7 @@ function buildConversationItems({
       thinkingExpandedByMessage,
       onToggleThinking,
       onTogglePendingThinking,
+      onFollowUpClick,
       items,
       queuedProductItems,
       knownProducts,
@@ -159,6 +166,7 @@ type ProcessMessageArgs = {
   thinkingExpandedByMessage: Record<string, boolean>;
   onToggleThinking: (messageId: string, next: boolean) => void;
   onTogglePendingThinking: (next: boolean) => void;
+  onFollowUpClick?: (message: string) => void;
   items: JSX.Element[];
   queuedProductItems: JSX.Element[];
   knownProducts: Map<string, Product>;
@@ -173,6 +181,7 @@ function processMessage({
   thinkingExpandedByMessage,
   onToggleThinking,
   onTogglePendingThinking,
+  onFollowUpClick,
   items,
   queuedProductItems,
   knownProducts,
@@ -219,6 +228,7 @@ function processMessage({
         isStreaming={isStreamingMessage}
         showTrailingSpinner={showTrailingSpinner}
         productLookup={knownProducts}
+        onFollowUpClick={onFollowUpClick}
       />
     </div>
   );
