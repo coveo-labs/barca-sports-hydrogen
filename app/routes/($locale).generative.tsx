@@ -539,6 +539,11 @@ export default function GenerativeShoppingAssistant() {
                     thinkingExpandedByMessage={thinkingExpandedByMessage}
                     onToggleThinking={handleToggleThinking}
                     onTogglePendingThinking={handleTogglePendingThinking}
+                    onFollowUpClick={(message) => {
+                      if (isStreaming) return;
+                      setInputValue('');
+                      void sendMessage(message);
+                    }}
                   />
                 </div>
               ) : null}
