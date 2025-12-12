@@ -34,7 +34,7 @@ export function useConversationScroll({
       if (element instanceof HTMLElement) {
         element.scrollIntoView({
           behavior: 'smooth',
-          block: 'start',
+          block: 'center',
           inline: 'nearest',
         });
         pendingScrollMessageIdRef.current = null;
@@ -44,7 +44,7 @@ export function useConversationScroll({
           if (retryElement instanceof HTMLElement) {
             retryElement.scrollIntoView({
               behavior: 'smooth',
-              block: 'start',
+              block: 'center',
               inline: 'nearest',
             });
             pendingScrollMessageIdRef.current = null;
