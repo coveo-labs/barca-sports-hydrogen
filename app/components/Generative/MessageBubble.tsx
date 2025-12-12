@@ -15,6 +15,7 @@ type MessageBubbleProps = {
   isStreaming: boolean;
   showTrailingSpinner: boolean;
   productLookup?: ReadonlyMap<string, Product>;
+  onFollowUpClick?: (message: string) => void;
 };
 
 function MessageBubbleComponent({
@@ -22,6 +23,7 @@ function MessageBubbleComponent({
   isStreaming,
   showTrailingSpinner,
   productLookup,
+  onFollowUpClick,
 }: Readonly<MessageBubbleProps>) {
   const isUser = message.role === 'user';
   const kind = message.kind ?? 'text';
@@ -63,7 +65,7 @@ function MessageBubbleComponent({
     : 'max-w-xl bg-indigo-600 text-white';
 
   const contentBody = isAssistant
-    ? renderAssistantMessageContent(message, productLookup)
+    ? renderAssistantMessageContent(message, productLookup, onFollowUpClick)
     : message.content;
 
   return (
@@ -120,6 +122,9 @@ function arePropsEqual(
   if (prev.productLookup !== next.productLookup) {
     return false;
   }
+  if (prev.onFollowUpClick !== next.onFollowUpClick) {
+    return false;
+  }
   const prevMessage = prev.message;
   const nextMessage = next.message;
   return (
@@ -135,9 +140,14 @@ function arePropsEqual(
 
 export const MessageBubble = memo(MessageBubbleComponent, arePropsEqual);
 
-const PRODUCT_REF_PATTERN_SOURCE = '<product_ref\\b([^>]*)\\s*\/>';
-const CAROUSEL_PATTERN_SOURCE = '<carousel>([\\s\\S]*?)<\\/carousel>';
+const PRODUCT_REF_PATTERN_SOURCE = '<product_ref\\b([^>]*)\\s*/>';
+const CAROUSEL_PATTERN_SOURCE = '<carousel>([\\s\\S]*?)</carousel>';
+const NEXT_ACTION_PATTERN_SOURCE = '<nextaction\\b([^>]*)\\s*/>';
 const ATTRIBUTE_PATTERN = /([^\s=]+)\s*=\s*("([^"]*)"|'([^']*)')/g;
+
+type NextAction =
+  | {type: 'search'; query: string}
+  | {type: 'followup'; message: string};
 
 type AssistantMessageSegment =
   | {type: 'text'; value: string}
@@ -146,23 +156,32 @@ type AssistantMessageSegment =
 function renderAssistantMessageContent(
   message: ConversationMessage,
   productLookup?: ReadonlyMap<string, Product>,
+  onFollowUpClick?: (message: string) => void,
 ) {
   const {content = ''} = message;
   if ((message.kind ?? 'text') !== 'text') {
     return content;
   }
 
-  if (!content.includes('<product_ref') && !content.includes('<carousel')) {
+  const hasSpecialMarkup =
+    content.includes('<product_ref') ||
+    content.includes('<carousel') ||
+    content.includes('<nextaction');
+
+  if (!hasSpecialMarkup) {
     return content;
   }
 
-  const segments = splitContentByCarousels(content);
-  if (segments.length === 0) {
+  // Extract next actions from the end of the content
+  const {cleanedContent, nextActions} = extractNextActions(content);
+
+  const segments = splitContentByCarousels(cleanedContent);
+  if (segments.length === 0 && nextActions.length === 0) {
     return content;
   }
 
   const productIndex = ensureProductLookup(message, productLookup);
-  return segments.map((segment, index) => {
+  const renderedSegments = segments.map((segment, index) => {
     const key = `${message.id}-${index}`;
     if (segment.type === 'carousel') {
       return renderCarouselSegment(segment.identifiers, productIndex, key);
@@ -173,6 +192,19 @@ function renderAssistantMessageContent(
       key,
     );
   });
+
+  return (
+    <>
+      {renderedSegments}
+      {nextActions.length > 0 && (
+        <NextActionsBar
+          actions={nextActions}
+          messageId={message.id}
+          onFollowUpClick={onFollowUpClick}
+        />
+      )}
+    </>
+  );
 }
 
 function splitContentByCarousels(content: string): AssistantMessageSegment[] {
@@ -432,4 +464,100 @@ function ensureProductLookup(
   const fallback = new Map<string, Product>();
   registerProducts(fallback, message.metadata?.products);
   return fallback;
+}
+
+function extractNextActions(content: string): {
+  cleanedContent: string;
+  nextActions: NextAction[];
+} {
+  const nextActions: NextAction[] = [];
+  const nextActionPattern = new RegExp(NEXT_ACTION_PATTERN_SOURCE, 'gi');
+  let cleanedContent = content;
+  let match: RegExpExecArray | null;
+
+  while ((match = nextActionPattern.exec(content)) !== null) {
+    const rawAttributes = match[1] ?? '';
+    const attributes = parseProductRefAttributes(rawAttributes);
+    const actionType = attributes.type;
+
+    if (actionType === 'search' && attributes.query) {
+      nextActions.push({type: 'search', query: attributes.query});
+    } else if (actionType === 'followup' && attributes.message) {
+      nextActions.push({type: 'followup', message: attributes.message});
+    }
+
+    cleanedContent = cleanedContent.replace(match[0], '');
+  }
+
+  // Trim any trailing whitespace left after removing next actions
+  cleanedContent = cleanedContent.trimEnd();
+
+  return {cleanedContent, nextActions};
+}
+
+type NextActionsBarProps = {
+  actions: NextAction[];
+  messageId: string;
+  onFollowUpClick?: (message: string) => void;
+};
+
+function NextActionsBar({
+  actions,
+  messageId,
+  onFollowUpClick,
+}: Readonly<NextActionsBarProps>) {
+  const searchActions = actions.filter((a) => a.type === 'search');
+  const followupActions = actions.filter((a) => a.type === 'followup');
+
+  return (
+    <div className="mt-4 flex flex-wrap gap-2 border-t border-slate-200 pt-4">
+      {searchActions.map((action, index) => (
+        <a
+          key={`${messageId}-search-${index}`}
+          href={`/search?q=${encodeURIComponent(action.query)}`}
+          className="inline-flex items-center gap-1.5 rounded-full bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white shadow-sm transition-colors hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+        >
+          <svg
+            className="h-3.5 w-3.5"
+            fill="none"
+            viewBox="0 0 24 24"
+            strokeWidth={2}
+            stroke="currentColor"
+            aria-hidden="true"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"
+            />
+          </svg>
+          {action.query}
+        </a>
+      ))}
+      {followupActions.map((action, index) => (
+        <button
+          key={`${messageId}-followup-${index}`}
+          type="button"
+          onClick={() => onFollowUpClick?.(action.message)}
+          className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-700 ring-1 ring-inset ring-slate-200 transition-colors hover:bg-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+        >
+          <svg
+            className="h-3.5 w-3.5"
+            fill="none"
+            viewBox="0 0 24 24"
+            strokeWidth={2}
+            stroke="currentColor"
+            aria-hidden="true"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M8.625 12a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 0 1-2.555-.337A5.972 5.972 0 0 1 5.41 20.97a5.969 5.969 0 0 1-.474-.065 4.48 4.48 0 0 0 .978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25Z"
+            />
+          </svg>
+          {action.message}
+        </button>
+      ))}
+    </div>
+  );
 }
