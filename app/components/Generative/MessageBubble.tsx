@@ -21,36 +21,37 @@ type MessageBubbleProps = {
 function ProductCardSkeleton() {
   return (
     <div className="animate-pulse">
-      <div className="relative w-full pb-[100%]">
+      <div className="relative w-full pb-[100%] max-h-[140px]">
         <div className="absolute inset-0 rounded-lg bg-slate-200" />
       </div>
-      <div className="mt-4 h-4 w-3/4 rounded bg-slate-200" />
-      <div className="mt-1 flex gap-1">
+      <div className="mt-2 h-3 w-3/4 rounded bg-slate-200" />
+      <div className="mt-1 h-3 w-1/2 rounded bg-slate-200" />
+      <div className="mt-1 flex gap-0.5">
         {[1, 2, 3, 4, 5].map((star) => (
           <div
             key={`star-${star}`}
-            className="h-5 w-5 rounded-full bg-slate-200"
+            className="h-3.5 w-3.5 rounded-full bg-slate-200"
           />
         ))}
       </div>
-      <div className="mt-1 h-6 w-16 rounded bg-slate-200" />
+      <div className="mt-0.5 h-4 w-12 rounded bg-slate-200" />
     </div>
   );
 }
 
 function CarouselSkeleton() {
   return (
-    <div className="my-4 rounded-2xl bg-gray-50 px-4 py-5 shadow-sm ring-1 ring-slate-200/70">
+    <div className="my-4 rounded-2xl bg-gray-50 px-3 py-4 shadow-sm ring-1 ring-slate-200/70">
       <ul
-        className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-3 lg:grid lg:grid-cols-3 lg:gap-6 lg:overflow-visible lg:snap-none list-none"
+        className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 lg:grid lg:grid-cols-4 lg:gap-4 lg:overflow-visible lg:snap-none list-none"
         aria-label="Loading products..."
       >
         {['slot-1', 'slot-2', 'slot-3'].map((slotId) => (
           <li
             key={slotId}
-            className="min-w-[11.25rem] max-w-[11.25rem] flex-shrink-0 snap-center lg:min-w-0 lg:max-w-none"
+            className="min-w-[9rem] max-w-[9rem] flex-shrink-0 snap-center lg:min-w-0 lg:max-w-none"
           >
-            <div className="rounded-2xl bg-white p-3 shadow-sm ring-1 ring-slate-200">
+            <div className="rounded-xl bg-white p-2 shadow-sm ring-1 ring-slate-200">
               <ProductCardSkeleton />
             </div>
           </li>
@@ -372,11 +373,19 @@ function renderAssistantMessageContent(
     message.id,
   );
 
+  const hasNextActions = nextActions.length > 0;
+  const isActivelyStreaming = isStreaming && pendingContent !== null;
+  const showNextActionsSkeleton = isActivelyStreaming && hasNextActions;
+  const showNextActionsBar = hasNextActions && !showNextActionsSkeleton;
+
   return (
     <>
       {renderedSegments}
       {pendingSkeleton}
-      {nextActions.length > 0 && (
+      {showNextActionsSkeleton && (
+        <NextActionsSkeleton key={`${message.id}-nextactions-skeleton`} />
+      )}
+      {showNextActionsBar && (
         <NextActionsBar
           actions={nextActions}
           messageId={message.id}
@@ -391,7 +400,6 @@ function renderPendingContentSkeleton(
   pendingContent: PendingRichContent | null,
   messageId: string,
 ): ReactNode {
-  // DEBUG: Always show carousel skeleton for testing
   if (!pendingContent) {
     return null;
   }
@@ -404,7 +412,7 @@ function renderPendingContentSkeleton(
     case 'product_ref':
       return <InlineProductSkeleton key={key} />;
     case 'nextaction':
-      return <NextActionsSkeleton key={key} />;
+      return null;
     default:
       return null;
   }
@@ -528,8 +536,12 @@ function renderInlineProductSegment(
   const product = lookupProduct(productIdentifier, productIndex);
   if (product) {
     return (
-      <div key={key} className="my-3 w-full max-w-[18rem]">
-        <ProductCard product={product} className="w-full text-sm" />
+      <div key={key} className="my-3 w-full max-w-[14rem]">
+        <ProductCard
+          product={product}
+          variant="compact"
+          className="w-full text-sm"
+        />
       </div>
     );
   }
@@ -559,10 +571,10 @@ function renderCarouselSegment(
   return (
     <div
       key={key}
-      className="my-4 rounded-2xl bg-gray-50 px-4 py-5 shadow-sm ring-1 ring-slate-200/70"
+      className="my-4 rounded-2xl bg-gray-50 px-3 py-4 shadow-sm ring-1 ring-slate-200/70"
     >
       <ul
-        className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-3 lg:grid lg:grid-cols-3 lg:gap-6 lg:overflow-visible lg:snap-none list-none"
+        className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 lg:grid lg:grid-cols-4 lg:gap-4 lg:overflow-visible lg:snap-none list-none"
         aria-label="Product carousel"
       >
         {identifiers.map((identifier, index) => {
@@ -571,11 +583,12 @@ function renderCarouselSegment(
             return (
               <li
                 key={`${key}-product-${identifier ?? index}`}
-                className="min-w-[11.25rem] max-w-[11.25rem] flex-shrink-0 snap-center lg:min-w-0 lg:max-w-none"
+                className="min-w-[9rem] max-w-[9rem] flex-shrink-0 snap-center lg:min-w-0 lg:max-w-none"
               >
-                <div className="rounded-2xl bg-white p-3 shadow-sm ring-1 ring-slate-200">
+                <div className="rounded-xl bg-white p-2 shadow-sm ring-1 ring-slate-200">
                   <ProductCard
                     product={product}
+                    variant="compact"
                     className="block w-full text-sm"
                   />
                 </div>
@@ -589,7 +602,7 @@ function renderCarouselSegment(
           return (
             <li
               key={`${key}-missing-${index}`}
-              className="min-w-[11.25rem] max-w-[11.25rem] flex-shrink-0 rounded-2xl border border-dashed border-amber-200 bg-amber-50/80 px-4 py-6 text-sm font-medium text-amber-900 snap-center lg:min-w-0 lg:max-w-none"
+              className="min-w-[9rem] max-w-[9rem] flex-shrink-0 rounded-xl border border-dashed border-amber-200 bg-amber-50/80 px-3 py-4 text-xs font-medium text-amber-900 snap-center lg:min-w-0 lg:max-w-none"
             >
               {fallbackLabel}
             </li>
