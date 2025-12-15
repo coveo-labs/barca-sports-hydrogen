@@ -36,7 +36,7 @@ export function FeaturedCategories({header}: FeaturedCategoriesProps) {
               } else if (title === 'Water Sports') {
                 url = 'plp/Sporting-Goods/Outdoor-Recreation/Boating-Water-Sports/Boating-Rafting';
               } else if (title === 'Toys & Games') {
-                url = '/plp/Toys-Games/';
+                url = '/plp/Toys-Games';
               }
               // First collection (Apparel & Accessories) gets the larger layout
               const isFirst = title === 'Apparel & Accessories';
