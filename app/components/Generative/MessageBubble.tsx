@@ -43,15 +43,12 @@ function CarouselSkeleton() {
   return (
     <div className="my-4 rounded-2xl bg-gray-50 px-3 py-4 shadow-sm ring-1 ring-slate-200/70">
       <ul
-        className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 lg:grid lg:grid-cols-4 lg:gap-4 lg:overflow-visible lg:snap-none list-none"
+        className="grid grid-cols-3 gap-3 list-none"
         aria-label="Loading products..."
       >
         {['slot-1', 'slot-2', 'slot-3'].map((slotId) => (
-          <li
-            key={slotId}
-            className="min-w-[9rem] max-w-[9rem] flex-shrink-0 snap-center lg:min-w-0 lg:max-w-none"
-          >
-            <div className="rounded-xl bg-white p-2 shadow-sm ring-1 ring-slate-200">
+          <li key={slotId}>
+            <div className="rounded-xl bg-white p-2 shadow-sm ring-1 ring-slate-200 h-full">
               <ProductCardSkeleton />
             </div>
           </li>
@@ -568,24 +565,28 @@ function renderCarouselSegment(
     return null;
   }
 
+  const gridColsClass =
+    identifiers.length === 1
+      ? 'grid-cols-1 max-w-[14rem]'
+      : identifiers.length === 2
+        ? 'grid-cols-2'
+        : 'grid-cols-3';
+
   return (
     <div
       key={key}
       className="my-4 rounded-2xl bg-gray-50 px-3 py-4 shadow-sm ring-1 ring-slate-200/70"
     >
       <ul
-        className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 lg:grid lg:grid-cols-4 lg:gap-4 lg:overflow-visible lg:snap-none list-none"
+        className={cx('grid gap-3 list-none', gridColsClass)}
         aria-label="Product carousel"
       >
         {identifiers.map((identifier, index) => {
           const product = lookupProduct(identifier, productIndex);
           if (product) {
             return (
-              <li
-                key={`${key}-product-${identifier ?? index}`}
-                className="min-w-[9rem] max-w-[9rem] flex-shrink-0 snap-center lg:min-w-0 lg:max-w-none"
-              >
-                <div className="rounded-xl bg-white p-2 shadow-sm ring-1 ring-slate-200">
+              <li key={`${key}-product-${identifier ?? index}`}>
+                <div className="rounded-xl bg-white p-2 shadow-sm ring-1 ring-slate-200 h-full">
                   <ProductCard
                     product={product}
                     variant="compact"
@@ -602,7 +603,7 @@ function renderCarouselSegment(
           return (
             <li
               key={`${key}-missing-${index}`}
-              className="min-w-[9rem] max-w-[9rem] flex-shrink-0 rounded-xl border border-dashed border-amber-200 bg-amber-50/80 px-3 py-4 text-xs font-medium text-amber-900 snap-center lg:min-w-0 lg:max-w-none"
+              className="rounded-xl border border-dashed border-amber-200 bg-amber-50/80 px-3 py-4 text-xs font-medium text-amber-900 flex items-center justify-center"
             >
               {fallbackLabel}
             </li>
