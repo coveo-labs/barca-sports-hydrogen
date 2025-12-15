@@ -1,5 +1,4 @@
 import type {ActionFunctionArgs} from 'react-router';
-import {streamAgenticConversation} from '~/lib/agentic.server';
 import {ServerSideNavigatorContextProvider} from '~/lib/coveo/navigator.provider';
 import {getCookieFromRequest} from '~/lib/shopify/session';
 import type {
@@ -7,6 +6,10 @@ import type {
   ConversationSummary,
 } from '~/types/conversation';
 import {CONVERSATIONS_SESSION_KEY} from '~/types/conversation';
+
+const AGENTIC_BASE_URL =
+  'https://platformdev.cloud.coveo.com/rest/organizations/barcasportsmcy01fvu/commerce/unstable/agentic';
+
 const MAX_CONVERSATIONS = 10;
 const MAX_MESSAGES_PER_CONVERSATION = 20;
 const MAX_CONTENT_LENGTH = 4000;
@@ -382,4 +385,51 @@ function createConversationId() {
   return `conv_${Date.now().toString(36)}_${Math.random()
     .toString(36)
     .slice(2, 10)}`;
+}
+
+type StreamAgenticConversationOptions = {
+  signal?: AbortSignal;
+  accessToken?: string | null;
+};
+
+async function streamAgenticConversation(
+  payload: unknown,
+  options: StreamAgenticConversationOptions = {},
+): Promise<Response> {
+  const accessToken = pickAccessToken(options.accessToken);
+  const url = new URL(`${AGENTIC_BASE_URL}/converse`);
+
+  return fetch(url, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+    signal: options.signal,
+  });
+}
+
+function pickAccessToken(candidate?: string | null) {
+  const trimmedCandidate = candidate?.trim();
+  if (trimmedCandidate) {
+    return trimmedCandidate;
+  }
+
+  const resolved = resolveAgenticAccessToken();
+  if (resolved) {
+    return resolved;
+  }
+
+  throw new Error(
+    'Missing AGENTIC_ACCESS_TOKEN environment variable for Agentic API access.',
+  );
+}
+
+function resolveAgenticAccessToken() {
+  if (typeof process !== 'undefined' && process?.env?.AGENTIC_ACCESS_TOKEN) {
+    return process.env.AGENTIC_ACCESS_TOKEN;
+  }
+
+  return undefined;
 }
