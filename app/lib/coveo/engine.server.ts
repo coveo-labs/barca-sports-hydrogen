@@ -1,8 +1,8 @@
 import {type CommerceSearchParameters} from '@coveo/headless-react/ssr-commerce';
 import type {AppLoadContext} from '@shopify/remix-oxygen';
-import {getLocaleFromRequest} from './i18n';
-import {updateTokenIfNeeded} from '~/lib/token-utils.server';
-import {engineDefinition} from './coveo.engine';
+import {getLocaleFromRequest} from '~/lib/i18n';
+import {updateTokenIfNeeded} from '~/lib/auth/token-utils.server';
+import {engineDefinition} from '~/lib/coveo/engine';
 import type {CartReturn} from '@shopify/hydrogen';
 import {mapShopifyMerchandiseToCoveoCartItem} from './map.coveo.shopify';
 

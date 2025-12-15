@@ -1,7 +1,7 @@
 import type {ActionFunctionArgs} from 'react-router';
 import {streamAgenticConversation} from '~/lib/agentic.server';
-import {ServerSideNavigatorContextProvider} from '~/lib/navigator.provider';
-import {getCookieFromRequest} from '~/lib/session';
+import {ServerSideNavigatorContextProvider} from '~/lib/coveo/navigator.provider';
+import {getCookieFromRequest} from '~/lib/shopify/session';
 import type {
   ConversationMessage,
   ConversationSummary,

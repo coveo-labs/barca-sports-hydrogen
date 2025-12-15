@@ -1,6 +1,6 @@
 import {useCallback, useEffect, useRef} from 'react';
 import type {Dispatch, MutableRefObject, SetStateAction} from 'react';
-import type {ConversationRecord} from '~/lib/generative-chat';
+import type {ConversationRecord} from '~/lib/generative/chat';
 import {logDebug} from '~/lib/logger';
 
 const MAX_AUTO_RETRIES = 2;
@@ -19,7 +19,6 @@ type UseAutoRetryOptions = {
 
 type UseAutoRetryReturn = {
   isRetryingRef: MutableRefObject<boolean>;
-  retryCount: number;
   resetRetryCount: () => void;
 };
 
@@ -71,16 +70,16 @@ export function useAutoRetry({
       return;
     }
 
+    retryCountRef.current += 1;
+    isRetryingRef.current = true;
+
+    logDebug('scheduling auto-retry', {
+      attempt: retryCountRef.current,
+      maxRetries: MAX_AUTO_RETRIES,
+      conversationId,
+    });
+
     const performAutoRetry = async () => {
-      retryCountRef.current += 1;
-      isRetryingRef.current = true;
-
-      logDebug('performing auto-retry', {
-        attempt: retryCountRef.current,
-        maxRetries: MAX_AUTO_RETRIES,
-        conversationId,
-      });
-
       removeLastErrorMessage();
       setStreamError(null);
 
@@ -98,7 +97,10 @@ export function useAutoRetry({
       void performAutoRetry();
     }, RETRY_DELAY_MS);
 
-    return () => clearTimeout(timeoutId);
+    return () => {
+      clearTimeout(timeoutId);
+      isRetryingRef.current = false;
+    };
   }, [
     streamError,
     isStreaming,
@@ -115,7 +117,6 @@ export function useAutoRetry({
 
   return {
     isRetryingRef,
-    retryCount: retryCountRef.current,
     resetRetryCount,
   };
 }

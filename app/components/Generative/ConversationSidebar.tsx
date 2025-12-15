@@ -1,6 +1,6 @@
 import cx from '~/lib/cx';
-import {formatRelativeTime} from '~/lib/generative-chat';
-import type {ConversationRecord} from '~/lib/generative-chat';
+import {formatRelativeTime} from '~/lib/generative/chat';
+import type {ConversationRecord} from '~/lib/generative/chat';
 
 interface ConversationSidebarProps {
   conversations: ConversationRecord[];

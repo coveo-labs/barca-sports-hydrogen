@@ -10,14 +10,15 @@ import {
   generateId,
   limitMessages,
   sortConversations,
-} from '~/lib/generative-chat';
+} from '~/lib/generative/chat';
 import {logDebug, logError, logInfo, logWarn} from '~/lib/logger';
-import {resolveProductId} from '~/lib/product-identifier';
+import {resolveProductId} from '~/lib/generative/product-identifier';
 import {
   createBufferProcessor,
   parseAssistantStreamEvent,
   processSSEStream,
   type SessionIdentifier,
+  type StreamArgs,
   type ThinkingUpdateSnapshot,
   CONNECTING_STATUS_MESSAGE,
   CONNECTION_ERROR_MESSAGE,
@@ -25,17 +26,9 @@ import {
   GENERIC_ERROR_MESSAGE,
   INTERRUPTED_ERROR_MESSAGE,
   TOOL_RESULT_FALLBACK_MESSAGE,
-} from '~/lib/streaming';
+} from '~/lib/generative/streaming';
 
-export type {ThinkingUpdateSnapshot} from '~/lib/streaming';
-
-type StreamArgs = {
-  conversationLocalId: string;
-  sessionId: string | null;
-  userMessage: string;
-  showInitialStatus?: boolean;
-  onThinkingUpdate?: (snapshot: ThinkingUpdateSnapshot) => void;
-};
+export type {ThinkingUpdateSnapshot, StreamArgs} from '~/lib/generative/streaming';
 
 type UseAssistantStreamingOptions = {
   locale: unknown;

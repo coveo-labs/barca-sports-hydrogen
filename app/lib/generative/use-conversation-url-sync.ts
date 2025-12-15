@@ -1,6 +1,6 @@
 import {useCallback, useEffect} from 'react';
 import {useLocation, useNavigate} from 'react-router';
-import type {ConversationRecord} from '~/lib/generative-chat';
+import type {ConversationRecord} from '~/lib/generative/chat';
 
 type UseConversationUrlSyncOptions = {
   activeConversationId: string | null;

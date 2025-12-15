@@ -2,12 +2,12 @@ import {useMemo} from 'react';
 import type {Product} from '@coveo/headless-react/ssr-commerce';
 import {MessageBubble} from '~/components/Generative/MessageBubble';
 import {ThinkingStatusPanel} from '~/components/Generative/ThinkingStatusPanel';
-import type {ThinkingUpdateSnapshot} from '~/lib/use-assistant-streaming';
+import type {ThinkingUpdateSnapshot} from '~/lib/generative/use-assistant-streaming';
 import type {ConversationMessage} from '~/types/conversation';
-import {PENDING_THINKING_KEY} from '~/lib/thinking-constants';
-import {registerProducts} from '~/lib/product-index';
+import {PENDING_THINKING_KEY} from '~/lib/generative/thinking-constants';
+import {registerProducts} from '~/lib/generative/product-index';
 
-export {PENDING_THINKING_KEY} from '~/lib/thinking-constants';
+export {PENDING_THINKING_KEY} from '~/lib/generative/thinking-constants';
 
 interface ConversationTranscriptProps {
   visibleMessages: ConversationMessage[];

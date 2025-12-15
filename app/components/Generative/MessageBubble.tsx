@@ -3,7 +3,7 @@ import type {Product} from '@coveo/headless-react/ssr-commerce';
 import cx from '~/lib/cx';
 import type {ConversationMessage} from '~/types/conversation';
 import {ProductResultsMessage} from '~/components/Generative/ProductResultsMessage';
-import {registerProducts} from '~/lib/product-index';
+import {registerProducts} from '~/lib/generative/product-index';
 import {NextActionsSkeleton} from '~/components/Generative/Skeletons';
 import {
   detectPendingRichContent,
@@ -12,7 +12,7 @@ import {
   hasSpecialMarkup,
   hasPotentialStreamingMarkup,
   splitContentByCarousels,
-} from '~/lib/message-markup-parser';
+} from '~/lib/generative/message-markup-parser';
 import {
   ProductCarousel,
   renderPendingContentSkeleton,

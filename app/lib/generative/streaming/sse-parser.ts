@@ -1,7 +1,7 @@
 import {
   extractAssistantChunk,
   parseToolResultPayload,
-} from '~/lib/generative-chat';
+} from '~/lib/generative/chat';
 import {
   DEFAULT_STATUS_MESSAGE,
   DEFAULT_TOOL_PROGRESS_MESSAGE,

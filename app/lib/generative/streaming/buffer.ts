@@ -1,4 +1,4 @@
-import {findEventBoundary, getBoundaryLength} from '~/lib/generative-chat';
+import {findEventBoundary, getBoundaryLength} from '~/lib/generative/chat';
 
 export type RawSSEEvent = {
   event: string;

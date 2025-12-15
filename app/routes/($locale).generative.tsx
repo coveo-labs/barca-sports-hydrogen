@@ -26,18 +26,18 @@ import {
   createEmptyConversation,
   generateId,
   limitMessages,
-} from '~/lib/generative-chat';
-import {useAssistantStreaming} from '~/lib/use-assistant-streaming';
-import {useConversationState} from '~/lib/use-conversation-state';
-import {useConversationUrlSync} from '~/lib/use-conversation-url-sync';
-import {useAutoRetry} from '~/lib/use-auto-retry';
+} from '~/lib/generative/chat';
+import {useAssistantStreaming} from '~/lib/generative/use-assistant-streaming';
+import {useConversationState} from '~/lib/generative/use-conversation-state';
+import {useConversationUrlSync} from '~/lib/generative/use-conversation-url-sync';
+import {useAutoRetry} from '~/lib/generative/use-auto-retry';
 import {EmptyState} from '~/components/Generative/EmptyState';
 import {AssistantHeader} from '~/components/Generative/AssistantHeader';
 import {ChatInputFooter} from '~/components/Generative/ChatInputFooter';
 import {ConversationSidebar} from '~/components/Generative/ConversationSidebar';
 import {ConversationTranscript} from '~/components/Generative/ConversationTranscript';
-import {useConversationScroll} from '~/lib/use-conversation-scroll';
-import {useThinkingState} from '~/lib/use-thinking-state';
+import {useConversationScroll} from '~/lib/generative/use-conversation-scroll';
+import {useThinkingState} from '~/lib/generative/use-thinking-state';
 import {logDebug} from '~/lib/logger';
 
 const STREAM_ENDPOINT = '/api/agentic/conversation';

@@ -1,4 +1,4 @@
-import {resolveProductIdFromAttributes} from '~/lib/product-identifier';
+import {resolveProductIdFromAttributes} from '~/lib/generative/product-identifier';
 
 export type PendingRichContentType =
   | 'carousel'

@@ -1,6 +1,6 @@
 import {createHydrogenContext} from '@shopify/hydrogen';
-import {AppSession} from '~/lib/session';
-import {CART_QUERY_FRAGMENT} from '~/lib/fragments';
+import {AppSession} from '~/lib/shopify/session';
+import {CART_QUERY_FRAGMENT} from '~/lib/shopify/fragments';
 import {getLocaleFromRequest} from '~/lib/i18n';
 
 // Define the additional context object
