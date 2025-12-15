@@ -79,18 +79,20 @@ function NextActionsSkeleton() {
 }
 
 type PendingRichContent = {
-  type: 'carousel' | 'product_ref' | 'nextaction';
+  type: 'carousel' | 'product_ref' | 'nextaction' | 'refinement_chip';
   partialText: string;
 };
 
 const INCOMPLETE_CAROUSEL_PATTERN = /<carousel(?:>[\s\S]*)?$/;
 const INCOMPLETE_PRODUCT_REF_PATTERN = /<product_ref[^>]*$/;
 const INCOMPLETE_NEXT_ACTION_PATTERN = /<nextaction[^>]*$/;
+const INCOMPLETE_REFINEMENT_CHIP_PATTERN = /<refinement_chip[^>]*$/;
 
 const PARTIAL_TAG_PREFIXES = [
   {prefix: '<carousel', type: 'carousel' as const, minLength: 2},
   {prefix: '<product_ref', type: 'product_ref' as const, minLength: 3},
   {prefix: '<nextaction', type: 'nextaction' as const, minLength: 3},
+  {prefix: '<refinement_chip', type: 'refinement_chip' as const, minLength: 3},
 ];
 
 function detectIncompleteCarousel(content: string): PendingRichContent | null {
@@ -129,6 +131,16 @@ function detectIncompleteNextAction(
   return null;
 }
 
+function detectIncompleteRefinementChip(
+  content: string,
+): PendingRichContent | null {
+  const match = INCOMPLETE_REFINEMENT_CHIP_PATTERN.exec(content);
+  if (match) {
+    return {type: 'refinement_chip', partialText: match[0]};
+  }
+  return null;
+}
+
 function detectPartialTagStart(content: string): PendingRichContent | null {
   const lastLtIndex = content.lastIndexOf('<');
   if (lastLtIndex === -1) {
@@ -163,6 +175,11 @@ function detectPendingRichContent(content: string): PendingRichContent | null {
   const nextActionResult = detectIncompleteNextAction(content);
   if (nextActionResult) {
     return nextActionResult;
+  }
+
+  const refinementChipResult = detectIncompleteRefinementChip(content);
+  if (refinementChipResult) {
+    return refinementChipResult;
   }
 
   return detectPartialTagStart(content);
@@ -298,11 +315,18 @@ export const MessageBubble = memo(MessageBubbleComponent, arePropsEqual);
 const PRODUCT_REF_PATTERN_SOURCE = String.raw`<product_ref\b([^>]*)\s*/>`;
 const CAROUSEL_PATTERN_SOURCE = String.raw`<carousel>([\s\S]*?)</carousel>`;
 const NEXT_ACTION_PATTERN_SOURCE = String.raw`<nextaction\b([^>]*)\s*/>`;
+const REFINEMENT_CHIP_PATTERN_SOURCE = String.raw`<refinement_chip\b([^>]*)\s*/>`;
 const ATTRIBUTE_PATTERN = /([^\s=]+)\s*=\s*("([^"]*)"|'([^']*)')/g;
 
 type NextAction =
   | {type: 'search'; query: string}
   | {type: 'followup'; message: string};
+
+type RefinementChip = {
+  facet: string;
+  value: string;
+  label: string;
+};
 
 type AssistantMessageSegment =
   | {type: 'text'; value: string}
@@ -322,14 +346,16 @@ function renderAssistantMessageContent(
   const hasSpecialMarkup =
     content.includes('<product_ref') ||
     content.includes('<carousel') ||
-    content.includes('<nextaction');
+    content.includes('<nextaction') ||
+    content.includes('<refinement_chip');
 
   const hasPotentialMarkup =
     hasSpecialMarkup ||
     (isStreaming &&
       (content.includes('<c') ||
         content.includes('<p') ||
-        content.includes('<n')));
+        content.includes('<n') ||
+        content.includes('<r')));
 
   if (!hasPotentialMarkup) {
     return content;
@@ -345,10 +371,19 @@ function renderAssistantMessageContent(
     );
   }
 
-  const {cleanedContent, nextActions} = extractNextActions(processableContent);
+  const {cleanedContent: contentAfterNextActions, nextActions} =
+    extractNextActions(processableContent);
+  const {cleanedContent, refinementChips} = extractRefinementChips(
+    contentAfterNextActions,
+  );
 
   const segments = splitContentByCarousels(cleanedContent);
-  if (segments.length === 0 && nextActions.length === 0 && !pendingContent) {
+  if (
+    segments.length === 0 &&
+    nextActions.length === 0 &&
+    refinementChips.length === 0 &&
+    !pendingContent
+  ) {
     return content;
   }
 
@@ -371,6 +406,7 @@ function renderAssistantMessageContent(
   );
 
   const hasNextActions = nextActions.length > 0;
+  const hasRefinementChips = refinementChips.length > 0;
   const isActivelyStreaming = isStreaming && pendingContent !== null;
   const showNextActionsSkeleton = isActivelyStreaming && hasNextActions;
   const showNextActionsBar = hasNextActions && !showNextActionsSkeleton;
@@ -379,6 +415,9 @@ function renderAssistantMessageContent(
     <>
       {renderedSegments}
       {pendingSkeleton}
+      {hasRefinementChips && (
+        <RefinementChipsBar chips={refinementChips} messageId={message.id} />
+      )}
       {showNextActionsSkeleton && (
         <NextActionsSkeleton key={`${message.id}-nextactions-skeleton`} />
       )}
@@ -565,12 +604,12 @@ function renderCarouselSegment(
     return null;
   }
 
-  const gridColsClass =
-    identifiers.length === 1
-      ? 'grid-cols-1 max-w-[14rem]'
-      : identifiers.length === 2
-        ? 'grid-cols-2'
-        : 'grid-cols-3';
+  let gridColsClass = 'grid-cols-3';
+  if (identifiers.length === 1) {
+    gridColsClass = 'grid-cols-1 max-w-[14rem]';
+  } else if (identifiers.length === 2) {
+    gridColsClass = 'grid-cols-2';
+  }
 
   return (
     <div
@@ -706,6 +745,73 @@ function extractNextActions(content: string): {
   cleanedContent = cleanedContent.trimEnd();
 
   return {cleanedContent, nextActions};
+}
+
+function extractRefinementChips(content: string): {
+  cleanedContent: string;
+  refinementChips: RefinementChip[];
+} {
+  const refinementChips: RefinementChip[] = [];
+  const chipPattern = new RegExp(REFINEMENT_CHIP_PATTERN_SOURCE, 'gi');
+  let cleanedContent = content;
+  let match: RegExpExecArray | null;
+
+  while ((match = chipPattern.exec(content)) !== null) {
+    const rawAttributes = match[1] ?? '';
+    const attributes = parseProductRefAttributes(rawAttributes);
+    const facet = attributes.facet;
+    const value = attributes.value;
+
+    if (facet && value) {
+      // Extract the last part of the value for display (e.g., "Touring Kayaks" from "Canoes & Kayaks|Kayaks|Touring Kayaks")
+      const valueParts = value.split('|');
+      const label = valueParts.at(-1) ?? value;
+      refinementChips.push({facet, value, label});
+    }
+
+    cleanedContent = cleanedContent.replace(match[0], '');
+  }
+
+  cleanedContent = cleanedContent.trimEnd();
+
+  return {cleanedContent, refinementChips};
+}
+
+type RefinementChipsBarProps = {
+  chips: RefinementChip[];
+  messageId: string;
+};
+
+function RefinementChipsBar({
+  chips,
+  messageId,
+}: Readonly<RefinementChipsBarProps>) {
+  return (
+    <div className="mt-3 flex flex-wrap gap-2">
+      {chips.map((chip, index) => (
+        <span
+          key={`${messageId}-chip-${index}`}
+          className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-700 ring-1 ring-inset ring-slate-200"
+        >
+          <svg
+            className="h-3.5 w-3.5 text-slate-500"
+            fill="none"
+            viewBox="0 0 24 24"
+            strokeWidth={2}
+            stroke="currentColor"
+            aria-hidden="true"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 0 1-.659 1.591l-5.432 5.432a2.25 2.25 0 0 0-.659 1.591v2.927a2.25 2.25 0 0 1-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 0 0-.659-1.591L3.659 7.409A2.25 2.25 0 0 1 3 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0 1 12 3Z"
+            />
+          </svg>
+          {chip.label}
+        </span>
+      ))}
+    </div>
+  );
 }
 
 type NextActionsBarProps = {
