@@ -32,7 +32,7 @@ export function FeaturedCategories({header}: FeaturedCategoriesProps) {
               let url = '';
               
               if (title === 'Apparel & Accessories') {
-                url = 'plp/Apparel-Accessories';
+                url = '/plp/Apparel-Accessories';
               } else if (title === 'Water Sports') {
                 url = 'plp/Sporting-Goods/Outdoor-Recreation/Boating-Water-Sports/Boating-Rafting';
               } else if (title === 'Toys & Games') {
