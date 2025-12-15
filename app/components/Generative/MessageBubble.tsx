@@ -56,7 +56,7 @@ function MessageBubbleComponent({
     text: 'bg-white text-slate-900 ring-1 ring-slate-200',
     status: 'bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200',
     tool: 'bg-sky-50 text-sky-800 ring-1 ring-sky-200',
-    error: 'bg-rose-50 text-rose-700 ring-1 ring-rose-200',
+    error: 'bg-amber-50 text-amber-700 ring-1 ring-amber-200',
   };
 
   const assistantClass =

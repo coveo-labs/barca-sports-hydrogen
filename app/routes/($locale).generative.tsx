@@ -39,6 +39,8 @@ import {useThinkingState} from '~/lib/use-thinking-state';
 import {logDebug} from '~/lib/logger';
 
 const STREAM_ENDPOINT = '/api/agentic/conversation';
+const MAX_AUTO_RETRIES = 2;
+const AUTO_RETRY_MESSAGE = 'continue';
 
 export async function loader({request}: LoaderFunctionArgs) {
   const url = new URL(request.url);
@@ -113,6 +115,8 @@ export default function GenerativeShoppingAssistant() {
   );
 
   const initialQueryHandledRef = useRef(false);
+  const retryCountRef = useRef(0);
+  const isRetryingRef = useRef(false);
 
   const [inputValue, setInputValue] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
@@ -248,6 +252,11 @@ export default function GenerativeShoppingAssistant() {
         return;
       }
 
+      // Reset retry count for new user messages (not for auto-retries)
+      if (!isRetryingRef.current) {
+        retryCountRef.current = 0;
+      }
+
       clearActiveSnapshot();
       setStreamError(null);
 
@@ -349,6 +358,78 @@ export default function GenerativeShoppingAssistant() {
       setStreamError,
     ],
   );
+
+  // Auto-retry on error: send "continue" to the agent up to MAX_AUTO_RETRIES times
+  useEffect(() => {
+    if (!streamError || isStreaming || isRetryingRef.current) {
+      return;
+    }
+
+    if (retryCountRef.current >= MAX_AUTO_RETRIES) {
+      logDebug('auto-retry limit reached', {
+        retryCount: retryCountRef.current,
+        maxRetries: MAX_AUTO_RETRIES,
+      });
+      return;
+    }
+
+    if (!activeConversation?.sessionId) {
+      logDebug('cannot auto-retry: no session id');
+      return;
+    }
+
+    const removeLastErrorMessage = () => {
+      setConversations((prev) =>
+        prev.map((conversation) => {
+          if (conversation.localId !== activeConversationId) {
+            return conversation;
+          }
+          const messages = [...conversation.messages];
+          for (let i = messages.length - 1; i >= 0; i--) {
+            if (messages[i].kind === 'error') {
+              messages.splice(i, 1);
+              break;
+            }
+          }
+          return {...conversation, messages};
+        }),
+      );
+    };
+
+    const performAutoRetry = async () => {
+      retryCountRef.current += 1;
+      isRetryingRef.current = true;
+
+      logDebug('performing auto-retry', {
+        attempt: retryCountRef.current,
+        maxRetries: MAX_AUTO_RETRIES,
+        conversationId: activeConversationId,
+      });
+
+      removeLastErrorMessage();
+      setStreamError(null);
+
+      try {
+        await sendMessage(AUTO_RETRY_MESSAGE);
+      } finally {
+        isRetryingRef.current = false;
+      }
+    };
+
+    // Small delay before retry to avoid rapid loops
+    const timeoutId = setTimeout(() => {
+      void performAutoRetry();
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [
+    streamError,
+    isStreaming,
+    activeConversation?.sessionId,
+    activeConversationId,
+    sendMessage,
+    setConversations,
+  ]);
 
   useEffect(() => {
     if (!isHydrated) {
