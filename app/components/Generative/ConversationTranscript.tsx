@@ -188,7 +188,7 @@ function processMessage({
 }: ProcessMessageArgs) {
   const isAssistant = message.role === 'assistant';
   const isProductList = message.kind === 'products';
-  const kind = message.kind ?? 'text';
+  const kind = message.kind;
   const isStreamingMessage =
     isAssistant && message.id === latestStreamingAssistantId;
   const showTrailingSpinner = isStreamingMessage && kind === 'text';

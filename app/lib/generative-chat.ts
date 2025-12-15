@@ -251,13 +251,18 @@ export function formatRelativeTime(value: string) {
 export function mapSummaryToRecord(
   summary: ConversationSummary,
 ): ConversationRecord {
+  const messages = (summary.messages ?? []).map((message) => ({
+    ...message,
+    kind: message.kind ?? 'text',
+  })) as ConversationMessage[];
+
   return {
     localId: generateId(),
     sessionId: summary.id,
     title: summary.title,
     createdAt: summary.createdAt,
     updatedAt: summary.updatedAt,
-    messages: limitMessages(summary.messages ?? []),
+    messages: limitMessages(messages),
     isPersisted: true,
   };
 }

@@ -259,9 +259,9 @@ function sanitizeMessage(message: ConversationMessage): ConversationMessage {
     'products',
     'error',
   ];
-  const kind = allowedKinds.includes(message.kind ?? 'text')
-    ? (message.kind ?? 'text')
-    : ('text' as ConversationMessage['kind']);
+  const kind = allowedKinds.includes(message.kind)
+    ? message.kind
+    : 'text';
 
   const metadata = message.metadata;
 

@@ -39,7 +39,7 @@ function MessageBubbleComponent({
   onFollowUpClick,
 }: Readonly<MessageBubbleProps>) {
   const isUser = message.role === 'user';
-  const kind = message.kind ?? 'text';
+  const kind = message.kind;
   const isAssistant = !isUser;
 
   if (isAssistant && kind === 'products') {
@@ -165,7 +165,7 @@ function renderAssistantMessageContent(
   onFollowUpClick?: (message: string) => void,
 ) {
   const {content = ''} = message;
-  if ((message.kind ?? 'text') !== 'text') {
+  if (message.kind !== 'text') {
     return content;
   }
 

@@ -16,6 +16,7 @@ import {
   sortConversations,
 } from '~/lib/generative-chat';
 import {logDebug, logError, logInfo, logWarn} from '~/lib/logger';
+import {resolveProductId} from '~/lib/product-identifier';
 
 const CONNECTING_STATUS_MESSAGE =
   'Connecting to the Barca water sports assistant...';
@@ -210,13 +211,13 @@ export function useAssistantStreaming({
         const nextProducts = [...collectedProducts];
         const indexByKey = new Map<string, number>();
         for (const [index, product] of nextProducts.entries()) {
-          const key = resolveProductKey(product);
+          const key = resolveProductId(product);
           if (key) {
             indexByKey.set(key, index);
           }
         }
         for (const product of incoming) {
-          const key = resolveProductKey(product);
+          const key = resolveProductId(product);
           if (!key) {
             nextProducts.push(product);
             continue;
@@ -882,33 +883,4 @@ function stringifyUnknownPayload(value: unknown): string {
   } catch {
     return '';
   }
-}
-
-function resolveProductKey(product: Product): string | null {
-  const record = product as unknown as Record<string, unknown>;
-  const candidates: unknown[] = [
-    record.ec_product_id,
-    record.ec_productId,
-    record.ec_item_id,
-    record.permanentid,
-    record.permanentId,
-    record.permanentID,
-    record.permanent_url,
-    record.permanentUrl,
-    record.clickUri,
-    record.productId,
-    record.id,
-    record.sku,
-  ];
-
-  for (const candidate of candidates) {
-    if (typeof candidate === 'string' && candidate.trim()) {
-      return candidate.trim();
-    }
-    if (typeof candidate === 'number' && Number.isFinite(candidate)) {
-      return String(candidate);
-    }
-  }
-
-  return null;
 }

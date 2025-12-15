@@ -29,6 +29,7 @@ import {
 } from '~/lib/generative-chat';
 import {useAssistantStreaming} from '~/lib/use-assistant-streaming';
 import {useConversationState} from '~/lib/use-conversation-state';
+import {useAutoRetry} from '~/lib/use-auto-retry';
 import {EmptyState} from '~/components/Generative/EmptyState';
 import {AssistantHeader} from '~/components/Generative/AssistantHeader';
 import {ChatInputFooter} from '~/components/Generative/ChatInputFooter';
@@ -39,8 +40,6 @@ import {useThinkingState} from '~/lib/use-thinking-state';
 import {logDebug} from '~/lib/logger';
 
 const STREAM_ENDPOINT = '/api/agentic/conversation';
-const MAX_AUTO_RETRIES = 2;
-const AUTO_RETRY_MESSAGE = 'continue';
 
 export async function loader({request}: LoaderFunctionArgs) {
   const url = new URL(request.url);
@@ -115,8 +114,6 @@ export default function GenerativeShoppingAssistant() {
   );
 
   const initialQueryHandledRef = useRef(false);
-  const retryCountRef = useRef(0);
-  const isRetryingRef = useRef(false);
 
   const [inputValue, setInputValue] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
@@ -245,6 +242,21 @@ export default function GenerativeShoppingAssistant() {
     updateConversationQuery,
   ]);
 
+  // Ref to sendMessage for auto-retry hook (avoids circular dependency)
+  const sendMessageRef = useRef<((message: string) => Promise<void>) | null>(
+    null,
+  );
+
+  const {isRetryingRef, resetRetryCount} = useAutoRetry({
+    streamError,
+    isStreaming,
+    sessionId: activeConversation?.sessionId ?? null,
+    conversationId: activeConversationId,
+    setConversations,
+    setStreamError,
+    sendMessageRef,
+  });
+
   const sendMessage = useCallback(
     async (messageText: string, options: {forceNew?: boolean} = {}) => {
       const trimmed = messageText.trim();
@@ -254,7 +266,7 @@ export default function GenerativeShoppingAssistant() {
 
       // Reset retry count for new user messages (not for auto-retries)
       if (!isRetryingRef.current) {
-        retryCountRef.current = 0;
+        resetRetryCount();
       }
 
       clearActiveSnapshot();
@@ -356,80 +368,13 @@ export default function GenerativeShoppingAssistant() {
       setConversations,
       setIsStreaming,
       setStreamError,
+      isRetryingRef,
+      resetRetryCount,
     ],
   );
 
-  // Auto-retry on error: send "continue" to the agent up to MAX_AUTO_RETRIES times
-  useEffect(() => {
-    if (!streamError || isStreaming || isRetryingRef.current) {
-      return;
-    }
-
-    if (retryCountRef.current >= MAX_AUTO_RETRIES) {
-      logDebug('auto-retry limit reached', {
-        retryCount: retryCountRef.current,
-        maxRetries: MAX_AUTO_RETRIES,
-      });
-      return;
-    }
-
-    if (!activeConversation?.sessionId) {
-      logDebug('cannot auto-retry: no session id');
-      return;
-    }
-
-    const removeLastErrorMessage = () => {
-      setConversations((prev) =>
-        prev.map((conversation) => {
-          if (conversation.localId !== activeConversationId) {
-            return conversation;
-          }
-          const messages = [...conversation.messages];
-          for (let i = messages.length - 1; i >= 0; i--) {
-            if (messages[i].kind === 'error') {
-              messages.splice(i, 1);
-              break;
-            }
-          }
-          return {...conversation, messages};
-        }),
-      );
-    };
-
-    const performAutoRetry = async () => {
-      retryCountRef.current += 1;
-      isRetryingRef.current = true;
-
-      logDebug('performing auto-retry', {
-        attempt: retryCountRef.current,
-        maxRetries: MAX_AUTO_RETRIES,
-        conversationId: activeConversationId,
-      });
-
-      removeLastErrorMessage();
-      setStreamError(null);
-
-      try {
-        await sendMessage(AUTO_RETRY_MESSAGE);
-      } finally {
-        isRetryingRef.current = false;
-      }
-    };
-
-    // Small delay before retry to avoid rapid loops
-    const timeoutId = setTimeout(() => {
-      void performAutoRetry();
-    }, 500);
-
-    return () => clearTimeout(timeoutId);
-  }, [
-    streamError,
-    isStreaming,
-    activeConversation?.sessionId,
-    activeConversationId,
-    sendMessage,
-    setConversations,
-  ]);
+  // Keep ref in sync with sendMessage for auto-retry hook
+  sendMessageRef.current = sendMessage;
 
   useEffect(() => {
     if (!isHydrated) {
