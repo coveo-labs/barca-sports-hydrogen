@@ -9,9 +9,9 @@ import {
 import {
   data as reactRouterData,
   useLoaderData,
+  useLocation,
   useNavigate,
   useRouteLoaderData,
-  useLocation,
   type LoaderFunctionArgs,
 } from 'react-router';
 import cx from '~/lib/cx';
@@ -29,6 +29,7 @@ import {
 } from '~/lib/generative-chat';
 import {useAssistantStreaming} from '~/lib/use-assistant-streaming';
 import {useConversationState} from '~/lib/use-conversation-state';
+import {useConversationUrlSync} from '~/lib/use-conversation-url-sync';
 import {useAutoRetry} from '~/lib/use-auto-retry';
 import {EmptyState} from '~/components/Generative/EmptyState';
 import {AssistantHeader} from '~/components/Generative/AssistantHeader';
@@ -83,35 +84,11 @@ export default function GenerativeShoppingAssistant() {
     loaderActiveId,
   });
 
-  const updateConversationQuery = useCallback(
-    (sessionId: string | null) => {
-      const searchParams = new URLSearchParams(location.search);
-      const currentValue = searchParams.get('conversationId');
-
-      if (sessionId) {
-        if (currentValue === sessionId) {
-          return;
-        }
-        searchParams.set('conversationId', sessionId);
-      } else {
-        if (!currentValue) {
-          return;
-        }
-        searchParams.delete('conversationId');
-      }
-
-      const searchString = searchParams.toString();
-      navigate(
-        {
-          pathname: location.pathname,
-          search: searchString ? `?${searchString}` : '',
-          hash: location.hash,
-        },
-        {replace: true},
-      );
-    },
-    [location.hash, location.pathname, location.search, navigate],
-  );
+  useConversationUrlSync({
+    activeConversationId,
+    conversations,
+    isHydrated,
+  });
 
   const initialQueryHandledRef = useRef(false);
 
@@ -225,22 +202,6 @@ export default function GenerativeShoppingAssistant() {
     },
     [togglePendingExpansion],
   );
-
-  useEffect(() => {
-    if (!isHydrated) {
-      return;
-    }
-    const active =
-      conversations.find(
-        (conversation) => conversation.localId === activeConversationId,
-      ) ?? null;
-    updateConversationQuery(active?.sessionId ?? null);
-  }, [
-    activeConversationId,
-    conversations,
-    isHydrated,
-    updateConversationQuery,
-  ]);
 
   // Ref to sendMessage for auto-retry hook (avoids circular dependency)
   const sendMessageRef = useRef<((message: string) => Promise<void>) | null>(

@@ -7,37 +7,27 @@ import type {
 } from '~/types/conversation';
 import {
   type ConversationRecord,
-  extractAssistantChunk,
-  findEventBoundary,
   generateId,
-  getBoundaryLength,
   limitMessages,
-  parseToolResultPayload,
   sortConversations,
 } from '~/lib/generative-chat';
 import {logDebug, logError, logInfo, logWarn} from '~/lib/logger';
 import {resolveProductId} from '~/lib/product-identifier';
+import {
+  createBufferProcessor,
+  parseAssistantStreamEvent,
+  processSSEStream,
+  type SessionIdentifier,
+  type ThinkingUpdateSnapshot,
+  CONNECTING_STATUS_MESSAGE,
+  CONNECTION_ERROR_MESSAGE,
+  DEFAULT_STATUS_MESSAGE,
+  GENERIC_ERROR_MESSAGE,
+  INTERRUPTED_ERROR_MESSAGE,
+  TOOL_RESULT_FALLBACK_MESSAGE,
+} from '~/lib/streaming';
 
-const CONNECTING_STATUS_MESSAGE =
-  'Connecting to the Barca water sports assistant...';
-const DEFAULT_STATUS_MESSAGE =
-  'Assistant is preparing your Barca recommendations...';
-const DEFAULT_TOOL_PROGRESS_MESSAGE =
-  'Assistant is fetching fresh data...';
-const TOOL_RESULT_FALLBACK_MESSAGE =
-  'Got the latest catalog results - summarizing now.';
-const CONNECTION_ERROR_MESSAGE =
-  'Unable to reach the shopping assistant right now.';
-const INTERRUPTED_ERROR_MESSAGE =
-  'The assistant stopped responding before finishing. Please try again.';
-const GENERIC_ERROR_MESSAGE =
-  'The assistant ran into a problem. Please try again in a moment.';
-
-export type ThinkingUpdateSnapshot = {
-  updates: ConversationThinkingUpdate[];
-  isComplete: boolean;
-  messageId: string | null;
-};
+export type {ThinkingUpdateSnapshot} from '~/lib/streaming';
 
 type StreamArgs = {
   conversationLocalId: string;
@@ -55,38 +45,6 @@ type UseAssistantStreamingOptions = {
   endpoint: string;
   onThinkingUpdate?: (snapshot: ThinkingUpdateSnapshot) => void;
 };
-
-type SessionIdentifier = {
-  sessionId: string | null;
-};
-
-type StatusPayload = SessionIdentifier & {
-  message: string;
-};
-
-type ToolResultPayload = SessionIdentifier & {
-  message: string;
-  products: ReturnType<typeof parseToolResultPayload>['products'];
-};
-
-type ErrorPayload = SessionIdentifier & {
-  message: string;
-};
-
-type MessagePayload = SessionIdentifier & {
-  message: string;
-};
-
-type AssistantStreamEvent =
-  | {type: 'turn_started'; payload: SessionIdentifier}
-  | {type: 'turn_complete'; payload: SessionIdentifier}
-  | {type: 'status'; payload: StatusPayload}
-  | {type: 'status_update'; payload: StatusPayload}
-  | {type: 'tool_invocation'; payload: StatusPayload}
-  | {type: 'tool_result'; payload: ToolResultPayload}
-  | {type: 'error'; payload: ErrorPayload}
-  | {type: 'message'; payload: MessagePayload}
-  | {type: 'unknown'; event: string; payload: SessionIdentifier & {message: unknown}};
 
 export function useAssistantStreaming({
   locale,
@@ -387,8 +345,6 @@ export function useAssistantStreaming({
         }
 
         const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        let buffer = '';
 
         const processEvent = (event: {event: string; data: string}) => {
           if (!event.data) return;
@@ -565,52 +521,13 @@ export function useAssistantStreaming({
           }
         };
 
-        const processRawEvent = (rawEvent: string) => {
-          if (!rawEvent.trim()) {
-            return;
+        const bufferProcessor = createBufferProcessor((event) => {
+          if (event.data) {
+            processEvent(event);
           }
-          const lines = rawEvent.split(/\r?\n/);
-          let eventType = 'message';
-          const dataLines: string[] = [];
-          for (const line of lines) {
-            if (!line || line.startsWith(':')) {
-              continue;
-            }
-            if (line.startsWith('event:')) {
-              eventType = line.slice(6).trim();
-            } else if (line.startsWith('data:')) {
-              dataLines.push(line.slice(5).trimStart());
-            }
-          }
-          processEvent({event: eventType, data: dataLines.join('\n')});
-        };
+        });
 
-        const extractEvents = (chunk: string) => {
-          buffer += chunk;
-          while (true) {
-            const boundaryIndex = findEventBoundary(buffer);
-            if (boundaryIndex === -1) {
-              break;
-            }
-            const delimiterLength = getBoundaryLength(buffer, boundaryIndex);
-            const rawEvent = buffer.slice(0, boundaryIndex);
-            buffer = buffer.slice(boundaryIndex + delimiterLength);
-            processRawEvent(rawEvent);
-          }
-        };
-
-        while (true) {
-          const {value, done} = await reader.read();
-          if (done) {
-            if (buffer.trim()) {
-              processRawEvent(buffer);
-              buffer = '';
-            }
-            break;
-          }
-          const chunk = decoder.decode(value, {stream: true});
-          extractEvents(chunk);
-        }
+        await processSSEStream(reader, bufferProcessor);
 
         if (latestSnapshot) {
           const snapshot: ConversationRecord = latestSnapshot;
@@ -688,199 +605,4 @@ export function useAssistantStreaming({
   );
 
   return {streamAssistantResponse, abortStream};
-}
-
-function parseAssistantStreamEvent({
-  event,
-  data,
-}: {
-  event: string;
-  data: string;
-}): AssistantStreamEvent {
-  const rawEventName = event || 'message';
-  let parsedPayload: unknown = data;
-  if (data) {
-    try {
-      parsedPayload = JSON.parse(data);
-    } catch {
-      parsedPayload = data;
-    }
-  }
-
-  const {name, payload, reportedEvent} = normalizeAssistantStreamEvent(
-    rawEventName,
-    parsedPayload,
-  );
-  const session = extractSessionIdentifier(payload);
-
-  switch (name) {
-    case 'turn_started':
-      return {type: 'turn_started', payload: {...session}};
-    case 'turn_complete':
-      return {type: 'turn_complete', payload: {...session}};
-    case 'status':
-    case 'status_update':
-      return {
-        type: name,
-        payload: {
-          ...session,
-          message: resolveDisplayText(payload, DEFAULT_STATUS_MESSAGE),
-        },
-      };
-    case 'tool_invocation':
-      return {
-        type: 'tool_invocation',
-        payload: {
-          ...session,
-          message: resolveDisplayText(payload, DEFAULT_TOOL_PROGRESS_MESSAGE),
-        },
-      };
-    case 'tool_result': {
-      const result = parseToolResultPayload(payload);
-      const resolvedMessage =
-        result.message ?? resolveDisplayText(payload, TOOL_RESULT_FALLBACK_MESSAGE);
-      return {
-        type: 'tool_result',
-        payload: {
-          ...session,
-          message: resolvedMessage,
-          products: result.products,
-        },
-      };
-    }
-    case 'error':
-      return {
-        type: 'error',
-        payload: {
-          ...session,
-          message: resolveDisplayText(payload, GENERIC_ERROR_MESSAGE),
-        },
-      };
-    case 'message':
-      return {
-        type: 'message',
-        payload: {
-          ...session,
-          message: extractMessageChunkString(payload),
-        },
-      };
-    default:
-      return {
-        type: 'unknown',
-        event: reportedEvent,
-        payload: {
-          ...session,
-          message: stringifyUnknownPayload(payload),
-        },
-      };
-  }
-}
-
-function normalizeAssistantStreamEvent(
-  fallbackName: string,
-  payload: unknown,
-) {
-  const baseName = fallbackName || 'message';
-  if (!payload || typeof payload !== 'object') {
-    return {name: baseName, payload, reportedEvent: baseName};
-  }
-
-  const record = payload as Record<string, unknown>;
-  const nestedType = readTrimmedString(record.type);
-  const nestedEvent = readTrimmedString(record.event);
-  const normalizedName = nestedType ?? baseName;
-  const normalizedPayload = nestedType
-    ? resolveNestedPayload(record, payload)
-    : payload;
-
-  return {
-    name: normalizedName,
-    payload: normalizedPayload,
-    reportedEvent: nestedEvent ?? baseName,
-  };
-}
-
-function readTrimmedString(value: unknown): string | null {
-  if (typeof value !== 'string') {
-    return null;
-  }
-  const trimmed = value.trim();
-  return trimmed || null;
-}
-
-function resolveNestedPayload(
-  record: Record<string, unknown>,
-  fallback: unknown,
-) {
-  if ('payload' in record && record.payload !== undefined) {
-    return record.payload;
-  }
-  if ('data' in record && record.data !== undefined) {
-    return record.data;
-  }
-  return fallback;
-}
-
-function extractSessionIdentifier(value: unknown): SessionIdentifier {
-  if (value && typeof value === 'object') {
-    const record = value as Record<string, unknown>;
-    const direct = typeof record.sessionId === 'string' ? record.sessionId : null;
-    if (direct?.trim()) {
-      return {sessionId: direct.trim()};
-    }
-    const legacy =
-      typeof record.conversationSessionId === 'string'
-        ? record.conversationSessionId
-        : null;
-    if (legacy?.trim()) {
-      return {sessionId: legacy.trim()};
-    }
-    return {sessionId: null};
-  }
-  return {sessionId: null};
-}
-
-function resolveDisplayText(value: unknown, fallback: string): string {
-  if (typeof value === 'string') {
-    const trimmed = value.trim();
-    return trimmed || fallback;
-  }
-
-  if (value && typeof value === 'object') {
-    const record = value as Record<string, unknown>;
-    const keys = ['message', 'content', 'status', 'detail', 'text'];
-    for (const key of keys) {
-      const candidate = record[key];
-      if (typeof candidate === 'string') {
-        const trimmed = candidate.trim();
-        if (trimmed) {
-          return trimmed;
-        }
-      }
-    }
-  }
-
-  return fallback;
-}
-
-function extractMessageChunkString(value: unknown): string {
-  const chunk = extractAssistantChunk(value);
-  if (typeof chunk === 'string') {
-    return chunk;
-  }
-  if (typeof value === 'string') {
-    return value;
-  }
-  return resolveDisplayText(value, '');
-}
-
-function stringifyUnknownPayload(value: unknown): string {
-  if (typeof value === 'string') {
-    return value;
-  }
-  try {
-    return JSON.stringify(value);
-  } catch {
-    return '';
-  }
 }

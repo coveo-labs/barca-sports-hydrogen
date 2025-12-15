@@ -14,27 +14,15 @@ type UseAutoRetryOptions = {
   conversationId: string | null;
   setConversations: Dispatch<SetStateAction<ConversationRecord[]>>;
   setStreamError: Dispatch<SetStateAction<string | null>>;
-  /**
-   * Ref to the sendMessage function to avoid circular dependencies.
-   * The hook reads the current value from the ref when needed.
-   */
   sendMessageRef: MutableRefObject<((message: string) => Promise<void>) | null>;
 };
 
 type UseAutoRetryReturn = {
-  /**
-   * Ref to check if currently retrying - read .current in callbacks
-   * to avoid stale closures without adding to dependency arrays.
-   */
   isRetryingRef: MutableRefObject<boolean>;
   retryCount: number;
   resetRetryCount: () => void;
 };
 
-/**
- * Hook that handles automatic retry logic when streaming errors occur.
- * Automatically sends "continue" message up to MAX_AUTO_RETRIES times.
- */
 export function useAutoRetry({
   streamError,
   isStreaming,
