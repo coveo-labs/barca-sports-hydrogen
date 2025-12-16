@@ -1,14 +1,13 @@
-interface AssistantHeaderProps {
-  isStreaming: boolean;
-  onStop: () => void;
-  onNewConversation: () => void;
-}
+import {
+  useConversationActions,
+  useStreamingActions,
+  useStreamingState,
+} from '~/lib/generative/context';
 
-export function AssistantHeader({
-  isStreaming,
-  onStop,
-  onNewConversation,
-}: AssistantHeaderProps) {
+export function AssistantHeader() {
+  const {isStreaming} = useStreamingState();
+  const {onStop} = useStreamingActions();
+  const {onNewConversation} = useConversationActions();
   return (
     <header className="border-b border-slate-200 bg-white px-4 py-4 shadow-sm sm:px-6 lg:px-10">
       <div className="flex flex-wrap items-center justify-between gap-3">

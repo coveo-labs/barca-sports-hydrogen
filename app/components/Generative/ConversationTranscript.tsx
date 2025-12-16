@@ -6,32 +6,24 @@ import type {ThinkingUpdateSnapshot} from '~/lib/generative/use-assistant-stream
 import type {ConversationMessage} from '~/types/conversation';
 import {PENDING_THINKING_KEY} from '~/lib/generative/thinking-constants';
 import {registerProducts} from '~/lib/generative/product-index';
+import {
+  useMessagesContext,
+  useStreamingActions,
+  useThinkingContext,
+} from '~/lib/generative/context';
 
-export {PENDING_THINKING_KEY} from '~/lib/generative/thinking-constants';
+export function ConversationTranscript() {
+  const {visibleMessages, latestStreamingAssistantId, latestUserMessageId} =
+    useMessagesContext();
+  const {
+    activeSnapshot: activeThinkingSnapshot,
+    pendingSnapshot: pendingThinkingSnapshot,
+    expandedByMessage: thinkingExpandedByMessage,
+    onToggleThinking,
+    onTogglePendingThinking,
+  } = useThinkingContext();
+  const {onSendMessage} = useStreamingActions();
 
-interface ConversationTranscriptProps {
-  visibleMessages: ConversationMessage[];
-  latestStreamingAssistantId: string | null;
-  activeThinkingSnapshot: ThinkingUpdateSnapshot | null;
-  pendingThinkingSnapshot: ThinkingUpdateSnapshot | null;
-  latestUserMessageId: string | null;
-  thinkingExpandedByMessage: Record<string, boolean>;
-  onToggleThinking: (messageId: string, next: boolean) => void;
-  onTogglePendingThinking: (next: boolean) => void;
-  onFollowUpClick?: (message: string) => void;
-}
-
-export function ConversationTranscript({
-  visibleMessages,
-  latestStreamingAssistantId,
-  activeThinkingSnapshot,
-  pendingThinkingSnapshot,
-  latestUserMessageId,
-  thinkingExpandedByMessage,
-  onToggleThinking,
-  onTogglePendingThinking,
-  onFollowUpClick,
-}: Readonly<ConversationTranscriptProps>) {
   const renderedConversationItems = useMemo(
     () =>
       buildConversationItems({
@@ -43,7 +35,7 @@ export function ConversationTranscript({
         thinkingExpandedByMessage,
         onToggleThinking,
         onTogglePendingThinking,
-        onFollowUpClick,
+        onFollowUpClick: onSendMessage,
       }),
     [
       visibleMessages,
@@ -54,7 +46,7 @@ export function ConversationTranscript({
       thinkingExpandedByMessage,
       onToggleThinking,
       onTogglePendingThinking,
-      onFollowUpClick,
+      onSendMessage,
     ],
   );
 

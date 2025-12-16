@@ -1,22 +1,14 @@
 import cx from '~/lib/cx';
 import {formatRelativeTime} from '~/lib/generative/chat';
-import type {ConversationRecord} from '~/lib/generative/chat';
+import {
+  useConversationActions,
+  useConversationsState,
+} from '~/lib/generative/context';
 
-interface ConversationSidebarProps {
-  conversations: ConversationRecord[];
-  activeConversationId: string | null;
-  onNewConversation: () => void;
-  onSelectConversation: (conversation: ConversationRecord) => void;
-  onDeleteConversation: (conversation: ConversationRecord) => void;
-}
-
-export function ConversationSidebar({
-  conversations,
-  activeConversationId,
-  onNewConversation,
-  onSelectConversation,
-  onDeleteConversation,
-}: ConversationSidebarProps) {
+export function ConversationSidebar() {
+  const {conversations, activeConversationId} = useConversationsState();
+  const {onNewConversation, onSelectConversation, onDeleteConversation} =
+    useConversationActions();
   return (
     <aside className="hidden w-80 min-h-0 flex-col border-r border-slate-200 bg-white/80 backdrop-blur lg:flex">
       <div className="flex items-center justify-between px-6 py-5">

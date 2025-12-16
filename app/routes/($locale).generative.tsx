@@ -29,6 +29,7 @@ import {EmptyState} from '~/components/Generative/EmptyState';
 import {MessageListContainer} from '~/components/Generative/MessageListContainer';
 import {useConversationScroll} from '~/lib/generative/use-conversation-scroll';
 import {useThinkingState} from '~/lib/generative/use-thinking-state';
+import {GenerativeProvider} from '~/lib/generative/context';
 
 const STREAM_ENDPOINT = '/api/agentic/conversation';
 
@@ -220,23 +221,12 @@ export default function GenerativeShoppingAssistant() {
     [inputValue, isStreaming, sendMessage],
   );
 
-  const handleStop = useCallback(() => {
-    abortStream();
-  }, [abortStream]);
-
   const handleSelectConversation = useCallback(
     (conversation: ConversationRecord) => {
       setActiveConversationId(conversation.localId);
       setStreamError(null);
     },
     [setActiveConversationId, setStreamError],
-  );
-
-  const handleSendMessage = useCallback(
-    (message: string) => {
-      void sendMessage(message);
-    },
-    [sendMessage],
   );
 
   const handleNewConversation = useCallback(() => {
@@ -316,55 +306,46 @@ export default function GenerativeShoppingAssistant() {
   );
 
   return (
-    <div className="flex w-full flex-1 min-h-0 bg-slate-100">
-      <ConversationSidebar
-        conversations={conversations}
-        activeConversationId={activeConversationId}
-        onNewConversation={handleNewConversation}
-        onSelectConversation={handleSelectConversation}
-        onDeleteConversation={handleDeleteConversation}
-      />
-      <main className="flex flex-1 min-h-0 flex-col">
-        <AssistantHeader
-          isStreaming={isStreaming}
-          onStop={handleStop}
-          onNewConversation={handleNewConversation}
-        />
+    <GenerativeProvider
+      conversations={conversations}
+      activeConversationId={activeConversationId}
+      isStreaming={isStreaming}
+      streamError={streamError}
+      visibleMessages={visibleMessages}
+      latestUserMessageId={latestUserMessageId}
+      latestStreamingAssistantId={latestStreamingAssistantId}
+      activeSnapshot={activeThinkingSnapshot}
+      pendingSnapshot={pendingThinkingSnapshot}
+      expandedByMessage={thinkingExpandedByMessage}
+      onNewConversation={handleNewConversation}
+      onSelectConversation={handleSelectConversation}
+      onDeleteConversation={handleDeleteConversation}
+      onSendMessage={handleSuggestionClick}
+      onStop={abortStream}
+      onToggleThinking={toggleMessageExpansion}
+      onTogglePendingThinking={togglePendingExpansion}
+    >
+      <div className="flex w-full flex-1 min-h-0 bg-slate-100">
+        <ConversationSidebar />
+        <main className="flex flex-1 min-h-0 flex-col">
+          <AssistantHeader />
 
-        <MessageListContainer
-          containerRef={messageContainerRef}
-          isEmpty={messages.length === 0}
-          hasContent={visibleMessages.length > 0}
-          emptyState={
-            <EmptyState
-              prompts={suggestedPrompts}
-              isStreaming={isStreaming}
-              onPromptClick={handleSuggestionClick}
-            />
-          }
-        >
-          <ConversationTranscript
-            visibleMessages={visibleMessages}
-            latestStreamingAssistantId={latestStreamingAssistantId}
-            activeThinkingSnapshot={activeThinkingSnapshot}
-            pendingThinkingSnapshot={pendingThinkingSnapshot}
-            latestUserMessageId={latestUserMessageId}
-            thinkingExpandedByMessage={thinkingExpandedByMessage}
-            onToggleThinking={toggleMessageExpansion}
-            onTogglePendingThinking={togglePendingExpansion}
-            onFollowUpClick={handleSuggestionClick}
+          <MessageListContainer
+            containerRef={messageContainerRef}
+            isEmpty={messages.length === 0}
+            hasContent={visibleMessages.length > 0}
+            emptyState={<EmptyState prompts={suggestedPrompts} />}
+          >
+            <ConversationTranscript />
+          </MessageListContainer>
+
+          <ChatInputFooter
+            inputValue={inputValue}
+            onInputChange={setInputValue}
+            onSubmit={handleSubmit}
           />
-        </MessageListContainer>
-
-        <ChatInputFooter
-          streamError={streamError}
-          inputValue={inputValue}
-          isStreaming={isStreaming}
-          onInputChange={setInputValue}
-          onSubmit={handleSubmit}
-          onSendMessage={handleSendMessage}
-        />
-      </main>
-    </div>
+        </main>
+      </div>
+    </GenerativeProvider>
   );
 }
