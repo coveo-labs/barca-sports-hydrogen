@@ -5,7 +5,7 @@ import {
   listingEngineDefinition,
   recommendationEngineDefinition,
   standaloneEngineDefinition,
-} from '~/lib/coveo.engine';
+} from '~/lib/coveo/engine';
 
 // Wraps listing pages to provide context for listing-specific hooks
 export const ListingProvider = buildProviderWithDefinition(

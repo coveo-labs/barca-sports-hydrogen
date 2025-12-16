@@ -5,9 +5,9 @@ import {Image} from '@shopify/hydrogen';
 
 import {Hero} from '~/components/Homepage/Hero';
 import {FeaturedCategories} from '~/components/Homepage/FeaturedCategories';
-import {engineDefinition} from '~/lib/coveo.engine';
-import {fetchRecommendationStaticState} from '~/lib/coveo.engine.server';
-import {HEADER_QUERY} from '~/lib/fragments';
+import {engineDefinition} from '~/lib/coveo/engine';
+import {fetchRecommendationStaticState} from '~/lib/coveo/engine.server';
+import {HEADER_QUERY} from '~/lib/shopify/fragments';
 import {LearnMore} from '~/components/Homepage/LearnMore';
 import {Recommendations} from '~/components/Homepage/Recommendations';
 import {CTA} from '~/components/Homepage/CTA';
@@ -15,7 +15,7 @@ import {RecommendationProvider} from '~/components/Search/Context';
 import {
   ClientSideNavigatorContextProvider,
   ServerSideNavigatorContextProvider,
-} from '~/lib/navigator.provider';
+} from '~/lib/coveo/navigator.provider';
 
 export const meta: MetaFunction = () => {
   return [{title: 'Hydrogen | Home'}];

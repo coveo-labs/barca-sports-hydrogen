@@ -1,5 +1,5 @@
 import {useCallback, useEffect, useRef, type RefObject} from 'react';
-import type {ThinkingUpdateSnapshot} from '~/lib/use-assistant-streaming';
+import type {ThinkingUpdateSnapshot} from '~/lib/generative/use-assistant-streaming';
 import type {ConversationMessage} from '~/types/conversation';
 
 interface UseConversationScrollArgs {

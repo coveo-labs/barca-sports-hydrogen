@@ -3,7 +3,7 @@ import {
   MagnifyingGlassIcon,
   ChatBubbleOvalLeftEllipsisIcon,
 } from '@heroicons/react/24/outline';
-import type {NextAction, RefinementChip} from '~/lib/message-markup-parser';
+import type {NextAction, RefinementChip} from '~/lib/generative/message-markup-parser';
 
 type RefinementChipsBarProps = Readonly<{
   chips: RefinementChip[];

@@ -21,7 +21,7 @@ import {
 } from '@heroicons/react/20/solid';
 import {ChevronRightIcon} from '@heroicons/react/24/outline';
 import {type ReactNode} from 'react';
-import {engineDefinition} from '~/lib/coveo.engine';
+import {engineDefinition} from '~/lib/coveo/engine';
 import cx from '~/lib/cx';
 
 type FacetGenerator = ReturnType<

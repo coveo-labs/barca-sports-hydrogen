@@ -1,12 +1,12 @@
 import {
   searchEngineDefinition,
   type SearchStaticState,
-} from '~/lib/coveo.engine';
-import {fetchStaticState} from '~/lib/coveo.engine.server';
+} from '~/lib/coveo/engine';
+import {fetchStaticState} from '~/lib/coveo/engine.server';
 import {
   ClientSideNavigatorContextProvider,
   ServerSideNavigatorContextProvider,
-} from '~/lib/navigator.provider';
+} from '~/lib/coveo/navigator.provider';
 import {SearchProvider} from '~/components/Search/Context';
 import {FullSearch} from '~/components/Search/FullSearch';
 import ParameterManager from '~/components/ParameterManager';
