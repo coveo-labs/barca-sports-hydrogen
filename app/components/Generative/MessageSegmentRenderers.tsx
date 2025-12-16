@@ -1,6 +1,5 @@
 import type {ReactNode} from 'react';
 import type {Product} from '@coveo/headless-react/ssr-commerce';
-import cx from '~/lib/cx';
 import {ProductCard} from '~/components/Products/ProductCard';
 import {
   CarouselSkeleton,
@@ -90,12 +89,8 @@ function InlineProduct({identifier, productIndex}: InlineProductProps) {
 
   if (product) {
     return (
-      <div className="my-3 w-full max-w-[14rem]">
-        <ProductCard
-          product={product}
-          variant="compact"
-          className="w-full text-sm"
-        />
+      <div className="my-3">
+        <ProductCard product={product} variant="mini" />
       </div>
     );
   }
@@ -124,12 +119,10 @@ export function ProductCarousel({
     return null;
   }
 
-  const gridColsClass = getGridColsClass(identifiers.length);
-
   return (
-    <div className="my-4 rounded-2xl bg-gray-50 px-3 py-4 shadow-sm ring-1 ring-slate-200/70">
+    <div className="my-4 inline-block rounded-2xl bg-gray-50 px-3 py-4 shadow-sm ring-1 ring-slate-200/70">
       <ul
-        className={cx('grid gap-3 list-none', gridColsClass)}
+        className="flex gap-3 list-none overflow-x-auto"
         aria-label="Product carousel"
       >
         {identifiers.map((identifier, index) => (
@@ -144,11 +137,7 @@ export function ProductCarousel({
   );
 }
 
-function getGridColsClass(count: number): string {
-  if (count === 1) return 'grid-cols-1 max-w-[14rem]';
-  if (count === 2) return 'grid-cols-2';
-  return 'grid-cols-3';
-}
+// Grid cols class no longer needed - using flex layout
 
 type CarouselItemProps = Readonly<{
   identifier: string;
@@ -160,13 +149,9 @@ function CarouselItem({identifier, productIndex}: CarouselItemProps) {
 
   if (product) {
     return (
-      <li>
+      <li className="shrink-0">
         <div className="rounded-xl bg-white p-2 shadow-sm ring-1 ring-slate-200 h-full">
-          <ProductCard
-            product={product}
-            variant="compact"
-            className="block w-full text-sm"
-          />
+          <ProductCard product={product} variant="mini" />
         </div>
       </li>
     );
