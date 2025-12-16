@@ -174,12 +174,7 @@ function renderAssistantMessageContent(
     (isStreaming && hasPotentialStreamingMarkup(content));
 
   if (!hasPotentialMarkup) {
-    // Only render markdown when streaming is complete
-    if (!isStreaming) {
-      return <Answer text={content} />;
-    }
-    // During streaming, show nothing
-    return null;
+    return content;
   }
 
   const pendingContent = isStreaming ? detectPendingRichContent(content) : null;
@@ -208,11 +203,6 @@ function renderAssistantMessageContent(
     return content;
   }
 
-  // During streaming, hide everything until complete
-  if (isStreaming) {
-    return null;
-  }
-
   const productIndex = ensureProductLookup(message, productLookup);
   const renderedSegments = segments.map((segment, index) => {
     const key = `${message.id}-${index}`;
@@ -229,7 +219,6 @@ function renderAssistantMessageContent(
       segment.value,
       productIndex,
       key,
-      isStreaming,
     );
   });
 
