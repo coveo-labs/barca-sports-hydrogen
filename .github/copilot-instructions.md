@@ -297,8 +297,11 @@ const renewAccessToken = async (): Promise<string> => {
 
 export const engineConfig: CommerceEngineDefinitionOptions = {
   configuration: {
-    accessToken: await getSearchToken(),
-    renewAccessToken, // Automatic client-side token renewal
+    // Empty string as initial token - top-level await not supported in browsers
+    // Server-side: updateTokenIfNeeded() refreshes before API calls
+    // Client-side: renewAccessToken handles automatic refresh
+    accessToken: '',
+    renewAccessToken,
     // ...
   },
 };

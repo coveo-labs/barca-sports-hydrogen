@@ -86,21 +86,12 @@ type Pages = {
   "/token": {
     params: {};
   };
-  "/graphiql": {
-    params: {};
-  };
-  "/subrequest-profiler": {
-    params: {};
-  };
-  "/.well-known/appspecific/com.chrome.devtools.json": {
-    params: {};
-  };
 };
 
 type RouteFiles = {
   "root.tsx": {
     id: "root";
-    page: "/" | "/api/agentic/conversation" | "/account/authorize" | "/:locale?/account" | "/account/logout" | "/account/login" | "/robots.txt" | "/:locale?" | "/:locale?/sitemap/:type/:page.xml" | "/:locale?/products/:handle" | "/:locale?/sitemap.xml" | "/:locale?/generative" | "/:locale?/search" | "/:locale?/plp/*" | "/:locale?/cart" | "/:locale?/*" | "/token" | "/graphiql" | "/subrequest-profiler" | "/.well-known/appspecific/com.chrome.devtools.json";
+    page: "/" | "/api/agentic/conversation" | "/account/authorize" | "/:locale?/account" | "/account/logout" | "/account/login" | "/robots.txt" | "/:locale?" | "/:locale?/sitemap/:type/:page.xml" | "/:locale?/products/:handle" | "/:locale?/sitemap.xml" | "/:locale?/generative" | "/:locale?/search" | "/:locale?/plp/*" | "/:locale?/cart" | "/:locale?/*" | "/token";
   };
   "routes/api.agentic.conversation.ts": {
     id: "routes/api.agentic.conversation";
@@ -169,25 +160,5 @@ type RouteFiles = {
   "routes/token.tsx": {
     id: "routes/token";
     page: "/token";
-  };
-  "../node_modules/@shopify/hydrogen/dist/vite/virtual-routes/layout.jsx": {
-    id: "/Users/jdevost/Developer/barca-sports-hydrogen/node_modules/@shopify/hydrogen/dist/vite/virtual-routes/layout";
-    page: "/graphiql" | "/subrequest-profiler" | "/.well-known/appspecific/com.chrome.devtools.json" | "/";
-  };
-  "../node_modules/@shopify/hydrogen/dist/vite/virtual-routes/routes/graphiql.jsx": {
-    id: "vite/virtual-routes/routes/graphiql";
-    page: "/graphiql";
-  };
-  "../node_modules/@shopify/hydrogen/dist/vite/virtual-routes/routes/subrequest-profiler.jsx": {
-    id: "vite/virtual-routes/routes/subrequest-profiler";
-    page: "/subrequest-profiler";
-  };
-  "../node_modules/@shopify/hydrogen/dist/vite/virtual-routes/routes/[.]well-known.appspecific.com[.]chrome[.]devtools[.]json.jsx": {
-    id: "vite/virtual-routes/routes/[.]well-known.appspecific.com[.]chrome[.]devtools[.]json";
-    page: "/.well-known/appspecific/com.chrome.devtools.json";
-  };
-  "../node_modules/@shopify/hydrogen/dist/vite/virtual-routes/routes/index.jsx": {
-    id: "vite/virtual-routes/routes/index";
-    page: "/";
   };
 };

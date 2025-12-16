@@ -1,5 +1,11 @@
-import {Await, useLoaderData, Link, useParams} from 'react-router';
-import type {Route} from './+types/_index';
+import {
+  Await,
+  useLoaderData,
+  Link,
+  useParams,
+  type LoaderFunctionArgs,
+  type MetaFunction,
+} from 'react-router';
 
 import {
   ClientSideNavigatorContextProvider,
@@ -12,7 +18,6 @@ import {FullSearch} from '~/components/Search/FullSearch';
 import {buildParameterSerializer} from '@coveo/headless-react/ssr-commerce';
 import {useEffect, useState} from 'react';
 import ParameterManager from '~/components/ParameterManager';
-import type {LoaderFunctionArgs, MetaFunction} from 'react-router';
 
 export const meta: MetaFunction<typeof loader> = ({data}) => {
   return [{title: `Coveo ProductListingPage Work in progress`}];
@@ -27,7 +32,7 @@ export async function loader({context, params, request}: LoaderFunctionArgs) {
     () => new ServerSideNavigatorContextProvider(request),
   );
 
-  const staticState = await fetchStaticState({
+  const {staticState, accessToken} = await fetchStaticState({
     url: `https://shop.barca.group/plp/${params['*']}${url.search}`,
     context,
     parameters,
@@ -35,11 +40,11 @@ export async function loader({context, params, request}: LoaderFunctionArgs) {
     request,
   });
 
-  return {staticState, url};
+  return {staticState, url, accessToken};
 }
 
 export default function PLP() {
-  const {staticState, url} = useLoaderData<typeof loader>();
+  const {staticState, url, accessToken} = useLoaderData<typeof loader>();
   const [currentUrl, setCurrentUrl] = useState(url);
 
   useEffect(() => {
@@ -56,6 +61,7 @@ export default function PLP() {
     <ListingProvider
       navigatorContext={new ClientSideNavigatorContextProvider()}
       staticState={staticState as ListingStaticState}
+      accessToken={accessToken}
     >
       <ParameterManager url={currentUrl.toString()} />
       <FullSearch headline={headline} tagline={tagline} />

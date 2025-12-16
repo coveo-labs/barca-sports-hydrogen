@@ -1,5 +1,10 @@
-import {Await, useLoaderData, Link} from 'react-router';
-import type {Route} from './+types/_index';
+import {
+  Await,
+  useLoaderData,
+  Link,
+  type LoaderFunctionArgs,
+  type MetaFunction,
+} from 'react-router';
 import {Suspense} from 'react';
 import {Image} from '@shopify/hydrogen';
 
@@ -25,7 +30,7 @@ export async function loader({request, context}: LoaderFunctionArgs) {
   engineDefinition.recommendationEngineDefinition.setNavigatorContextProvider(
     () => new ServerSideNavigatorContextProvider(request),
   );
-  const [header, recommendationStaticState] = await Promise.all([
+  const [header, recommendationResult] = await Promise.all([
     context.storefront.query(HEADER_QUERY, {
       cache: context.storefront.CacheLong(),
       variables: {
@@ -39,7 +44,11 @@ export async function loader({request, context}: LoaderFunctionArgs) {
     }),
   ]);
 
-  return {header, recommendationStaticState};
+  return {
+    header,
+    recommendationStaticState: recommendationResult.staticState,
+    accessToken: recommendationResult.accessToken,
+  };
 }
 
 export default function Homepage() {
@@ -59,6 +68,7 @@ export default function Homepage() {
         <RecommendationProvider
           staticState={data.recommendationStaticState}
           navigatorContext={new ClientSideNavigatorContextProvider()}
+          accessToken={data.accessToken}
         >
           <Recommendations />
         </RecommendationProvider>

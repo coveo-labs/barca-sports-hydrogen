@@ -28,7 +28,10 @@ export async function fetchStaticState({
 
   await updateTokenIfNeeded(k, request);
 
-  return engineDefinition[k].fetchStaticState({
+  // Get the access token to pass to the client for hydration
+  const accessToken = engineDefinition[k].getAccessToken();
+
+  const staticState = await engineDefinition[k].fetchStaticState({
     controllers: {
       parameterManager: {
         initialState: {
@@ -48,6 +51,8 @@ export async function fetchStaticState({
       },
     },
   });
+
+  return {staticState, accessToken};
 }
 
 export async function fetchRecommendationStaticState({
@@ -71,37 +76,44 @@ export async function fetchRecommendationStaticState({
 
   await updateTokenIfNeeded('recommendationEngineDefinition', request);
 
-  return engineDefinition.recommendationEngineDefinition.fetchStaticState({
-    controllers: {
-      homepageRecommendations: {
-        enabled: k.includes('homepageRecommendations'),
-        productId,
-      },
-      cartRecommendations: {
-        enabled: k.includes('cartRecommendations'),
-        productId,
-      },
-      pdpRecommendationsLowerCarousel: {
-        enabled: k.includes('pdpRecommendationsLowerCarousel'),
-        productId,
-      },
-      pdpRecommendationsUpperCarousel: {
-        enabled: k.includes('pdpRecommendationsUpperCarousel'),
-        productId,
-      },
-      cart: {
-        initialState: mapShopifyCartToCoveoCart(cart),
-      },
-      context: {
-        language: language.toLowerCase(),
-        country,
-        currency: currency as any,
-        view: {
-          url: 'https://shop.barca.group',
+  // Get the access token to pass to the client for hydration
+  const accessToken =
+    engineDefinition.recommendationEngineDefinition.getAccessToken();
+
+  const staticState =
+    await engineDefinition.recommendationEngineDefinition.fetchStaticState({
+      controllers: {
+        homepageRecommendations: {
+          enabled: k.includes('homepageRecommendations'),
+          productId,
+        },
+        cartRecommendations: {
+          enabled: k.includes('cartRecommendations'),
+          productId,
+        },
+        pdpRecommendationsLowerCarousel: {
+          enabled: k.includes('pdpRecommendationsLowerCarousel'),
+          productId,
+        },
+        pdpRecommendationsUpperCarousel: {
+          enabled: k.includes('pdpRecommendationsUpperCarousel'),
+          productId,
+        },
+        cart: {
+          initialState: mapShopifyCartToCoveoCart(cart),
+        },
+        context: {
+          language: language.toLowerCase(),
+          country,
+          currency: currency as any,
+          view: {
+            url: 'https://shop.barca.group',
+          },
         },
       },
-    },
-  });
+    });
+
+  return {staticState, accessToken};
 }
 
 function mapShopifyCartToCoveoCart(cart: CartReturn | null) {
