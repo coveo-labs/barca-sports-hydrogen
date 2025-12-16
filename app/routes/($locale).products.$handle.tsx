@@ -4,23 +4,23 @@ import {
   useOptimisticVariant,
 } from '@shopify/hydrogen';
 import type {SelectedOption} from '@shopify/hydrogen/storefront-api-types';
-import {getVariantUrl} from '~/lib/variants';
+import {getVariantUrl} from '~/lib/shopify/variants';
 import {HeartIcon} from '@heroicons/react/24/outline';
 import {AddToCartButton} from '~/components/AddToCartButton';
 import {ImageGallery} from '~/components/Products/ImageGallery';
 import {Colors} from '~/components/Products/Colors';
 import {Sizes} from '~/components/Products/Sizes';
 import {Description} from '~/components/Products/Description';
-import {engineDefinition, useProductView} from '~/lib/coveo.engine';
-import {fetchRecommendationStaticState} from '~/lib/coveo.engine.server';
+import {engineDefinition, useProductView} from '~/lib/coveo/engine';
+import {fetchRecommendationStaticState} from '~/lib/coveo/engine.server';
 import {useCallback, useEffect, useState} from 'react';
 import {ProductRecommendations} from '~/components/Products/Recommendations';
 import {RecommendationProvider} from '~/components/Search/Context';
 import {
   ClientSideNavigatorContextProvider,
   ServerSideNavigatorContextProvider,
-} from '~/lib/navigator.provider';
-import {colorToShorthand} from '~/lib/map.coveo.shopify';
+} from '~/lib/coveo/navigator.provider';
+import {colorToShorthand} from '~/lib/coveo/map.coveo.shopify';
 import {
   redirect,
   useLoaderData,

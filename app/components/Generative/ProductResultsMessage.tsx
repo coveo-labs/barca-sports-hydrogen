@@ -31,7 +31,7 @@ function ProductResultsMessageComponent({
 
   return (
     <div className="flex w-full justify-start">
-      <div className="w-full rounded-2xl bg-white px-4 py-4 shadow-sm ring-1 ring-slate-200">
+      <div className="inline-block max-w-full rounded-2xl bg-white px-4 py-4 shadow-sm ring-1 ring-slate-200">
         {hasHeadline ? (
           <p className="text-sm font-semibold text-slate-900">
             {message.content}
@@ -58,7 +58,7 @@ function ProductResultsMessageComponent({
         ) : null}
         <div
           className={cx(
-            'grid grid-cols-2 gap-x-3 gap-y-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5',
+            'flex gap-3 overflow-x-auto pb-2',
             hasHeadline || showProgress ? 'mt-4' : undefined,
           )}
         >
@@ -71,7 +71,6 @@ function ProductResultsMessageComponent({
               }
               product={product}
               variant="compact"
-              className="h-full"
             />
           ))}
         </div>

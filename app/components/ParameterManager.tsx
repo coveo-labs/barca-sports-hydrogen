@@ -1,4 +1,4 @@
-import {useParameterManager} from '../lib/coveo.engine';
+import {useParameterManager} from '~/lib/coveo/engine';
 import {
   buildParameterSerializer,
   type ParameterManagerState,

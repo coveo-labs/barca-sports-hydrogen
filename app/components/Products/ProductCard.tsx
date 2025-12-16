@@ -45,9 +45,15 @@ export function ProductCard({
   };
 
   const isCompact = variant === 'compact';
-  
+
   return (
-    <div>
+    <div
+      style={
+        isCompact
+          ? {width: '160px', minWidth: '160px', maxWidth: '160px'}
+          : undefined
+      }
+    >
       <NavLink
         key={product.permanentid}
         onClick={onSelect}
@@ -56,15 +62,16 @@ export function ProductCard({
       >
         <img
           loading="lazy"
-          width={1024}
-          height={1024}
+          width={isCompact ? 160 : 1024}
+          height={isCompact ? 160 : 1024}
           alt={productName}
           src={productImage}
           className={
             isCompact
-              ? 'aspect-square w-full rounded-lg bg-gray-200 object-cover group-hover:opacity-75 max-h-[140px]'
+              ? 'aspect-square w-full rounded-lg bg-gray-200 object-cover group-hover:opacity-75'
               : 'aspect-square w-full rounded-lg bg-gray-200 object-cover group-hover:opacity-75'
           }
+          style={isCompact ? {width: '160px', height: '160px'} : undefined}
         />
         <h3
           className={

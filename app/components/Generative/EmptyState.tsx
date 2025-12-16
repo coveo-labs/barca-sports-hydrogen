@@ -1,17 +1,14 @@
 import {memo} from 'react';
 import cx from '~/lib/cx';
+import {useStreamingActions, useStreamingState} from '~/lib/generative/context';
 
 type EmptyStateProps = {
   prompts: string[];
-  isStreaming: boolean;
-  onPromptClick: (prompt: string) => void;
 };
 
-function EmptyStateComponent({
-  prompts,
-  isStreaming,
-  onPromptClick,
-}: EmptyStateProps) {
+function EmptyStateComponent({prompts}: EmptyStateProps) {
+  const {isStreaming} = useStreamingState();
+  const {onSendMessage} = useStreamingActions();
   return (
     <div className="mx-auto flex max-w-3xl flex-col items-center gap-6 rounded-3xl border border-dashed border-slate-300 bg-white p-10 text-center text-slate-600">
       <h2 className="text-2xl font-semibold text-slate-900">
@@ -33,7 +30,7 @@ function EmptyStateComponent({
                 ? 'cursor-not-allowed bg-slate-100 text-slate-400'
                 : 'bg-white text-slate-700 hover:border-indigo-300 hover:text-indigo-600',
             )}
-            onClick={() => onPromptClick(prompt)}
+            onClick={() => onSendMessage(prompt)}
           >
             {prompt}
           </button>

@@ -19,7 +19,7 @@ import {
   type InferStaticState,
   type CommerceEngineDefinitionOptions,
 } from '@coveo/headless-react/ssr-commerce';
-import {fetchToken} from './fetch-token';
+import {fetchToken} from '~/lib/auth/fetch-token';
 
 // Headless requires an `accessToken` to be set in the configuration.
 // We can't simply call `fetchToken` in all cases, because when the file

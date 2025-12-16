@@ -6,7 +6,7 @@ import type {
   NumericFacetValue,
   RegularFacetValue,
 } from '@coveo/headless-react/ssr-commerce';
-import {useBreadcrumbManager} from '~/lib/coveo.engine';
+import {useBreadcrumbManager} from '~/lib/coveo/engine';
 
 type AnyFacet =
   | RegularFacetValue

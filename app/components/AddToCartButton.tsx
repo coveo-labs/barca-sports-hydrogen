@@ -4,8 +4,8 @@ import {
   useSearchParams,
   type FetcherWithComponents,
 } from 'react-router';
-import {useCart} from '~/lib/coveo.engine';
-import {colorToShorthand} from '~/lib/map.coveo.shopify';
+import {useCart} from '~/lib/coveo/engine';
+import {colorToShorthand} from '~/lib/coveo/map.coveo.shopify';
 import type {CartReturn} from '~/routes/($locale).cart';
 import type {ProductHandleData} from '~/routes/($locale).products.$handle';
 import '~/types/gtm';
