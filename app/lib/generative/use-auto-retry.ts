@@ -14,12 +14,12 @@ type UseAutoRetryOptions = {
   conversationId: string | null;
   setConversations: Dispatch<SetStateAction<ConversationRecord[]>>;
   setStreamError: Dispatch<SetStateAction<string | null>>;
-  sendMessageRef: MutableRefObject<((message: string) => Promise<void>) | null>;
 };
 
 type UseAutoRetryReturn = {
   isRetryingRef: MutableRefObject<boolean>;
   resetRetryCount: () => void;
+  sendMessageRef: MutableRefObject<((message: string) => Promise<void>) | null>;
 };
 
 export function useAutoRetry({
@@ -29,10 +29,12 @@ export function useAutoRetry({
   conversationId,
   setConversations,
   setStreamError,
-  sendMessageRef,
 }: UseAutoRetryOptions): UseAutoRetryReturn {
   const retryCountRef = useRef(0);
   const isRetryingRef = useRef(false);
+  const sendMessageRef = useRef<((message: string) => Promise<void>) | null>(
+    null,
+  );
 
   const removeLastErrorMessage = useCallback(() => {
     setConversations((prev) =>
@@ -118,5 +120,6 @@ export function useAutoRetry({
   return {
     isRetryingRef,
     resetRetryCount,
+    sendMessageRef,
   };
 }

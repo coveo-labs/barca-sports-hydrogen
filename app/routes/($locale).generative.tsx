@@ -1,11 +1,5 @@
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type FormEvent,
-} from 'react';
+import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import type {FormEvent} from 'react';
 import {
   data as reactRouterData,
   useLoaderData,
@@ -14,31 +8,27 @@ import {
   useRouteLoaderData,
   type LoaderFunctionArgs,
 } from 'react-router';
-import cx from '~/lib/cx';
 import type {RootLoader} from '~/root';
-import {
-  type ConversationMessage,
-  type ConversationSummary,
-} from '~/types/conversation';
+import type {ConversationSummary} from '~/types/conversation';
 import {
   MAX_CONVERSATIONS,
   type ConversationRecord,
   createEmptyConversation,
-  generateId,
-  limitMessages,
 } from '~/lib/generative/chat';
 import {useAssistantStreaming} from '~/lib/generative/use-assistant-streaming';
 import {useConversationState} from '~/lib/generative/use-conversation-state';
 import {useConversationUrlSync} from '~/lib/generative/use-conversation-url-sync';
 import {useAutoRetry} from '~/lib/generative/use-auto-retry';
-import {EmptyState} from '~/components/Generative/EmptyState';
+import {useMessageDerivation} from '~/lib/generative/use-message-derivation';
+import {useSendMessage} from '~/lib/generative/use-send-message';
 import {AssistantHeader} from '~/components/Generative/AssistantHeader';
 import {ChatInputFooter} from '~/components/Generative/ChatInputFooter';
 import {ConversationSidebar} from '~/components/Generative/ConversationSidebar';
 import {ConversationTranscript} from '~/components/Generative/ConversationTranscript';
+import {EmptyState} from '~/components/Generative/EmptyState';
+import {MessageListContainer} from '~/components/Generative/MessageListContainer';
 import {useConversationScroll} from '~/lib/generative/use-conversation-scroll';
 import {useThinkingState} from '~/lib/generative/use-thinking-state';
-import {logDebug} from '~/lib/logger';
 
 const STREAM_ENDPOINT = '/api/agentic/conversation';
 
@@ -109,57 +99,17 @@ export default function GenerativeShoppingAssistant() {
 
   useEffect(() => () => abortStream(), [abortStream]);
 
-  const activeConversation = useMemo(
-    () =>
-      conversations.find(
-        (conversation) => conversation.localId === activeConversationId,
-      ) ?? null,
-    [conversations, activeConversationId],
-  );
-
-  const messages = activeConversation?.messages ?? [];
-  const visibleMessages = useMemo(
-    () =>
-      messages.filter(
-        (message) =>
-          !message.ephemeral ||
-          (message.kind !== 'status' && message.kind !== 'tool'),
-      ),
-    [messages],
-  );
-  const hasVisibleMessages = visibleMessages.length > 0;
-  const latestUserMessageId = useMemo(() => {
-    for (let index = visibleMessages.length - 1; index >= 0; index -= 1) {
-      const candidate = visibleMessages[index];
-      if (!candidate) {
-        continue;
-      }
-      if (candidate.role === 'user') {
-        return candidate.id;
-      }
-    }
-    return null;
-  }, [visibleMessages]);
-
-  const latestStreamingAssistantId = useMemo(() => {
-    if (!isStreaming) {
-      return null;
-    }
-    for (let index = messages.length - 1; index >= 0; index -= 1) {
-      const candidate = messages[index];
-      if (!candidate) {
-        continue;
-      }
-      if (candidate.role !== 'assistant') {
-        continue;
-      }
-      if (candidate.kind === 'status' || candidate.kind === 'tool') {
-        continue;
-      }
-      return candidate.id;
-    }
-    return null;
-  }, [isStreaming, messages]);
+  const {
+    activeConversation,
+    messages,
+    visibleMessages,
+    latestUserMessageId,
+    latestStreamingAssistantId,
+  } = useMessageDerivation({
+    conversations,
+    activeConversationId,
+    isStreaming,
+  });
 
   const {
     activeSnapshot: activeThinkingSnapshot,
@@ -189,153 +139,29 @@ export default function GenerativeShoppingAssistant() {
     resetScrollState();
   }, [activeConversationId, resetScrollState]);
 
-  const handleToggleThinking = useCallback(
-    (messageId: string, next: boolean) => {
-      toggleMessageExpansion(messageId, next);
-    },
-    [toggleMessageExpansion],
-  );
-
-  const handleTogglePendingThinking = useCallback(
-    (next: boolean) => {
-      togglePendingExpansion(next);
-    },
-    [togglePendingExpansion],
-  );
-
-  // Ref to sendMessage for auto-retry hook (avoids circular dependency)
-  const sendMessageRef = useRef<((message: string) => Promise<void>) | null>(
-    null,
-  );
-
-  const {isRetryingRef, resetRetryCount} = useAutoRetry({
+  const {isRetryingRef, resetRetryCount, sendMessageRef} = useAutoRetry({
     streamError,
     isStreaming,
     sessionId: activeConversation?.sessionId ?? null,
     conversationId: activeConversationId,
     setConversations,
     setStreamError,
-    sendMessageRef,
   });
 
-  const sendMessage = useCallback(
-    async (messageText: string, options: {forceNew?: boolean} = {}) => {
-      const trimmed = messageText.trim();
-      if (!trimmed) {
-        return;
-      }
-
-      // Reset retry count for new user messages (not for auto-retries)
-      if (!isRetryingRef.current) {
-        resetRetryCount();
-      }
-
-      clearActiveSnapshot();
-      setStreamError(null);
-
-      const {forceNew = false} = options;
-
-      const now = new Date().toISOString();
-      const existing =
-        !forceNew && activeConversationId
-          ? (conversations.find(
-              (conversation) => conversation.localId === activeConversationId,
-            ) ?? null)
-          : null;
-
-      const base: ConversationRecord =
-        existing ??
-        createEmptyConversation(
-          trimmed.slice(0, 60) || 'New conversation',
-          now,
-        );
-
-      const hasAssistantHistory = existing
-        ? existing.messages.some((message) => message.role === 'assistant')
-        : false;
-      const shouldShowInitialStatus = !hasAssistantHistory;
-
-      if (!existing) {
-        logDebug('created new conversation', base);
-      }
-
-      const userMessage: ConversationMessage = {
-        id: generateId(),
-        role: 'user',
-        content: trimmed,
-        createdAt: now,
-        kind: 'text',
-      };
-
-      // Hold auto-scroll so the new user turn stays pinned while the assistant replies.
-      queueScrollToMessage(userMessage.id);
-
-      const title =
-        base.messages.length === 0
-          ? trimmed.slice(0, 60) || base.title
-          : base.title;
-
-      const updated: ConversationRecord = {
-        ...base,
-        title,
-        updatedAt: now,
-        messages: limitMessages([...base.messages, userMessage]),
-      };
-
-      logDebug('sending message', {
-        localId: updated.localId,
-        sessionId: updated.sessionId,
-        text: trimmed,
-      });
-
-      setConversations((prev) => {
-        const others = prev.filter(
-          (conversation) => conversation.localId !== updated.localId,
-        );
-        const nextState = [updated, ...others];
-        logDebug(
-          'conversation state updated',
-          nextState.map((conversation) => ({
-            localId: conversation.localId,
-            sessionId: conversation.sessionId,
-            updatedAt: conversation.updatedAt,
-            messageCount: conversation.messages.length,
-          })),
-        );
-        return nextState;
-      });
-
-      setActiveConversationId(updated.localId);
-      setIsStreaming(true);
-
-      logDebug('invoking stream', {
-        localId: updated.localId,
-        sessionId: updated.sessionId,
-      });
-
-      await streamAssistantResponse({
-        conversationLocalId: updated.localId,
-        sessionId: updated.sessionId,
-        userMessage: trimmed,
-        showInitialStatus: shouldShowInitialStatus,
-      });
-    },
-    [
-      activeConversationId,
-      clearActiveSnapshot,
-      conversations,
-      streamAssistantResponse,
-      setActiveConversationId,
-      setConversations,
-      setIsStreaming,
-      setStreamError,
-      isRetryingRef,
-      resetRetryCount,
-    ],
-  );
-
-  // Keep ref in sync with sendMessage for auto-retry hook
-  sendMessageRef.current = sendMessage;
+  const {sendMessage} = useSendMessage({
+    conversations,
+    activeConversationId,
+    setConversations,
+    setActiveConversationId,
+    setIsStreaming,
+    setStreamError,
+    clearActiveSnapshot,
+    queueScrollToMessage,
+    isRetryingRef,
+    resetRetryCount,
+    sendMessageRef,
+    streamAssistantResponse,
+  });
 
   useEffect(() => {
     if (!isHydrated) {
@@ -480,6 +306,15 @@ export default function GenerativeShoppingAssistant() {
     [],
   );
 
+  const handleSuggestionClick = useCallback(
+    (text: string) => {
+      if (isStreaming) return;
+      setInputValue('');
+      void sendMessage(text);
+    },
+    [isStreaming, sendMessage],
+  );
+
   return (
     <div className="flex w-full flex-1 min-h-0 bg-slate-100">
       <ConversationSidebar
@@ -496,50 +331,30 @@ export default function GenerativeShoppingAssistant() {
           onNewConversation={handleNewConversation}
         />
 
-        <div
-          ref={messageContainerRef}
-          className={cx(
-            'relative flex-1 overflow-y-auto bg-slate-50 px-4 pt-6 sm:px-6 lg:px-10',
-            hasVisibleMessages ? 'pb-32' : 'pb-24',
-          )}
-        >
-          {messages.length === 0 ? (
+        <MessageListContainer
+          containerRef={messageContainerRef}
+          isEmpty={messages.length === 0}
+          hasContent={visibleMessages.length > 0}
+          emptyState={
             <EmptyState
               prompts={suggestedPrompts}
               isStreaming={isStreaming}
-              onPromptClick={(prompt) => {
-                if (isStreaming) return;
-                setInputValue('');
-                void sendMessage(prompt);
-              }}
+              onPromptClick={handleSuggestionClick}
             />
-          ) : (
-            <div className="mx-auto flex w-full max-w-5xl flex-col gap-4">
-              {hasVisibleMessages ? (
-                <div className="flex w-full flex-col gap-5">
-                  <ConversationTranscript
-                    visibleMessages={visibleMessages}
-                    latestStreamingAssistantId={latestStreamingAssistantId}
-                    activeThinkingSnapshot={activeThinkingSnapshot}
-                    pendingThinkingSnapshot={pendingThinkingSnapshot}
-                    latestUserMessageId={latestUserMessageId}
-                    thinkingExpandedByMessage={thinkingExpandedByMessage}
-                    onToggleThinking={handleToggleThinking}
-                    onTogglePendingThinking={handleTogglePendingThinking}
-                    onFollowUpClick={(message) => {
-                      if (isStreaming) return;
-                      setInputValue('');
-                      void sendMessage(message);
-                    }}
-                  />
-                </div>
-              ) : null}
-            </div>
-          )}
-          {hasVisibleMessages ? (
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-24 bg-gradient-to-t from-slate-50 via-slate-50/80 to-transparent backdrop-blur-sm" />
-          ) : null}
-        </div>
+          }
+        >
+          <ConversationTranscript
+            visibleMessages={visibleMessages}
+            latestStreamingAssistantId={latestStreamingAssistantId}
+            activeThinkingSnapshot={activeThinkingSnapshot}
+            pendingThinkingSnapshot={pendingThinkingSnapshot}
+            latestUserMessageId={latestUserMessageId}
+            thinkingExpandedByMessage={thinkingExpandedByMessage}
+            onToggleThinking={toggleMessageExpansion}
+            onTogglePendingThinking={togglePendingExpansion}
+            onFollowUpClick={handleSuggestionClick}
+          />
+        </MessageListContainer>
 
         <ChatInputFooter
           streamError={streamError}
