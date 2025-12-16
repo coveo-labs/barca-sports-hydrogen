@@ -9,6 +9,7 @@ import {
   normalizeProductIdentifier,
   registerProducts,
 } from '~/lib/product-index';
+import {Answer} from '~/components/Generative/Answer';
 
 type MessageBubbleProps = {
   message: ConversationMessage;
@@ -335,7 +336,12 @@ function renderAssistantMessageContent(
         content.includes('<n')));
 
   if (!hasPotentialMarkup) {
-    return content;
+    // Only render markdown when streaming is complete
+    if (!isStreaming) {
+      return <Answer text={content} />;
+    }
+    // During streaming, show nothing
+    return null;
   }
 
   const pendingContent = isStreaming ? detectPendingRichContent(content) : null;
@@ -355,6 +361,11 @@ function renderAssistantMessageContent(
     return content;
   }
 
+  // During streaming, hide everything until complete
+  if (isStreaming) {
+    return null;
+  }
+
   const productIndex = ensureProductLookup(message, productLookup);
   const renderedSegments = segments.map((segment, index) => {
     const key = `${message.id}-${index}`;
@@ -365,6 +376,7 @@ function renderAssistantMessageContent(
       segment.value,
       productIndex,
       key,
+      isStreaming,
     );
   });
 
@@ -381,10 +393,6 @@ function renderAssistantMessageContent(
   return (
     <>
       {renderedSegments}
-      {pendingSkeleton}
-      {showNextActionsSkeleton && (
-        <NextActionsSkeleton key={`${message.id}-nextactions-skeleton`} />
-      )}
       {showNextActionsBar && (
         <NextActionsBar
           actions={nextActions}
@@ -470,19 +478,36 @@ function renderTextSegmentWithInlineProducts(
   text: string,
   productIndex: ReadonlyMap<string, Product>,
   key: string,
+  isStreaming: boolean,
 ) {
   if (!text) {
     return null;
   }
 
   if (!text.includes('<product_ref')) {
-    return <span key={key}>{text}</span>;
+    // Only render markdown when streaming is complete
+    if (!isStreaming) {
+      return (
+        <span key={key}>
+          <Answer text={text} />
+        </span>
+      );
+    }
+    return null;
   }
 
   const inlinePattern = new RegExp(PRODUCT_REF_PATTERN_SOURCE, 'gi');
   const matches = [...text.matchAll(inlinePattern)];
   if (!matches.length) {
-    return <span key={key}>{text}</span>;
+    // Only render markdown when streaming is complete
+    if (!isStreaming) {
+      return (
+        <span key={key}>
+          <Answer text={text} />
+        </span>
+      );
+    }
+    return null;
   }
 
   const nodes: ReactNode[] = [];
@@ -492,11 +517,14 @@ function renderTextSegmentWithInlineProducts(
   for (const match of matches) {
     const matchIndex = match.index ?? 0;
     if (matchIndex > cursor) {
-      nodes.push(
-        <span key={`${key}-text-${segmentId}`}>
-          {text.slice(cursor, matchIndex)}
-        </span>,
-      );
+      const textSegment = text.slice(cursor, matchIndex);
+      if (!isStreaming) {
+        nodes.push(
+          <span key={`${key}-text-${segmentId}`}>
+            <Answer text={textSegment} />
+          </span>,
+        );
+      }
       segmentId += 1;
     }
 
@@ -516,12 +544,17 @@ function renderTextSegmentWithInlineProducts(
   }
 
   if (cursor < text.length) {
-    nodes.push(
-      <span key={`${key}-text-${segmentId}`}>{text.slice(cursor)}</span>,
-    );
+    const textSegment = text.slice(cursor);
+    if (!isStreaming) {
+      nodes.push(
+        <span key={`${key}-text-${segmentId}`}>
+          <Answer text={textSegment} />
+        </span>,
+      );
+    }
   }
 
-  return (
+  return isStreaming && nodes.length === 0 ? null : (
     <span key={key} className="contents">
       {nodes}
     </span>
