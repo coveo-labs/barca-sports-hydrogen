@@ -1,23 +1,21 @@
 import type {FormEvent, KeyboardEvent} from 'react';
 import cx from '~/lib/cx';
+import {useStreamingActions, useStreamingState} from '~/lib/generative/context';
 
 interface ChatInputFooterProps {
-  streamError: string | null;
   inputValue: string;
-  isStreaming: boolean;
   onInputChange: (value: string) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
-  onSendMessage: (value: string) => void;
 }
 
 export function ChatInputFooter({
-  streamError,
   inputValue,
-  isStreaming,
   onInputChange,
   onSubmit,
-  onSendMessage,
 }: ChatInputFooterProps) {
+  const {isStreaming, streamError} = useStreamingState();
+  const {onSendMessage} = useStreamingActions();
+
   const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key !== 'Enter' || event.shiftKey) {
       return;

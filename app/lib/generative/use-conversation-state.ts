@@ -13,7 +13,7 @@ import {
   mapSummaryToRecord,
   mergeConversations,
   persistConversationsToStorage,
-} from '~/lib/generative-chat';
+} from '~/lib/generative/chat';
 
 type UseConversationStateOptions = {
   initialSummaries: ConversationSummary[];

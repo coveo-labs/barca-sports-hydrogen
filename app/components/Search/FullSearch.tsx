@@ -7,7 +7,7 @@ import {NoProductsFound} from './NoProductsFound';
 import {Sorts} from './Sorts';
 import {Breadcrumbs} from './Breadcrumbs';
 import {useEffect, useRef, useState} from 'react';
-import {engineDefinition} from '~/lib/coveo.engine';
+import {engineDefinition} from '~/lib/coveo/engine';
 import type {ProductListState} from '@coveo/headless/ssr-commerce';
 
 interface SearchPageProps {

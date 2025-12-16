@@ -15,17 +15,21 @@ import {
 import favicon from '~/assets/favicon.ico';
 import tailwindCss from './styles/tailwind.css?url';
 import {PageLayout} from '~/components/PageLayout';
-import {FOOTER_QUERY, GET_CUSTOMER_QUERY, HEADER_QUERY} from '~/lib/fragments';
-import {engineDefinition} from './lib/coveo.engine';
-import {fetchStaticState} from './lib/coveo.engine.server';
+import {
+  FOOTER_QUERY,
+  GET_CUSTOMER_QUERY,
+  HEADER_QUERY,
+} from '~/lib/shopify/fragments';
+import {engineDefinition} from '~/lib/coveo/engine';
+import {fetchStaticState} from '~/lib/coveo/engine.server';
 import {
   ClientSideNavigatorContextProvider,
   ServerSideNavigatorContextProvider,
-} from './lib/navigator.provider';
+} from '~/lib/coveo/navigator.provider';
 import {StandaloneProvider} from './components/Search/Context';
 import {GlobalLoading} from './components/ProgressBar';
 import {getLocaleFromRequest} from './lib/i18n';
-import {getCookieFromRequest} from './lib/session';
+import {getCookieFromRequest} from '~/lib/shopify/session';
 import type {Route} from './+types/root';
 export type RootLoader = typeof loader;
 

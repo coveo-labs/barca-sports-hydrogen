@@ -1,14 +1,14 @@
 import {
   usePdpRecommendationsLowerCarousel,
   usePdpRecommendationsUpperCarousel,
-} from '~/lib/coveo.engine';
+} from '~/lib/coveo/engine';
 import {ProductCard} from './ProductCard';
 import {Fragment, useEffect} from 'react';
 import type {Product} from '@coveo/headless-react/ssr-commerce';
 import {
   createProductWithConsistentId,
   createGTMItemFromProduct,
-} from '~/lib/map.coveo.shopify';
+} from '~/lib/coveo/map.coveo.shopify';
 import '~/types/gtm';
 
 let hasRunRefUpper = false;

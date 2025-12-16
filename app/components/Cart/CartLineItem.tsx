@@ -1,7 +1,7 @@
 import type {CartLineUpdateInput} from '@shopify/hydrogen/storefront-api-types';
 import {CartForm} from '@shopify/hydrogen';
 import {XMarkIcon as XMarkIconMini} from '@heroicons/react/20/solid';
-import {useCart} from '~/lib/coveo.engine';
+import {useCart} from '~/lib/coveo/engine';
 import type {CartItem} from '@coveo/headless-react/ssr-commerce';
 import '~/types/gtm';
 

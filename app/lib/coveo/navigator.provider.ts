@@ -1,5 +1,5 @@
 import type {NavigatorContext} from '@coveo/headless/ssr-commerce';
-import {getCookie, getCookieFromRequest} from './session';
+import {getCookie, getCookieFromRequest} from '~/lib/shopify/session';
 export class ServerSideNavigatorContextProvider implements NavigatorContext {
   private request: Request;
   private generatedId?: string;

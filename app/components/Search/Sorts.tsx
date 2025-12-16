@@ -1,5 +1,5 @@
 import {MenuItem} from '@headlessui/react';
-import {engineDefinition} from '~/lib/coveo.engine';
+import {engineDefinition} from '~/lib/coveo/engine';
 import {SortBy} from '@coveo/headless/commerce';
 
 function classNames(...classes: string[]) {

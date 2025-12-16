@@ -6,14 +6,14 @@ import {
   ComboboxOptions,
 } from '@headlessui/react';
 import {useCallback, useEffect, useRef} from 'react';
-import {useInstantProducts, useStandaloneSearchBox} from '~/lib/coveo.engine';
+import {useInstantProducts, useStandaloneSearchBox} from '~/lib/coveo/engine';
 import {
   MagnifyingGlassIcon,
   ChatBubbleBottomCenterIcon,
   SparklesIcon,
 } from '@heroicons/react/24/outline';
 import {ProductCard} from '../Products/ProductCard';
-import {createProductWithConsistentId} from '~/lib/map.coveo.shopify';
+import {createProductWithConsistentId} from '~/lib/coveo/map.coveo.shopify';
 import '~/types/gtm';
 import {useNavigate} from 'react-router';
 

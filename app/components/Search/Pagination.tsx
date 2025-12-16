@@ -1,4 +1,4 @@
-import {engineDefinition} from '~/lib/coveo.engine';
+import {engineDefinition} from '~/lib/coveo/engine';
 
 export function PaginationFooter() {
   const summary = engineDefinition.controllers.useSummary();

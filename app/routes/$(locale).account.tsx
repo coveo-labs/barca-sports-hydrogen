@@ -5,7 +5,7 @@ import {
   type LoaderFunctionArgs,
   data as reactRouterData,
 } from 'react-router';
-import {GET_CUSTOMER_QUERY} from '~/lib/fragments';
+import {GET_CUSTOMER_QUERY} from '~/lib/shopify/fragments';
 
 const SET_METAFIELDS_MUTATION = `
   mutation MetafieldsSet($metafields: [MetafieldsSetInput!]!) {

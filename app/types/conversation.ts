@@ -28,11 +28,16 @@ export interface ConversationMessage {
   role: ConversationRole;
   content: string;
   createdAt: string;
-  kind?: ConversationMessageKind;
+  kind: ConversationMessageKind;
   ephemeral?: boolean;
   metadata?: ConversationMessageMetadata;
 }
 
+/**
+ * Serialized conversation format used for localStorage persistence.
+ * Use `mapSummaryToRecord` and `recordToSummary` in generative-chat.ts
+ * to convert between this and `ConversationRecord`.
+ */
 export interface ConversationSummary {
   id: string;
   title: string;

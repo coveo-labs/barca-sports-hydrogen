@@ -1,4 +1,4 @@
-import {normalizeProductIdentifier} from '~/lib/product-index';
+import {resolveProductIdFromAttributes} from '~/lib/generative/product-identifier';
 
 export type PendingRichContentType =
   | 'carousel'
@@ -202,27 +202,7 @@ export function parseAttributes(raw: string): Record<string, string> {
 export function resolveProductIdentifierFromAttributes(
   attributes: Record<string, string>,
 ): string | null {
-  const candidates = [
-    attributes.ec_product_id,
-    attributes.ec_productId,
-    attributes.permanentid,
-    attributes.permanentId,
-    attributes.permanentID,
-    attributes.permanent_url,
-    attributes.permanentUrl,
-    attributes.clickUri,
-    attributes.id,
-    attributes.sku,
-  ];
-
-  for (const candidate of candidates) {
-    const normalized = normalizeProductIdentifier(candidate);
-    if (normalized) {
-      return normalized;
-    }
-  }
-
-  return null;
+  return resolveProductIdFromAttributes(attributes);
 }
 
 export function hasSpecialMarkup(content: string): boolean {

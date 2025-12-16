@@ -8,7 +8,7 @@ import {
 import {
   extractInlineProductRefs,
   type PendingRichContent,
-} from '~/lib/message-markup-parser';
+} from '~/lib/generative/message-markup-parser';
 
 export function renderPendingContentSkeleton(
   pendingContent: PendingRichContent | null,

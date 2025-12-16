@@ -3,7 +3,7 @@ import type {Product} from '@coveo/headless-react/ssr-commerce';
 import cx from '~/lib/cx';
 import type {ConversationMessage} from '~/types/conversation';
 import {ProductResultsMessage} from '~/components/Generative/ProductResultsMessage';
-import {registerProducts} from '~/lib/product-index';
+import {registerProducts} from '~/lib/generative/product-index';
 import {NextActionsSkeleton} from '~/components/Generative/Skeletons';
 import {
   detectPendingRichContent,
@@ -12,7 +12,7 @@ import {
   hasSpecialMarkup,
   hasPotentialStreamingMarkup,
   splitContentByCarousels,
-} from '~/lib/message-markup-parser';
+} from '~/lib/generative/message-markup-parser';
 import {
   ProductCarousel,
   renderPendingContentSkeleton,
@@ -39,7 +39,7 @@ function MessageBubbleComponent({
   onFollowUpClick,
 }: Readonly<MessageBubbleProps>) {
   const isUser = message.role === 'user';
-  const kind = message.kind ?? 'text';
+  const kind = message.kind;
   const isAssistant = !isUser;
 
   if (isAssistant && kind === 'products') {
@@ -165,7 +165,7 @@ function renderAssistantMessageContent(
   onFollowUpClick?: (message: string) => void,
 ) {
   const {content = ''} = message;
-  if ((message.kind ?? 'text') !== 'text') {
+  if (message.kind !== 'text') {
     return content;
   }
 
