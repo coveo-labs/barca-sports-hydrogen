@@ -50,13 +50,14 @@ renderer.blockquote = function (quote) {
 renderer.list = function (body, ordered, start) {
   const type = ordered ? 'ol' : 'ul';
   const startAttr = ordered && start !== 1 ? ` start="${start}"` : '';
-  return `<${type} class="mt-4 mb-4 space-y-2 list-disc list-inside"${startAttr}>${body}</${type}>`;
+  const listClass = ordered ? 'list-decimal list-inside' : 'list-disc list-inside';
+  return `<${type} class="mt-4 mb-4 space-y-2 ${listClass}"${startAttr}>${body}</${type}>`;
 };
 
 renderer.listitem = function (text) {
   // Remove empty list items or items with only whitespace
   const trimmedText = text.trim();
-  if (!trimmedText || trimmedText === '<p></p>' || trimmedText === '') {
+  if (!trimmedText || trimmedText === '<p></p>') {
     return '';
   }
   return `<li class="text-sm">${text}</li>`;
