@@ -274,16 +274,35 @@ Use `NavLinkWithLocale` component for links that respect current locale.
 
 ### Coveo Search Token
 
-- Generated via `/token` route
-- Stored in `coveo_accessToken` cookie
-- Auto-refreshed when expired
-- Uses `fetchToken()` utility
+- Generated via `/token` route (calls Shopify App Proxy at `https://barca-sports.myshopify.com/apps/coveo`)
+- Stored in `coveo_accessToken` httpOnly cookie
+- Auto-refreshed when expired via `renewAccessToken` callback
+- Uses `fetchToken()` utility from `~/lib/auth/fetch-token`
 
 ### Token Flow
 
-1. Server-side: `updateTokenIfNeeded()` checks and refreshes token
-2. Client-side: `fetchToken()` retrieves from `/token` endpoint
-3. Token stored in httpOnly cookie for security
+1. **Server-side**: `updateTokenIfNeeded()` checks and refreshes token before Coveo API calls
+2. **Client-side**: `renewAccessToken` callback in engine config automatically fetches new tokens when expired
+3. **Manual fetch**: `fetchToken()` retrieves from `/token` endpoint
+4. Token stored in httpOnly cookie for security
+
+### Engine Configuration
+
+The `renewAccessToken` callback is configured in `lib/coveo/engine.ts`:
+
+```typescript
+const renewAccessToken = async (): Promise<string> => {
+  return await fetchToken();
+};
+
+export const engineConfig: CommerceEngineDefinitionOptions = {
+  configuration: {
+    accessToken: await getSearchToken(),
+    renewAccessToken, // Automatic client-side token renewal
+    // ...
+  },
+};
+```
 
 ## Component Patterns
 
