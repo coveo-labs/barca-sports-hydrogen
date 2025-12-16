@@ -70,7 +70,7 @@ function ProductResultsMessageComponent({
                 `${message.id}-${index}`
               }
               product={product}
-              variant="mini"
+              variant="compact"
             />
           ))}
         </div>

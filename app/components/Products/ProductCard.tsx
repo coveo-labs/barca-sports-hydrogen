@@ -12,7 +12,7 @@ interface ProductCardProps {
   onSelect?: () => void;
   className?: string;
   onSwapColor?: (color: string) => void;
-  variant?: 'default' | 'compact' | 'mini';
+  variant?: 'default' | 'compact';
 }
 export function ProductCard({
   product,
@@ -44,13 +44,12 @@ export function ProductCard({
     onSwapColor?.(color);
   };
 
-  const isCompact = variant === 'compact' || variant === 'mini';
-  const isMini = variant === 'mini';
+  const isCompact = variant === 'compact';
 
   return (
     <div
       style={
-        isMini
+        isCompact
           ? {width: '160px', minWidth: '160px', maxWidth: '160px'}
           : undefined
       }
@@ -63,16 +62,16 @@ export function ProductCard({
       >
         <img
           loading="lazy"
-          width={isMini ? 160 : 1024}
-          height={isMini ? 160 : 1024}
+          width={isCompact ? 160 : 1024}
+          height={isCompact ? 160 : 1024}
           alt={productName}
           src={productImage}
           className={
             isCompact
-              ? 'aspect-square w-full rounded-lg bg-gray-200 object-cover group-hover:opacity-75 max-h-[140px]'
+              ? 'aspect-square w-full rounded-lg bg-gray-200 object-cover group-hover:opacity-75'
               : 'aspect-square w-full rounded-lg bg-gray-200 object-cover group-hover:opacity-75'
           }
-          style={isMini ? {width: '160px', height: '160px'} : undefined}
+          style={isCompact ? {width: '160px', height: '160px'} : undefined}
         />
         <h3
           className={

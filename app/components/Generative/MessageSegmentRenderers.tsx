@@ -90,7 +90,7 @@ function InlineProduct({identifier, productIndex}: InlineProductProps) {
   if (product) {
     return (
       <div className="my-3">
-        <ProductCard product={product} variant="mini" />
+        <ProductCard product={product} variant="compact" />
       </div>
     );
   }
@@ -151,7 +151,7 @@ function CarouselItem({identifier, productIndex}: CarouselItemProps) {
     return (
       <li className="shrink-0">
         <div className="rounded-xl bg-white p-2 shadow-sm ring-1 ring-slate-200 h-full">
-          <ProductCard product={product} variant="mini" />
+          <ProductCard product={product} variant="compact" />
         </div>
       </li>
     );
