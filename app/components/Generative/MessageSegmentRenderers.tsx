@@ -137,8 +137,6 @@ export function ProductCarousel({
   );
 }
 
-// Grid cols class no longer needed - using flex layout
-
 type CarouselItemProps = Readonly<{
   identifier: string;
   productIndex: ReadonlyMap<string, Product>;
