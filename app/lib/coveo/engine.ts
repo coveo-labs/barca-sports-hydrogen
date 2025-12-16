@@ -30,13 +30,16 @@ const getSearchToken = async () => {
   return typeof window !== 'undefined' ? await fetchToken() : '';
 };
 
-const getPublicApiKey = () => {
-  return 'xx697404a7-6cfd-48c6-93d1-30d73d17e07a';
+// Renew access token callback for automatic client-side token renewal.
+// This is called by Coveo Headless when a token expires during client-side requests.
+const renewAccessToken = async (): Promise<string> => {
+  return await fetchToken();
 };
 
 export const engineConfig: CommerceEngineDefinitionOptions = {
   configuration: {
-    accessToken: getPublicApiKey(),
+    accessToken: await getSearchToken(),
+    renewAccessToken,
     organizationId: 'barcagroupproductionkwvdy6lp',
     analytics: {
       enabled: true,

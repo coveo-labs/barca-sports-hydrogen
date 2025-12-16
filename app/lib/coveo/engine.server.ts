@@ -1,5 +1,5 @@
 import {type CommerceSearchParameters} from '@coveo/headless-react/ssr-commerce';
-import type {AppLoadContext} from '@shopify/remix-oxygen';
+import type {AppLoadContext} from 'react-router';
 import {getLocaleFromRequest} from '~/lib/i18n';
 import {updateTokenIfNeeded} from '~/lib/auth/token-utils.server';
 import {engineDefinition} from '~/lib/coveo/engine';
