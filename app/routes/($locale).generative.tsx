@@ -325,7 +325,7 @@ export default function GenerativeShoppingAssistant() {
       onToggleThinking={toggleMessageExpansion}
       onTogglePendingThinking={togglePendingExpansion}
     >
-      <div className="flex w-full flex-1 min-h-0 bg-slate-100">
+      <div className="isolate flex w-full flex-1 min-h-0 bg-slate-100">
         <ConversationSidebar />
         <main className="flex flex-1 min-h-0 flex-col">
           <AssistantHeader />

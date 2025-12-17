@@ -10,7 +10,7 @@ export function ConversationSidebar() {
   const {onNewConversation, onSelectConversation, onDeleteConversation} =
     useConversationActions();
   return (
-    <aside className="hidden w-80 min-h-0 flex-col border-r border-slate-200 bg-white/80 backdrop-blur lg:flex">
+    <aside className="hidden w-80 min-h-0 flex-col border-r border-slate-200 bg-white lg:flex">
       <div className="flex items-center justify-between px-6 py-5">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
           Conversations
