@@ -14,7 +14,6 @@
     "codegen": "shopify hydrogen codegen",
     "prettier": "prettier --write ."
   },
-  "prettier": "@shopify/prettier-config",
   "dependencies": {
     "@coveo/headless": "3.35.2",
     "@coveo/headless-react": "2.6.10",
