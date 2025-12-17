@@ -1,7 +1,5 @@
 import {
-  Await,
   useLoaderData,
-  Link,
   type LoaderFunctionArgs,
   type MetaFunction,
 } from 'react-router';
