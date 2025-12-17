@@ -31,6 +31,7 @@ type UseSendMessageOptions = {
 
 type SendMessageOptions = {
   forceNew?: boolean;
+  isAutoRetry?: boolean;
 };
 
 export function useSendMessage({
@@ -61,7 +62,7 @@ export function useSendMessage({
       clearActiveSnapshot();
       setStreamError(null);
 
-      const {forceNew = false} = options;
+      const {forceNew = false, isAutoRetry = false} = options;
 
       const now = new Date().toISOString();
       const existing =
@@ -93,6 +94,7 @@ export function useSendMessage({
         content: trimmed,
         createdAt: now,
         kind: 'text',
+        ...(isAutoRetry && {isAutoRetry: true}),
       };
 
       queueScrollToMessage(userMessage.id);

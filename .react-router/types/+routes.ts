@@ -171,7 +171,7 @@ type RouteFiles = {
     page: "/token";
   };
   "../node_modules/@shopify/hydrogen/dist/vite/virtual-routes/layout.jsx": {
-    id: "/Users/jdevost/Developer/barca-sports-hydrogen/node_modules/@shopify/hydrogen/dist/vite/virtual-routes/layout";
+    id: "/Users/olamothe/barca-sports-hydrogen/node_modules/@shopify/hydrogen/dist/vite/virtual-routes/layout";
     page: "/graphiql" | "/subrequest-profiler" | "/.well-known/appspecific/com.chrome.devtools.json" | "/";
   };
   "../node_modules/@shopify/hydrogen/dist/vite/virtual-routes/routes/graphiql.jsx": {

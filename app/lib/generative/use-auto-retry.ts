@@ -19,7 +19,9 @@ type UseAutoRetryOptions = {
 type UseAutoRetryReturn = {
   isRetryingRef: MutableRefObject<boolean>;
   resetRetryCount: () => void;
-  sendMessageRef: MutableRefObject<((message: string) => Promise<void>) | null>;
+  sendMessageRef: MutableRefObject<
+    ((message: string, options?: {isAutoRetry?: boolean}) => Promise<void>) | null
+  >;
 };
 
 export function useAutoRetry({
@@ -32,9 +34,9 @@ export function useAutoRetry({
 }: UseAutoRetryOptions): UseAutoRetryReturn {
   const retryCountRef = useRef(0);
   const isRetryingRef = useRef(false);
-  const sendMessageRef = useRef<((message: string) => Promise<void>) | null>(
-    null,
-  );
+  const sendMessageRef = useRef<
+    ((message: string, options?: {isAutoRetry?: boolean}) => Promise<void>) | null
+  >(null);
 
   const removeLastErrorMessage = useCallback(() => {
     setConversations((prev) =>
@@ -88,7 +90,7 @@ export function useAutoRetry({
       try {
         const sendMessage = sendMessageRef.current;
         if (sendMessage) {
-          await sendMessage(AUTO_RETRY_MESSAGE);
+          await sendMessage(AUTO_RETRY_MESSAGE, {isAutoRetry: true});
         }
       } finally {
         isRetryingRef.current = false;
