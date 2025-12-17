@@ -16,6 +16,8 @@ const mapColor = (color: string) => {
       return 'slate-200';
     case 'yellow':
       return 'yellow-300';
+    case 'navy':
+      return 'blue-900';
     default:
       return `${color.toLowerCase()}-700`;
   }
@@ -60,11 +62,7 @@ export function Colors({
             >
               <span
                 aria-hidden="true"
-                className={cx(
-                  'color-swatch',
-                  `bg-${mapColor(color)}`,
-                  'size-8 rounded-full border border-black/10',
-                )}
+                className={cx('color-swatch', `bg-${mapColor(color)}`, 'size-8 rounded-full border border-black/10')}
               />
             </Radio>
           ))}
