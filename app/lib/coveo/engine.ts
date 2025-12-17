@@ -36,7 +36,7 @@ import {fetchToken} from '~/lib/auth/fetch-token';
  *   setAccessToken() before hydration begins
  * - Subsequent client requests: renewAccessToken callback fetches new tokens as needed
  */
-const PLACEHOLDER_TOKEN = 'placeholder-will-be-replaced-before-api-calls';
+const PLACEHOLDER_TOKEN = '';
 
 // Renew access token callback for automatic client-side token renewal.
 // This is called by Coveo Headless when a token expires during client-side requests.
