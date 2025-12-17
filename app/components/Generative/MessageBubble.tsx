@@ -22,6 +22,7 @@ import {
   NextActionsBar,
   RefinementChipsBar,
 } from '~/components/Generative/MessageActions';
+import {Answer} from '~/components/Generative/Answer';
 
 type MessageBubbleProps = {
   message: ConversationMessage;
@@ -174,7 +175,8 @@ function renderAssistantMessageContent(
     (isStreaming && hasPotentialStreamingMarkup(content));
 
   if (!hasPotentialMarkup) {
-    return content;
+    // No special markup - render with markdown support
+    return <Answer text={content} />;
   }
 
   const pendingContent = isStreaming ? detectPendingRichContent(content) : null;
@@ -200,7 +202,8 @@ function renderAssistantMessageContent(
     refinementChips.length === 0 &&
     !pendingContent
   ) {
-    return content;
+    // No special content - render with markdown support
+    return <Answer text={content} />;
   }
 
   const productIndex = ensureProductLookup(message, productLookup);
@@ -230,7 +233,8 @@ function renderAssistantMessageContent(
   const hasNextActions = nextActions.length > 0;
   const hasRefinementChips = refinementChips.length > 0;
   const isActivelyStreaming = isStreaming && pendingContent !== null;
-  const showNextActionsSkeleton = isActivelyStreaming && hasNextActions;
+  // Only show nextactions skeleton if we're specifically streaming a nextaction tag
+  const showNextActionsSkeleton = isActivelyStreaming && pendingContent.type === 'nextaction';
   const showNextActionsBar = hasNextActions && !showNextActionsSkeleton;
 
   return (
