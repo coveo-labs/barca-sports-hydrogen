@@ -4,6 +4,7 @@ import {ProductCard} from '~/components/Products/ProductCard';
 import {
   CarouselSkeleton,
   InlineProductSkeleton,
+  MarkdownSkeleton,
 } from '~/components/Generative/Skeletons';
 import {
   extractInlineProductRefs,
@@ -26,6 +27,9 @@ export function renderPendingContentSkeleton(
       return <CarouselSkeleton key={key} />;
     case 'product_ref':
       return <InlineProductSkeleton key={key} />;
+    case 'table':
+    case 'code_block':
+      return <MarkdownSkeleton key={key} />;
     case 'nextaction':
     default:
       return null;
@@ -42,8 +46,9 @@ export function renderTextSegmentWithInlineProducts(
   }
 
   const productRefs = extractInlineProductRefs(text);
+
   if (productRefs.length === 0) {
-    // Use Answer component for proper markdown rendering
+    // No inline products - render with markdown support
     return <Answer key={key} text={text} />;
   }
 
@@ -53,8 +58,9 @@ export function renderTextSegmentWithInlineProducts(
   productRefs.forEach((ref, index) => {
     if (ref.startIndex > cursor) {
       const textSegment = text.slice(cursor, ref.startIndex);
+      // Render text segments with markdown support
       nodes.push(
-        <Answer key={`${key}-text-${index}`} text={textSegment} />
+        <Answer key={`${key}-text-${index}`} text={textSegment} />,
       );
     }
 
