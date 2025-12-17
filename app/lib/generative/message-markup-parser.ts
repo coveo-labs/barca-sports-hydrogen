@@ -4,7 +4,9 @@ export type PendingRichContentType =
   | 'carousel'
   | 'product_ref'
   | 'nextaction'
-  | 'refinement_chip';
+  | 'refinement_chip'
+  | 'table'
+  | 'code_block';
 
 export type PendingRichContent = {
   type: PendingRichContentType;
@@ -52,6 +54,8 @@ export function detectPendingRichContent(
     detectIncompleteProductRef(content) ??
     detectIncompleteNextAction(content) ??
     detectIncompleteRefinementChip(content) ??
+    detectIncompleteTable(content) ??
+    detectIncompleteCodeBlock(content) ??
     detectPartialTagStart(content)
   );
 }
@@ -278,6 +282,49 @@ function detectPartialTagStart(content: string): PendingRichContent | null {
     ) {
       return {type, partialText: content.slice(lastLtIndex)};
     }
+  }
+
+  return null;
+}
+
+function detectIncompleteTable(content: string): PendingRichContent | null {
+  const hasTablePipes = content.includes('|');
+  if (!hasTablePipes) return null;
+
+  const lines = content.split('\n');
+  const hasSeparator = lines.some(line => /^\|?[\s]*[-:]+[\s]*\|/.test(line));
+
+  if (!hasSeparator) {
+    // Has pipes but no separator - might be starting a table
+    const lastPipeIndex = content.lastIndexOf('|');
+    if (lastPipeIndex > content.length - 50) {
+      return {type: 'table', partialText: content.slice(Math.max(0, lastPipeIndex - 20))};
+    }
+    return null;
+  }
+
+  // Check if table looks incomplete
+  const separatorIndex = lines.findIndex(line => /^\|?[\s]*[-:]+[\s]*\|/.test(line));
+  const linesAfterSeparator = lines.slice(separatorIndex + 1).filter(l => l.trim());
+
+  // If separator is near the end with few data rows, table might be incomplete
+  if (linesAfterSeparator.length < 2 && separatorIndex > lines.length - 4) {
+    const tableStart = Math.max(0, content.indexOf('|'));
+    return {type: 'table', partialText: content.slice(tableStart)};
+  }
+
+  return null;
+}
+
+function detectIncompleteCodeBlock(content: string): PendingRichContent | null {
+  const codeBlockStart = content.indexOf('```');
+  if (codeBlockStart === -1) return null;
+
+  // Check for closing backticks
+  const codeBlockEnd = content.indexOf('```', codeBlockStart + 3);
+  if (codeBlockEnd === -1) {
+    // No closing = incomplete
+    return {type: 'code_block', partialText: content.slice(codeBlockStart)};
   }
 
   return null;

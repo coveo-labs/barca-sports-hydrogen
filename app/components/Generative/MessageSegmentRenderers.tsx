@@ -4,11 +4,13 @@ import {ProductCard} from '~/components/Products/ProductCard';
 import {
   CarouselSkeleton,
   InlineProductSkeleton,
+  MarkdownSkeleton,
 } from '~/components/Generative/Skeletons';
 import {
   extractInlineProductRefs,
   type PendingRichContent,
 } from '~/lib/generative/message-markup-parser';
+import {Answer} from '~/components/Generative/Answer';
 
 export function renderPendingContentSkeleton(
   pendingContent: PendingRichContent | null,
@@ -25,6 +27,9 @@ export function renderPendingContentSkeleton(
       return <CarouselSkeleton key={key} />;
     case 'product_ref':
       return <InlineProductSkeleton key={key} />;
+    case 'table':
+    case 'code_block':
+      return <MarkdownSkeleton key={key} />;
     case 'nextaction':
     default:
       return null;
@@ -41,8 +46,10 @@ export function renderTextSegmentWithInlineProducts(
   }
 
   const productRefs = extractInlineProductRefs(text);
+
   if (productRefs.length === 0) {
-    return <span key={key}>{text}</span>;
+    // No inline products - render with markdown support
+    return <Answer key={key} text={text} />;
   }
 
   const nodes: ReactNode[] = [];
@@ -50,10 +57,10 @@ export function renderTextSegmentWithInlineProducts(
 
   productRefs.forEach((ref, index) => {
     if (ref.startIndex > cursor) {
+      const textSegment = text.slice(cursor, ref.startIndex);
+      // Render text segments with markdown support
       nodes.push(
-        <span key={`${key}-text-${index}`}>
-          {text.slice(cursor, ref.startIndex)}
-        </span>,
+        <Answer key={`${key}-text-${index}`} text={textSegment} />,
       );
     }
 
@@ -69,7 +76,8 @@ export function renderTextSegmentWithInlineProducts(
   });
 
   if (cursor < text.length) {
-    nodes.push(<span key={`${key}-text-end`}>{text.slice(cursor)}</span>);
+    const textSegment = text.slice(cursor);
+    nodes.push(<Answer key={`${key}-text-end`} text={textSegment} />);
   }
 
   return (
