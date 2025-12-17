@@ -64,3 +64,12 @@ export function NextActionsSkeleton() {
     </div>
   );
 }
+
+export function MarkdownSkeleton() {
+  return (
+    <div className="mt-2 flex items-center gap-2 text-xs text-gray-500">
+      <span className="inline-flex h-2 w-2 animate-pulse rounded-full bg-indigo-500" />
+      <span>Formatting content...</span>
+    </div>
+  );
+}

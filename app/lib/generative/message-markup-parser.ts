@@ -4,7 +4,9 @@ export type PendingRichContentType =
   | 'carousel'
   | 'product_ref'
   | 'nextaction'
-  | 'refinement_chip';
+  | 'refinement_chip'
+  | 'table'
+  | 'code_block';
 
 export type PendingRichContent = {
   type: PendingRichContentType;
@@ -52,6 +54,8 @@ export function detectPendingRichContent(
     detectIncompleteProductRef(content) ??
     detectIncompleteNextAction(content) ??
     detectIncompleteRefinementChip(content) ??
+    detectIncompleteTable(content) ??
+    detectIncompleteCodeBlock(content) ??
     detectPartialTagStart(content)
   );
 }
@@ -219,7 +223,9 @@ export function hasPotentialStreamingMarkup(content: string): boolean {
     content.includes('<c') ||
     content.includes('<p') ||
     content.includes('<n') ||
-    content.includes('<r')
+    content.includes('<r') ||
+    content.includes('```') ||
+    content.includes('|')
   );
 }
 
@@ -278,6 +284,124 @@ function detectPartialTagStart(content: string): PendingRichContent | null {
     ) {
       return {type, partialText: content.slice(lastLtIndex)};
     }
+  }
+
+  return null;
+}
+
+// Constants for table detection heuristics
+const TABLE_DETECTION = {
+  // Maximum distance from end to consider a pipe as potentially part of an incomplete table
+  MAX_PIPE_DISTANCE_FROM_END: 50,
+  // Amount of context to include before the last pipe when creating partial text
+  PARTIAL_TEXT_CONTEXT_LENGTH: 20,
+  // Minimum number of data rows after separator to consider table complete
+  MIN_DATA_ROWS_FOR_COMPLETE_TABLE: 2,
+  // Number of lines from end to check if separator is "near the end"
+  LINES_FROM_END_THRESHOLD: 4,
+  // Minimum pipes on a line to consider it table-like
+  MIN_PIPES_PER_LINE: 2,
+} as const;
+
+/**
+ * Detects if content contains an incomplete markdown table during streaming.
+ * 
+ * A table is considered incomplete if:
+ * 1. It has pipes but no separator row yet (header being typed)
+ * 2. It has a separator but fewer than 2 data rows and is near the end (data rows being typed)
+ * 
+ * Validates table-like structure to avoid false positives from:
+ * - Single pipes in regular text ("this | that")
+ * - Pipes in code blocks or URLs
+ * 
+ * @param content - The message content to check
+ * @returns PendingRichContent if incomplete table detected, null otherwise
+ */
+function detectIncompleteTable(content: string): PendingRichContent | null {
+  const hasTablePipes = content.includes('|');
+  if (!hasTablePipes) return null;
+
+  // Performance optimization: only do expensive operations if pipe is near end
+  const lastPipeIndex = content.lastIndexOf('|');
+  const distanceFromEnd = content.length - lastPipeIndex;
+  if (distanceFromEnd > TABLE_DETECTION.MAX_PIPE_DISTANCE_FROM_END) {
+    return null;
+  }
+
+  const lines = content.split('\n');
+  
+  // Improved regex: allow separators with or without pipes, e.g., "---", "| --- |" or ":---:"
+  const hasSeparator = lines.some(line => {
+    const trimmed = line.trim();
+    return /^\|?[\s]*[-:]+[\s]*\|?$/.test(trimmed) && trimmed.includes('-');
+  });
+
+  if (!hasSeparator) {
+    // Has pipes but no separator - validate it looks like a table header
+    const lastLineWithPipe = lines.filter(l => l.includes('|')).pop();
+    if (lastLineWithPipe) {
+      const pipeCount = (lastLineWithPipe.match(/\|/g) || []).length;
+      // Only consider it a table if there are multiple pipes (table-like structure)
+      if (pipeCount >= TABLE_DETECTION.MIN_PIPES_PER_LINE) {
+        return {
+          type: 'table',
+          partialText: content.slice(
+            Math.max(0, lastPipeIndex - TABLE_DETECTION.PARTIAL_TEXT_CONTEXT_LENGTH)
+          ),
+        };
+      }
+    }
+    return null;
+  }
+
+  // Check if table looks incomplete
+  const separatorIndex = lines.findIndex(line => {
+    const trimmed = line.trim();
+    return /^\|?[\s]*[-:]+[\s]*\|?$/.test(trimmed) && trimmed.includes('-');
+  });
+  const linesAfterSeparator = lines.slice(separatorIndex + 1).filter(l => l.trim());
+
+  // If separator is in the last few lines with few data rows, table might be incomplete
+  const isNearEnd = separatorIndex >= lines.length - TABLE_DETECTION.LINES_FROM_END_THRESHOLD;
+  if (linesAfterSeparator.length < TABLE_DETECTION.MIN_DATA_ROWS_FOR_COMPLETE_TABLE && isNearEnd) {
+    const tableStart = Math.max(0, content.indexOf('|'));
+    return {type: 'table', partialText: content.slice(tableStart)};
+  }
+
+  return null;
+}
+
+/**
+ * Detects if content contains an incomplete markdown code block during streaming.
+ * 
+ * A code block is incomplete if the last occurrence of triple backticks (```) 
+ * in the content is an opening delimiter without a matching closing delimiter.
+ * 
+ * Handles multiple code blocks correctly by checking if the total count of 
+ * backtick delimiters is odd (indicating an unclosed block).
+ * 
+ * @param content - The message content to check
+ * @returns PendingRichContent if incomplete code block detected, null otherwise
+ */
+function detectIncompleteCodeBlock(content: string): PendingRichContent | null {
+  const codeBlockDelimiter = '```';
+  const firstIndex = content.indexOf(codeBlockDelimiter);
+  if (firstIndex === -1) return null;
+
+  // Count all occurrences of ``` to determine if there's an unclosed block
+  let count = 0;
+  let lastIndex = -1;
+  let searchIndex = 0;
+  
+  while ((searchIndex = content.indexOf(codeBlockDelimiter, searchIndex)) !== -1) {
+    count++;
+    lastIndex = searchIndex;
+    searchIndex += codeBlockDelimiter.length;
+  }
+
+  // Odd count means the last ``` is an opening delimiter (incomplete)
+  if (count % 2 === 1) {
+    return {type: 'code_block', partialText: content.slice(lastIndex)};
   }
 
   return null;

@@ -4,14 +4,18 @@ import cx from '~/lib/cx';
 import type {ConversationMessage} from '~/types/conversation';
 import {ProductResultsMessage} from '~/components/Generative/ProductResultsMessage';
 import {registerProducts} from '~/lib/generative/product-index';
+import {NextActionsSkeleton} from '~/components/Generative/Skeletons';
 import {
+  detectPendingRichContent,
   extractNextActions,
   extractRefinementChips,
   hasSpecialMarkup,
+  hasPotentialStreamingMarkup,
   splitContentByCarousels,
 } from '~/lib/generative/message-markup-parser';
 import {
   ProductCarousel,
+  renderPendingContentSkeleton,
   renderTextSegmentWithInlineProducts,
 } from '~/components/Generative/MessageSegmentRenderers';
 import {
@@ -74,14 +78,10 @@ function MessageBubbleComponent({
     ? cx(assistantWidthClass, assistantClass)
     : 'max-w-xl bg-indigo-600 text-white';
 
-  // Hide entire bubble while streaming text messages to prevent partial markdown rendering
-  if (isAssistant && isStreaming && normalizedKind === 'text') {
-    return null;
-  }
-
   const contentBody = isAssistant
     ? renderAssistantMessageContent(
         message,
+        isStreaming,
         productLookup,
         onFollowUpClick,
       )
@@ -161,6 +161,7 @@ export const MessageBubble = memo(MessageBubbleComponent, arePropsEqual);
 
 function renderAssistantMessageContent(
   message: ConversationMessage,
+  isStreaming: boolean,
   productLookup?: ReadonlyMap<string, Product>,
   onFollowUpClick?: (message: string) => void,
 ) {
@@ -169,15 +170,27 @@ function renderAssistantMessageContent(
     return content;
   }
 
-  const hasPotentialMarkup = hasSpecialMarkup(content);
+  const hasPotentialMarkup =
+    hasSpecialMarkup(content) ||
+    (isStreaming && hasPotentialStreamingMarkup(content));
 
   if (!hasPotentialMarkup) {
-    // Use Answer component for markdown rendering
+    // No special markup - render with markdown support
     return <Answer text={content} />;
   }
 
+  const pendingContent = isStreaming ? detectPendingRichContent(content) : null;
+
+  let processableContent = content;
+  if (pendingContent) {
+    processableContent = content.slice(
+      0,
+      content.length - pendingContent.partialText.length,
+    );
+  }
+
   const {cleanedContent: contentAfterNextActions, nextActions} =
-    extractNextActions(content);
+    extractNextActions(processableContent);
   const {cleanedContent, refinementChips} = extractRefinementChips(
     contentAfterNextActions,
   );
@@ -186,9 +199,10 @@ function renderAssistantMessageContent(
   if (
     segments.length === 0 &&
     nextActions.length === 0 &&
-    refinementChips.length === 0
+    refinementChips.length === 0 &&
+    !pendingContent
   ) {
-    // Use Answer component for markdown rendering
+    // No special content - render with markdown support
     return <Answer text={content} />;
   }
 
@@ -211,16 +225,29 @@ function renderAssistantMessageContent(
     );
   });
 
+  const pendingSkeleton = renderPendingContentSkeleton(
+    pendingContent,
+    message.id,
+  );
+
   const hasNextActions = nextActions.length > 0;
   const hasRefinementChips = refinementChips.length > 0;
+  const isActivelyStreaming = isStreaming && pendingContent !== null;
+  // Only show nextactions skeleton if we're specifically streaming a nextaction tag
+  const showNextActionsSkeleton = isActivelyStreaming && pendingContent.type === 'nextaction';
+  const showNextActionsBar = hasNextActions && !showNextActionsSkeleton;
 
   return (
     <>
       {renderedSegments}
+      {pendingSkeleton}
       {hasRefinementChips && (
         <RefinementChipsBar chips={refinementChips} messageId={message.id} />
       )}
-      {hasNextActions && (
+      {showNextActionsSkeleton && (
+        <NextActionsSkeleton key={`${message.id}-nextactions-skeleton`} />
+      )}
+      {showNextActionsBar && (
         <NextActionsBar
           actions={nextActions}
           messageId={message.id}
