@@ -32,6 +32,10 @@ export function Colors({
   headline?: string;
   onSelect?: (color: string) => void;
 }) {
+  if (availableColors.length === 0) {
+    return null;
+  }
+
   return (
     <div>
       <h3 className="text-sm text-gray-600">{headline}</h3>
