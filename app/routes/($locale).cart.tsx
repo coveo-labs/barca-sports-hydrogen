@@ -114,13 +114,14 @@ export async function loader({request, context}: LoaderFunctionArgs) {
   engineDefinition.recommendationEngineDefinition.setNavigatorContextProvider(
     () => new ServerSideNavigatorContextProvider(request),
   );
-  const recommendationStaticState = await fetchRecommendationStaticState({
-    request,
-    k: ['cartRecommendations'],
-    context,
-  });
+  const {staticState: recommendationStaticState, accessToken} =
+    await fetchRecommendationStaticState({
+      request,
+      k: ['cartRecommendations'],
+      context,
+    });
 
-  return {recommendationStaticState};
+  return {recommendationStaticState, accessToken};
 }
 
 export default function Cart() {
@@ -144,6 +145,7 @@ export default function Cart() {
               <RecommendationProvider
                 navigatorContext={new ClientSideNavigatorContextProvider()}
                 staticState={loaderData.recommendationStaticState}
+                accessToken={loaderData.accessToken}
               >
                 <CartRecommendations />
               </RecommendationProvider>

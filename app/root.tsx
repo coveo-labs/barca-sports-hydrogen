@@ -154,7 +154,7 @@ async function loadCriticalData({context, request}: Route.LoaderArgs) {
     () => coveoNavigatorProvider,
   );
 
-  const [header, customer, staticStateStandalone] = await Promise.all([
+  const [header, customer, standaloneResult] = await Promise.all([
     storefront.query(HEADER_QUERY, {
       cache: storefront.CacheLong(),
       variables: {
@@ -182,7 +182,8 @@ async function loadCriticalData({context, request}: Route.LoaderArgs) {
 
   return {
     header,
-    staticStateStandalone,
+    staticStateStandalone: standaloneResult.staticState,
+    accessTokenStandalone: standaloneResult.accessToken,
     loggedIn,
     customerDisplayName: customer?.data.customer.firstName || '',
     customerImageUrl: customer?.data.customer.imageUrl || '',
@@ -252,6 +253,7 @@ export default function App() {
         <StandaloneProvider
           navigatorContext={new ClientSideNavigatorContextProvider()}
           staticState={data.staticStateStandalone as any}
+          accessToken={data.accessTokenStandalone}
         >
           <PageLayout
             {...data}

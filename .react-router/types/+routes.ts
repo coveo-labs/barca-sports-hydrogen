@@ -19,12 +19,6 @@ type Pages = {
   "/account/authorize": {
     params: {};
   };
-  "/answer-to-articles": {
-    params: {};
-  };
-  "/answer-to-products": {
-    params: {};
-  };
   "/:locale?/account": {
     params: {
       "locale"?: string;
@@ -106,7 +100,7 @@ type Pages = {
 type RouteFiles = {
   "root.tsx": {
     id: "root";
-    page: "/" | "/api/agentic/conversation" | "/account/authorize" | "/answer-to-articles" | "/answer-to-products" | "/:locale?/account" | "/account/logout" | "/account/login" | "/robots.txt" | "/:locale?" | "/:locale?/sitemap/:type/:page.xml" | "/:locale?/products/:handle" | "/:locale?/sitemap.xml" | "/:locale?/generative" | "/:locale?/search" | "/:locale?/plp/*" | "/:locale?/cart" | "/:locale?/*" | "/token" | "/graphiql" | "/subrequest-profiler" | "/.well-known/appspecific/com.chrome.devtools.json";
+    page: "/" | "/api/agentic/conversation" | "/account/authorize" | "/:locale?/account" | "/account/logout" | "/account/login" | "/robots.txt" | "/:locale?" | "/:locale?/sitemap/:type/:page.xml" | "/:locale?/products/:handle" | "/:locale?/sitemap.xml" | "/:locale?/generative" | "/:locale?/search" | "/:locale?/plp/*" | "/:locale?/cart" | "/:locale?/*" | "/token" | "/graphiql" | "/subrequest-profiler" | "/.well-known/appspecific/com.chrome.devtools.json";
   };
   "routes/api.agentic.conversation.ts": {
     id: "routes/api.agentic.conversation";
@@ -115,14 +109,6 @@ type RouteFiles = {
   "routes/account_.authorize.tsx": {
     id: "routes/account_.authorize";
     page: "/account/authorize";
-  };
-  "routes/answer-to-articles.tsx": {
-    id: "routes/answer-to-articles";
-    page: "/answer-to-articles";
-  };
-  "routes/answer-to-products.tsx": {
-    id: "routes/answer-to-products";
-    page: "/answer-to-products";
   };
   "routes/$(locale).account.tsx": {
     id: "routes/$(locale).account";
@@ -185,7 +171,7 @@ type RouteFiles = {
     page: "/token";
   };
   "../node_modules/@shopify/hydrogen/dist/vite/virtual-routes/layout.jsx": {
-    id: "/Users/olamothe/barca-sports-hydrogen/node_modules/@shopify/hydrogen/dist/vite/virtual-routes/layout";
+    id: "/Users/jdevost/Developer/barca-sports-hydrogen/node_modules/@shopify/hydrogen/dist/vite/virtual-routes/layout";
     page: "/graphiql" | "/subrequest-profiler" | "/.well-known/appspecific/com.chrome.devtools.json" | "/";
   };
   "../node_modules/@shopify/hydrogen/dist/vite/virtual-routes/routes/graphiql.jsx": {

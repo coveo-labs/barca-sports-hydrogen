@@ -49,14 +49,15 @@ export async function loader(args: LoaderFunctionArgs) {
   engineDefinition.recommendationEngineDefinition.setNavigatorContextProvider(
     () => new ServerSideNavigatorContextProvider(args.request),
   );
-  const recommendationStaticState = await fetchRecommendationStaticState({
-    request: args.request,
-    k: ['pdpRecommendationsUpperCarousel', 'pdpRecommendationsLowerCarousel'],
-    context: args.context,
-    productId: coveoProductId,
-  });
+  const {staticState: recommendationStaticState, accessToken} =
+    await fetchRecommendationStaticState({
+      request: args.request,
+      k: ['pdpRecommendationsUpperCarousel', 'pdpRecommendationsLowerCarousel'],
+      context: args.context,
+      productId: coveoProductId,
+    });
 
-  return {...criticalData, recommendationStaticState};
+  return {...criticalData, recommendationStaticState, accessToken};
 }
 
 /**
@@ -160,7 +161,7 @@ function getColorOptionIdx(product: ProductFragment, color: string) {
 }
 
 export default function Product() {
-  const {product, variants, recommendationStaticState} =
+  const {product, variants, recommendationStaticState, accessToken} =
     useLoaderData<typeof loader>();
   const productView = useProductView();
   const selectedVariant = useOptimisticVariant(
@@ -234,9 +235,7 @@ export default function Product() {
 
               <div className="mt-10 flex">
                 <AddToCartButton
-                  disabled={
-                    !selectedVariant
-                  }
+                  disabled={!selectedVariant}
                   product={product}
                   redirectTo={`/products/${useParams().handle}`}
                   lines={
@@ -268,6 +267,7 @@ export default function Product() {
       <RecommendationProvider
         navigatorContext={new ClientSideNavigatorContextProvider()}
         staticState={recommendationStaticState}
+        accessToken={accessToken}
       >
         <ProductRecommendations />
       </RecommendationProvider>

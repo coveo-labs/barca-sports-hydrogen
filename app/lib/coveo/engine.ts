@@ -21,22 +21,33 @@ import {
 } from '@coveo/headless-react/ssr-commerce';
 import {fetchToken} from '~/lib/auth/fetch-token';
 
-// Headless requires an `accessToken` to be set in the configuration.
-// We can't simply call `fetchToken` in all cases, because when the file
-// first loads, the /token route might not be ready. As a backup, we can
-// pass an empty, invalid value. Later in this file, we use the `updateTokenIfNeeded`
-// function to update invalid or outdated tokens before interacting with Coveo APIs.
-const getSearchToken = async () => {
-  return typeof window !== 'undefined' ? await fetchToken() : '';
-};
+/**
+ * Placeholder token used for initial engine configuration.
+ *
+ * This placeholder is necessary because:
+ * 1. Coveo's engine definition requires a non-empty accessToken at initialization
+ * 2. Top-level await is not supported in the browser build target
+ * 3. The real token is set via setAccessToken() before hydration on the client
+ *
+ * The actual token flow:
+ * - Server: updateTokenIfNeeded() fetches a real search token, calls setAccessToken(),
+ *   then fetchStaticState() makes API calls with the real token
+ * - Client: The route loader passes accessToken to the Provider component, which calls
+ *   setAccessToken() before hydration begins
+ * - Subsequent client requests: renewAccessToken callback fetches new tokens as needed
+ */
+const PLACEHOLDER_TOKEN = '';
 
-const getPublicApiKey = () => {
-  return 'xx697404a7-6cfd-48c6-93d1-30d73d17e07a';
+// Renew access token callback for automatic client-side token renewal.
+// This is called by Coveo Headless when a token expires during client-side requests.
+const renewAccessToken = async (): Promise<string> => {
+  return await fetchToken();
 };
 
 export const engineConfig: CommerceEngineDefinitionOptions = {
   configuration: {
-    accessToken: getPublicApiKey(),
+    accessToken: PLACEHOLDER_TOKEN,
+    renewAccessToken,
     organizationId: 'barcagroupproductionkwvdy6lp',
     analytics: {
       enabled: true,

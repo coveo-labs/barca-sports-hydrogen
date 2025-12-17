@@ -1,21 +1,22 @@
-import {Await, useLoaderData, Link} from 'react-router';
-import type {Route} from './+types/_index';
-import {Suspense} from 'react';
-import {Image} from '@shopify/hydrogen';
+import {
+  useLoaderData,
+  type LoaderFunctionArgs,
+  type MetaFunction,
+} from 'react-router';
 
-import {Hero} from '~/components/Homepage/Hero';
+import {CTA} from '~/components/Homepage/CTA';
 import {FeaturedCategories} from '~/components/Homepage/FeaturedCategories';
-import {engineDefinition} from '~/lib/coveo/engine';
-import {fetchRecommendationStaticState} from '~/lib/coveo/engine.server';
-import {HEADER_QUERY} from '~/lib/shopify/fragments';
+import {Hero} from '~/components/Homepage/Hero';
 import {LearnMore} from '~/components/Homepage/LearnMore';
 import {Recommendations} from '~/components/Homepage/Recommendations';
-import {CTA} from '~/components/Homepage/CTA';
 import {RecommendationProvider} from '~/components/Search/Context';
+import {engineDefinition} from '~/lib/coveo/engine';
+import {fetchRecommendationStaticState} from '~/lib/coveo/engine.server';
 import {
   ClientSideNavigatorContextProvider,
   ServerSideNavigatorContextProvider,
 } from '~/lib/coveo/navigator.provider';
+import {HEADER_QUERY} from '~/lib/shopify/fragments';
 
 export const meta: MetaFunction = () => {
   return [{title: 'Hydrogen | Home'}];
@@ -25,7 +26,7 @@ export async function loader({request, context}: LoaderFunctionArgs) {
   engineDefinition.recommendationEngineDefinition.setNavigatorContextProvider(
     () => new ServerSideNavigatorContextProvider(request),
   );
-  const [header, recommendationStaticState] = await Promise.all([
+  const [header, recommendationResult] = await Promise.all([
     context.storefront.query(HEADER_QUERY, {
       cache: context.storefront.CacheLong(),
       variables: {
@@ -39,7 +40,11 @@ export async function loader({request, context}: LoaderFunctionArgs) {
     }),
   ]);
 
-  return {header, recommendationStaticState};
+  return {
+    header,
+    recommendationStaticState: recommendationResult.staticState,
+    accessToken: recommendationResult.accessToken,
+  };
 }
 
 export default function Homepage() {
@@ -59,6 +64,7 @@ export default function Homepage() {
         <RecommendationProvider
           staticState={data.recommendationStaticState}
           navigatorContext={new ClientSideNavigatorContextProvider()}
+          accessToken={data.accessToken}
         >
           <Recommendations />
         </RecommendationProvider>
