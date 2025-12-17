@@ -233,7 +233,8 @@ function renderAssistantMessageContent(
   const hasNextActions = nextActions.length > 0;
   const hasRefinementChips = refinementChips.length > 0;
   const isActivelyStreaming = isStreaming && pendingContent !== null;
-  const showNextActionsSkeleton = isActivelyStreaming && hasNextActions;
+  // Only show nextactions skeleton if we're specifically streaming a nextaction tag
+  const showNextActionsSkeleton = isActivelyStreaming && pendingContent.type === 'nextaction';
   const showNextActionsBar = hasNextActions && !showNextActionsSkeleton;
 
   return (
