@@ -6,34 +6,16 @@ import {
   ComboboxOptions,
 } from '@headlessui/react';
 import {useCallback, useEffect, useRef} from 'react';
-import {useInstantProducts, useStandaloneSearchBox} from '~/lib/coveo.engine';
+import {useInstantProducts, useStandaloneSearchBox} from '~/lib/coveo/engine';
 import {
   MagnifyingGlassIcon,
   ChatBubbleBottomCenterIcon,
+  SparklesIcon,
 } from '@heroicons/react/24/outline';
 import {ProductCard} from '../Products/ProductCard';
-import {createProductWithConsistentId} from '~/lib/map.coveo.shopify';
+import {createProductWithConsistentId} from '~/lib/coveo/map.coveo.shopify';
 import '~/types/gtm';
 import {useNavigate} from 'react-router';
-
-const redirectToGenerative = [
-  'what',
-  'which',
-  'when',
-  'where',
-  'who',
-  'whom',
-  'whose',
-  'why',
-  'whether',
-  'how',
-];
-
-const shouldRedirectToGenerative = (query: string) => {
-  return redirectToGenerative.some((keyword) =>
-    query.toLowerCase().startsWith(keyword),
-  );
-};
 
 interface StandaloneSearchBoxProps {
   close?: () => void;
@@ -41,8 +23,17 @@ interface StandaloneSearchBoxProps {
 export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
   const searchBox = useStandaloneSearchBox();
   const instantProducts = useInstantProducts();
-  const navigate = useNavigate();
   const input = useRef<HTMLInputElement>(null);
+  const navigate = useNavigate();
+  const handleGenerativeSearch = useCallback(() => {
+    const query = searchBox.state.value?.trim();
+    const url = query
+      ? `/generative?q=${encodeURIComponent(query)}`
+      : '/generative';
+
+    navigate(url);
+    close?.();
+  }, [searchBox.state.value, navigate, close]);
 
   // Focus input and show suggestions when component mounts/remounts
   useEffect(() => {
@@ -56,26 +47,27 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
     return () => clearTimeout(timer);
   }, []);
 
-  useRedirect(searchBox, close);
+  useRedirect(searchBox, navigate, close);
   useUpdateInstantProducts(searchBox, instantProducts);
 
   const onSubmit = useCallback(
     (e?: React.FormEvent) => {
       e?.preventDefault();
-      if (shouldRedirectToGenerative(searchBox.state.value)) {
-        navigate('/generative?q=' + encodeURIComponent(searchBox.state.value));
-        close?.();
-      } else {
-        searchBox.methods?.submit();
-        window.dataLayer = window.dataLayer || [];
-        window.dataLayer.push({
-          event: 'search',
-          search_type: 'search_box',
-          search_term: encodeURIComponent(searchBox.state.value),
-        });
+
+      const query = searchBox.state.value?.trim();
+      if (!query) {
+        return;
       }
+
+      searchBox.methods?.submit();
+      window.dataLayer = window.dataLayer || [];
+      window.dataLayer.push({
+        event: 'search',
+        search_type: 'search_box',
+        search_term: encodeURIComponent(query),
+      });
     },
-    [searchBox.state.value, searchBox.methods, navigate, close],
+    [searchBox.state.value, searchBox.methods],
   );
   return (
     <>
@@ -101,24 +93,32 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
             onFocus={() => {
               searchBox.methods?.showSuggestions();
             }}
-            className="search-box w-full h-12 border p-4"
+            className="search-box w-full h-12 border p-4 pr-36"
             aria-label="Search"
             placeholder="Search"
             onChange={(event) => {
               searchBox.methods?.updateText(event.target.value);
             }}
           />
-          <ComboboxButton
-            as="button"
-            type="submit"
-            className="group absolute inset-y-0 right-0 px-2.5"
-          >
-            {searchBox.state.value.length > 10 ? (
-              <ChatBubbleBottomCenterIcon className="size-6" />
-            ) : (
+          <div className="absolute inset-y-0 right-0 flex items-center gap-2 pr-2">
+            <ComboboxButton
+              as="button"
+              type="submit"
+              className="group flex h-9 w-9 items-center justify-center"
+            >
               <MagnifyingGlassIcon className="size-6" />
-            )}
-          </ComboboxButton>
+            </ComboboxButton>
+            <ComboboxButton
+              as="button"
+              onClick={(e) => {e.preventDefault();handleGenerativeSearch()}}
+              className="inline-flex items-center gap-1.5 rounded-full border border-indigo-600 bg-indigo-50 px-3 py-1 text-sm font-semibold text-indigo-700 shadow-sm transition hover:bg-indigo-100"
+            >
+              <SparklesIcon className="size-4" />
+              <span className="text-sm font-semibold leading-none">
+                Conversational
+              </span>
+            </ComboboxButton>
+          </div>
         </form>
 
         <ComboboxOptions
@@ -180,17 +180,12 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
 
 function useRedirect(
   searchBox: ReturnType<typeof useStandaloneSearchBox>,
+  navigate: ReturnType<typeof useNavigate>,
   close?: () => void,
 ) {
-  const navigate = useNavigate();
-
   useEffect(() => {
     if (searchBox.state.redirectTo === '/search') {
-      const url = `${
-        shouldRedirectToGenerative(searchBox.state.value)
-          ? '/generative'
-          : searchBox.state.redirectTo
-      }?q=${encodeURIComponent(searchBox.state.value)}`;
+       const url = `${searchBox.state.redirectTo}?q=${encodeURIComponent(searchBox.state.value)}`;
 
       navigate(url);
       // Reset the redirectTo state to prevent re-triggering on popover reopen

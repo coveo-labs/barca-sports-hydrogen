@@ -1,4 +1,4 @@
-import {engineDefinition} from '~/lib/coveo.engine';
+import {engineDefinition} from '~/lib/coveo/engine';
 import {ProductCard} from '../Products/ProductCard';
 import type {
   SearchSummaryState,
@@ -10,7 +10,7 @@ import {useEffect} from 'react';
 import {
   createProductWithConsistentId,
   createGTMItemFromProduct,
-} from '~/lib/map.coveo.shopify';
+} from '~/lib/coveo/map.coveo.shopify';
 import '~/types/gtm';
 
 // Global tracking to ensure analytics only fire once per response

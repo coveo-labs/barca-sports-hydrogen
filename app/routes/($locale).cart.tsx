@@ -15,12 +15,12 @@ import {CartEmpty} from '~/components/Cart/CartEmpty';
 import {CartMain} from '~/components/Cart/CartMain';
 import {CartRecommendations} from '~/components/Cart/CartRecommendations';
 import {RecommendationProvider} from '~/components/Search/Context';
-import {engineDefinition} from '~/lib/coveo.engine';
-import {fetchRecommendationStaticState} from '~/lib/coveo.engine.server';
+import {engineDefinition} from '~/lib/coveo/engine';
+import {fetchRecommendationStaticState} from '~/lib/coveo/engine.server';
 import {
   ClientSideNavigatorContextProvider,
   ServerSideNavigatorContextProvider,
-} from '~/lib/navigator.provider';
+} from '~/lib/coveo/navigator.provider';
 import type {RootLoader} from '~/root';
 
 export const meta: MetaFunction = () => {
@@ -114,13 +114,14 @@ export async function loader({request, context}: LoaderFunctionArgs) {
   engineDefinition.recommendationEngineDefinition.setNavigatorContextProvider(
     () => new ServerSideNavigatorContextProvider(request),
   );
-  const recommendationStaticState = await fetchRecommendationStaticState({
-    request,
-    k: ['cartRecommendations'],
-    context,
-  });
+  const {staticState: recommendationStaticState, accessToken} =
+    await fetchRecommendationStaticState({
+      request,
+      k: ['cartRecommendations'],
+      context,
+    });
 
-  return {recommendationStaticState};
+  return {recommendationStaticState, accessToken};
 }
 
 export default function Cart() {
@@ -144,6 +145,7 @@ export default function Cart() {
               <RecommendationProvider
                 navigatorContext={new ClientSideNavigatorContextProvider()}
                 staticState={loaderData.recommendationStaticState}
+                accessToken={loaderData.accessToken}
               >
                 <CartRecommendations />
               </RecommendationProvider>

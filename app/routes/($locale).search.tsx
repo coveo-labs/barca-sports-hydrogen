@@ -1,12 +1,12 @@
 import {
   searchEngineDefinition,
   type SearchStaticState,
-} from '~/lib/coveo.engine';
-import {fetchStaticState} from '~/lib/coveo.engine.server';
+} from '~/lib/coveo/engine';
+import {fetchStaticState} from '~/lib/coveo/engine.server';
 import {
   ClientSideNavigatorContextProvider,
   ServerSideNavigatorContextProvider,
-} from '~/lib/navigator.provider';
+} from '~/lib/coveo/navigator.provider';
 import {SearchProvider} from '~/components/Search/Context';
 import {FullSearch} from '~/components/Search/FullSearch';
 import ParameterManager from '~/components/ParameterManager';
@@ -34,7 +34,7 @@ export async function loader({request, context}: LoaderFunctionArgs) {
     () => new ServerSideNavigatorContextProvider(request),
   );
 
-  const staticState = await fetchStaticState({
+  const {staticState, accessToken} = await fetchStaticState({
     context,
     k: 'searchEngineDefinition',
     parameters,
@@ -42,11 +42,11 @@ export async function loader({request, context}: LoaderFunctionArgs) {
     request,
   });
 
-  return {staticState, q, url};
+  return {staticState, q, url, accessToken};
 }
 
 export default function SearchPage() {
-  const {staticState, q, url} = useLoaderData<typeof loader>();
+  const {staticState, q, url, accessToken} = useLoaderData<typeof loader>();
   const [currentUrl, setCurrentUrl] = useState(url);
 
   useEffect(() => {
@@ -60,6 +60,7 @@ export default function SearchPage() {
     <SearchProvider
       navigatorContext={new ClientSideNavigatorContextProvider()}
       staticState={staticState as SearchStaticState}
+      accessToken={accessToken}
     >
       <ParameterManager url={currentUrl.toString()} />
       {!hasResults && (

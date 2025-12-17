@@ -21,15 +21,18 @@ export function PageLayout({
   publicStoreDomain,
 }: PageLayoutProps) {
   return (
-    <>
+    <div
+      className="flex min-h-screen flex-col bg-white"
+      style={{minHeight: '100svh'}}
+    >
       <Header
         header={header}
         cart={cart}
         publicStoreDomain={publicStoreDomain}
       />
 
-      <main>{children}</main>
+      <main className="flex flex-1 flex-col min-h-0">{children}</main>
       <Footer header={header} />
-    </>
+    </div>
   );
 }

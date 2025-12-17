@@ -10,16 +10,29 @@ import type {
   HydrogenSessionData,
   HydrogenEnv,
 } from '@shopify/hydrogen';
-import type {createAppLoadContext} from '~/lib/context';
+import type {createAppLoadContext} from '~/lib/shopify/context';
 
 declare global {
   /**
    * A global `process` object is only available during build to access NODE_ENV.
    */
-  const process: {env: {NODE_ENV: 'production' | 'development'}};
+  const process: {
+    env: {
+      NODE_ENV: 'production' | 'development';
+      AGENTIC_ACCESS_TOKEN?: string;
+    };
+  };
 
   interface Env extends HydrogenEnv {
     // declare additional Env parameter use in the fetch handler and Remix loader context here
+  }
+
+  interface ImportMetaEnv {
+    readonly AGENTIC_ACCESS_TOKEN?: string;
+  }
+
+  interface ImportMeta {
+    readonly env: ImportMetaEnv;
   }
 }
 

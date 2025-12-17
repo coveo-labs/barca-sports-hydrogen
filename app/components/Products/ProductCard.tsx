@@ -12,12 +12,14 @@ interface ProductCardProps {
   onSelect?: () => void;
   className?: string;
   onSwapColor?: (color: string) => void;
+  variant?: 'default' | 'compact';
 }
 export function ProductCard({
   product,
   onSelect,
   className = '',
   onSwapColor,
+  variant = 'default',
 }: ProductCardProps) {
   const rootData = useRouteLoaderData<RootLoader>('root');
   const hasPromo =
@@ -34,6 +36,7 @@ export function ProductCard({
     product.ec_images[0];
   const productLink = new URL(product.clickUri).pathname;
   const productName = (product.additionalFields?.ec_item_group_name ||
+    product.ec_name ||
     '') as string;
 
   const onColorChange = (color: string) => {
@@ -41,8 +44,16 @@ export function ProductCard({
     onSwapColor?.(color);
   };
 
+  const isCompact = variant === 'compact';
+
   return (
-    <div>
+    <div
+      style={
+        isCompact
+          ? {width: '160px', minWidth: '160px', maxWidth: '160px'}
+          : undefined
+      }
+    >
       <NavLink
         key={product.permanentid}
         onClick={onSelect}
@@ -51,20 +62,31 @@ export function ProductCard({
       >
         <img
           loading="lazy"
-          width={1024}
-          height={1024}
+          width={isCompact ? 160 : 1024}
+          height={isCompact ? 160 : 1024}
           alt={productName}
           src={productImage}
-          className="aspect-square w-full rounded-lg bg-gray-200 object-cover group-hover:opacity-75"
+          className={
+            isCompact
+              ? 'aspect-square w-full rounded-lg bg-gray-200 object-cover group-hover:opacity-75'
+              : 'aspect-square w-full rounded-lg bg-gray-200 object-cover group-hover:opacity-75'
+          }
+          style={isCompact ? {width: '160px', height: '160px'} : undefined}
         />
-        <h3 className="result-title mt-4 text-sm text-gray-700">
+        <h3
+          className={
+            isCompact
+              ? 'result-title mt-2 text-xs text-gray-700 line-clamp-2'
+              : 'result-title mt-4 text-sm text-gray-700'
+          }
+        >
           {productName}
         </h3>
-        <div className="flex">
+        <div className={isCompact ? 'flex mt-1' : 'flex'}>
           {Array.from(Array(5).keys()).map((i) => {
             return (
               <StarIcon
-                height={20}
+                height={isCompact ? 14 : 20}
                 fill={
                   i < Math.floor(product.ec_rating!) ? '#fde047' : '#94a3b8'
                 }
@@ -73,7 +95,13 @@ export function ProductCard({
             );
           })}
         </div>
-        <div className="flex justify-between mt-1 text-lg font-medium">
+        <div
+          className={
+            isCompact
+              ? 'flex justify-between mt-0.5 text-sm font-medium'
+              : 'flex justify-between mt-1 text-lg font-medium'
+          }
+        >
           <div
             className={
               hasPromo ? 'text-gray-400 line-through' : 'text-gray-900'
@@ -98,12 +126,14 @@ export function ProductCard({
           )}
         </div>
       </NavLink>
-      <Colors
-        headline=""
-        currentColor={selectedColor}
-        availableColors={availableColors}
-        onSelect={onColorChange}
-      />
+      {!isCompact && (
+        <Colors
+          headline=""
+          currentColor={selectedColor}
+          availableColors={availableColors}
+          onSelect={onColorChange}
+        />
+      )}
     </div>
   );
 }
