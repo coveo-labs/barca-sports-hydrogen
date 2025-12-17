@@ -1,23 +1,21 @@
 import {
-  Await,
   useLoaderData,
-  Link,
   useParams,
   type LoaderFunctionArgs,
   type MetaFunction,
 } from 'react-router';
 
+import {buildParameterSerializer} from '@coveo/headless-react/ssr-commerce';
+import {useEffect, useState} from 'react';
+import ParameterManager from '~/components/ParameterManager';
+import {ListingProvider} from '~/components/Search/Context';
+import {FullSearch} from '~/components/Search/FullSearch';
+import {engineDefinition, type ListingStaticState} from '~/lib/coveo/engine';
+import {fetchStaticState} from '~/lib/coveo/engine.server';
 import {
   ClientSideNavigatorContextProvider,
   ServerSideNavigatorContextProvider,
 } from '~/lib/coveo/navigator.provider';
-import {engineDefinition, type ListingStaticState} from '~/lib/coveo/engine';
-import {fetchStaticState} from '~/lib/coveo/engine.server';
-import {ListingProvider} from '~/components/Search/Context';
-import {FullSearch} from '~/components/Search/FullSearch';
-import {buildParameterSerializer} from '@coveo/headless-react/ssr-commerce';
-import {useEffect, useState} from 'react';
-import ParameterManager from '~/components/ParameterManager';
 
 export const meta: MetaFunction<typeof loader> = ({data}) => {
   return [{title: `Coveo ProductListingPage Work in progress`}];
