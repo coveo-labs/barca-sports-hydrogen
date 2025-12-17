@@ -9,6 +9,7 @@ import {
   extractInlineProductRefs,
   type PendingRichContent,
 } from '~/lib/generative/message-markup-parser';
+import {Answer} from '~/components/Generative/Answer';
 
 export function renderPendingContentSkeleton(
   pendingContent: PendingRichContent | null,
@@ -42,7 +43,8 @@ export function renderTextSegmentWithInlineProducts(
 
   const productRefs = extractInlineProductRefs(text);
   if (productRefs.length === 0) {
-    return <span key={key}>{text}</span>;
+    // Use Answer component for proper markdown rendering
+    return <Answer key={key} text={text} />;
   }
 
   const nodes: ReactNode[] = [];
@@ -50,10 +52,9 @@ export function renderTextSegmentWithInlineProducts(
 
   productRefs.forEach((ref, index) => {
     if (ref.startIndex > cursor) {
+      const textSegment = text.slice(cursor, ref.startIndex);
       nodes.push(
-        <span key={`${key}-text-${index}`}>
-          {text.slice(cursor, ref.startIndex)}
-        </span>,
+        <Answer key={`${key}-text-${index}`} text={textSegment} />
       );
     }
 
@@ -69,7 +70,8 @@ export function renderTextSegmentWithInlineProducts(
   });
 
   if (cursor < text.length) {
-    nodes.push(<span key={`${key}-text-end`}>{text.slice(cursor)}</span>);
+    const textSegment = text.slice(cursor);
+    nodes.push(<Answer key={`${key}-text-end`} text={textSegment} />);
   }
 
   return (
