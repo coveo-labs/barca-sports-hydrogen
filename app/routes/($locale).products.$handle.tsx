@@ -1,5 +1,8 @@
 import type {ProductFragment} from 'storefrontapi.generated';
-import {getSelectedProductOptions, useOptimisticVariant} from '@shopify/hydrogen';
+import {
+  getSelectedProductOptions,
+  useOptimisticVariant,
+} from '@shopify/hydrogen';
 import type {SelectedOption} from '@shopify/hydrogen/storefront-api-types';
 import {getVariantUrl} from '~/lib/shopify/variants';
 import {HeartIcon} from '@heroicons/react/24/outline';
@@ -13,7 +16,10 @@ import {fetchRecommendationStaticState} from '~/lib/coveo/engine.server';
 import {useCallback, useEffect, useState} from 'react';
 import {ProductRecommendations} from '~/components/Products/Recommendations';
 import {RecommendationProvider} from '~/components/Search/Context';
-import {ClientSideNavigatorContextProvider, ServerSideNavigatorContextProvider} from '~/lib/coveo/navigator.provider';
+import {
+  ClientSideNavigatorContextProvider,
+  ServerSideNavigatorContextProvider,
+} from '~/lib/coveo/navigator.provider';
 import {colorToShorthand} from '~/lib/coveo/map.coveo.shopify';
 import {
   redirect,
@@ -37,18 +43,20 @@ export async function loader(args: LoaderFunctionArgs) {
   const url = new URL(args.request.url);
 
   // UNI-1358
-  let productId = product.selectedVariant ? product.selectedVariant.id : product.id;
-  console.log('UNI-1358 - productId before fetchRecommendationStaticState:', productId);
+  let productId = product.selectedVariant
+    ? product.selectedVariant.id
+    : product.id;
 
   engineDefinition.recommendationEngineDefinition.setNavigatorContextProvider(
     () => new ServerSideNavigatorContextProvider(args.request),
   );
-  const {staticState: recommendationStaticState, accessToken} = await fetchRecommendationStaticState({
-    request: args.request,
-    k: ['pdpRecommendationsUpperCarousel', 'pdpRecommendationsLowerCarousel'],
-    context: args.context,
-    productId,
-  });
+  const {staticState: recommendationStaticState, accessToken} =
+    await fetchRecommendationStaticState({
+      request: args.request,
+      k: ['pdpRecommendationsUpperCarousel', 'pdpRecommendationsLowerCarousel'],
+      context: args.context,
+      productId,
+    });
 
   return {...criticalData, recommendationStaticState, accessToken};
 }
@@ -57,7 +65,11 @@ export async function loader(args: LoaderFunctionArgs) {
  * Load data necessary for rendering content above the fold. This is the critical data
  * needed to render the page. If it's unavailable, the whole page should 400 or 500 error.
  */
-async function loadCriticalData({context, params, request}: LoaderFunctionArgs) {
+async function loadCriticalData({
+  context,
+  params,
+  request,
+}: LoaderFunctionArgs) {
   const {handle} = params;
   const {storefront} = context;
 
@@ -82,7 +94,8 @@ async function loadCriticalData({context, params, request}: LoaderFunctionArgs) 
   const firstVariant = product.variants.nodes[0];
   const firstVariantIsDefault = Boolean(
     firstVariant.selectedOptions.find(
-      (option: SelectedOption) => option.name === 'Title' && option.value === 'Default Title',
+      (option: SelectedOption) =>
+        option.name === 'Title' && option.value === 'Default Title',
     ),
   );
 
@@ -112,7 +125,13 @@ async function loadCriticalData({context, params, request}: LoaderFunctionArgs) 
   };
 }
 
-function redirectToFirstVariant({product, request}: {product: ProductFragment; request: Request}) {
+function redirectToFirstVariant({
+  product,
+  request,
+}: {
+  product: ProductFragment;
+  request: Request;
+}) {
   const url = new URL(request.url);
   const firstVariant = product.variants.nodes[0];
 
@@ -130,29 +149,42 @@ function redirectToFirstVariant({product, request}: {product: ProductFragment; r
 }
 
 function getProductColors(product: ProductFragment) {
-  return product.options.find((option) => option.name === 'Color')?.optionValues || [];
+  return (
+    product.options.find((option) => option.name === 'Color')?.optionValues ||
+    []
+  );
 }
 
 function getColorOptionIdx(product: ProductFragment, color: string) {
-  return getProductColors(product).findIndex((option) => option.name === color) || 0;
+  return (
+    getProductColors(product).findIndex((option) => option.name === color) || 0
+  );
 }
 
 export default function Product() {
-  const {product, variants, recommendationStaticState, accessToken} = useLoaderData<typeof loader>();
+  const {product, variants, recommendationStaticState, accessToken} =
+    useLoaderData<typeof loader>();
   const productView = useProductView();
-  const selectedVariant = useOptimisticVariant(product.selectedVariant, variants);
+  const selectedVariant = useOptimisticVariant(
+    product.selectedVariant,
+    variants,
+  );
   const [searchParams, setSearchParams] = useSearchParams();
   const {handle} = useParams();
   const currentColor = searchParams.get('Color') || 'Black';
-  const [defaultImageIdx, setDefaultImageIdx] = useState(getColorOptionIdx(product, currentColor));
+  const [defaultImageIdx, setDefaultImageIdx] = useState(
+    getColorOptionIdx(product, currentColor),
+  );
 
   useEffect(() => {
     setDefaultImageIdx(getColorOptionIdx(product, currentColor));
   }, [product, currentColor]);
 
   // UNI-1358
-  let productId = product.selectedVariant ? product.selectedVariant.id : product.id;
-  console.log('UNI-1358 - productId in view product:', productId);
+  let productId = product.selectedVariant
+    ? product.selectedVariant.id
+    : product.id;
+
   const logProductView = useCallback(() => {
     productView.methods?.view({
       name: product.title,
@@ -182,7 +214,10 @@ export default function Product() {
             defaultImgIdx={defaultImageIdx}
             onImgSelect={(idx) => {
               setDefaultImageIdx(idx);
-              setColorParam(product.options.find((opt) => opt.name === 'Color')?.optionValues[idx].name || '');
+              setColorParam(
+                product.options.find((opt) => opt.name === 'Color')
+                  ?.optionValues[idx].name || '',
+              );
             }}
           />
 
@@ -193,7 +228,9 @@ export default function Product() {
               <Colors
                 currentColor={currentColor}
                 availableColors={
-                  product.options.find((opt) => opt.name === 'Color')?.optionValues.map(({name: color}) => color) || []
+                  product.options
+                    .find((opt) => opt.name === 'Color')
+                    ?.optionValues.map(({name: color}) => color) || []
                 }
                 onSelect={(color) => {
                   setColorParam(color);

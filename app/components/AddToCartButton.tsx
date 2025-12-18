@@ -34,7 +34,6 @@ export function AddToCartButton({
   if (product.selectedVariant) {
     productId = product.selectedVariant.id;
   }
-  console.log('UNI-1358 - Add to cart:', productId);
 
   return (
     <CartForm
