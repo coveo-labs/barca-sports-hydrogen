@@ -19,7 +19,13 @@ const mapColor = (color: string, gradient = false) => {
     case 'navy':
       return 'blue-900';
     case 'multi-colored':
-      return 'indigo-500' + (gradient ? ' bg-gradient-to-r from-yellow-500 via-red-400 to-yellow-500' : ''); // keep leading space for bg class
+    case 'multi color':
+      return (
+        'indigo-500' +
+        (gradient
+          ? ' bg-gradient-to-r from-yellow-500 via-red-400 to-yellow-500'
+          : '')
+      ); // keep leading space for bg class
     default:
       return `${color.toLowerCase()}-700`;
   }

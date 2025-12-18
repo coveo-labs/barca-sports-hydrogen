@@ -30,10 +30,9 @@ export function AddToCartButton({
   const [searchParams, _] = useSearchParams();
 
   // UNI-1358
-  let productId = product.id;
-  if (product.selectedVariant) {
-    productId = product.selectedVariant.id;
-  }
+  const productId = product.selectedVariant
+    ? product.selectedVariant.id
+    : product.id;
 
   return (
     <CartForm

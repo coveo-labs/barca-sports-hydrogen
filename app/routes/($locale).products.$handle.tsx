@@ -20,7 +20,6 @@ import {
   ClientSideNavigatorContextProvider,
   ServerSideNavigatorContextProvider,
 } from '~/lib/coveo/navigator.provider';
-import {colorToShorthand} from '~/lib/coveo/map.coveo.shopify';
 import {
   redirect,
   useLoaderData,
@@ -43,7 +42,7 @@ export async function loader(args: LoaderFunctionArgs) {
   const url = new URL(args.request.url);
 
   // UNI-1358
-  let productId = product.selectedVariant
+  const productId = product.selectedVariant
     ? product.selectedVariant.id
     : product.id;
 
@@ -181,7 +180,7 @@ export default function Product() {
   }, [product, currentColor]);
 
   // UNI-1358
-  let productId = product.selectedVariant
+  const productId = product.selectedVariant
     ? product.selectedVariant.id
     : product.id;
 
