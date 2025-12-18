@@ -1,5 +1,11 @@
 # skeleton
 
+## 2025.12.17
+
+### Patch Changes
+
+- Reset Product Ids to use Shopify Variant IDs in all tracking events
+
 ## 2025.12.4
 
 ### Patch Changes
@@ -15,15 +21,14 @@
   **Problem**: Click events used Shopify variant IDs (`gid://shopify/ProductVariant/123`) while other events (view, cart, purchase) used custom format (`HANDLE_COLORCODE`). This prevented proper revenue attribution in analytics.
 
   **Solution**: Created utility functions to ensure all events use consistent product ID format:
-  
   - Added `constructConsistentProductId()` to build consistent IDs from product data
-  - Added `createProductWithConsistentId()` for click tracking with `ec_product_id`  
+  - Added `createProductWithConsistentId()` for click tracking with `ec_product_id`
   - Added `createGTMItemFromProduct()` for GTM events with consistent `item_id`
   - Updated all recommendation components to use utility functions
 
   **Components Updated**:
   - `app/components/Search/ProductList.tsx`
-  - `app/components/Cart/CartRecommendations.tsx` 
+  - `app/components/Cart/CartRecommendations.tsx`
   - `app/components/Products/Recommendations.tsx`
   - `app/components/Homepage/Recommendations.tsx`
   - `app/components/Search/StandaloneSearchBox.tsx`
@@ -41,7 +46,6 @@
 ### Patch Changes
 
 - Stabilize `getSitemap`, `getSitemapIndex` and implement on skeleton ([#2589](https://github.com/Shopify/hydrogen/pull/2589)) by [@juanpprieto](https://github.com/juanpprieto)
-
   1. Update the `getSitemapIndex` at `/app/routes/[sitemap.xml].tsx`
 
   ```diff
@@ -151,7 +155,6 @@
 - [**Breaking change**] ([#2585](https://github.com/Shopify/hydrogen/pull/2585)) by [@wizardlyhel](https://github.com/wizardlyhel)
 
   Deprecate usages of `product.options.values` and use `product.options.optionValues` instead.
-
   1. Update your product graphql query to use the new `optionValues` field.
 
   ```diff
@@ -832,7 +835,6 @@
 ### Patch Changes
 
 - Improve performance of predictive search: ([#1823](https://github.com/Shopify/hydrogen/pull/1823)) by [@frandiox](https://github.com/frandiox)
-
   - Change the request to be GET instead of POST to avoid Remix route revalidations.
   - Add Cache-Control headers to the response to get quicker results when typing.
 
@@ -888,10 +890,7 @@
   export async function loader({params, context}: LoaderFunctionArgs) {
     const {language, country} = context.storefront.i18n;
 
-    if (
-      params.locale &&
-      params.locale.toLowerCase() !== `${language}-${country}`.toLowerCase()
-    ) {
+    if (params.locale && params.locale.toLowerCase() !== `${language}-${country}`.toLowerCase()) {
       // If the locale URL param is defined, yet we still are still at the default locale
       // then the the locale param must be invalid, send to the 404 page
       throw new Response(null, {status: 404});
@@ -1052,7 +1051,6 @@
 ### Major Changes
 
 - The Storefront API 2023-10 now returns menu item URLs that include the `primaryDomainUrl`, instead of defaulting to the Shopify store ID URL (example.myshopify.com). The skeleton template requires changes to check for the `primaryDomainUrl`: by [@blittle](https://github.com/blittle)
-
   1. Update the `HeaderMenu` component to accept a `primaryDomainUrl` and include
      it in the internal url check
 

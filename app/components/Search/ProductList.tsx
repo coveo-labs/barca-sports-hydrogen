@@ -7,10 +7,7 @@ import type {
   ProductList as ProductListType,
 } from '@coveo/headless/ssr-commerce';
 import {useEffect} from 'react';
-import {
-  createProductWithConsistentId,
-  createGTMItemFromProduct,
-} from '~/lib/coveo/map.coveo.shopify';
+import {createGTMItemFromProduct} from '~/lib/coveo/map.coveo.shopify';
 import '~/types/gtm';
 
 // Global tracking to ensure analytics only fire once per response
@@ -95,13 +92,10 @@ export function ProductList() {
               key={product.permanentid}
               product={product}
               onSelect={() => {
-                const productWithConsistentId =
-                  createProductWithConsistentId(product);
-
                 productList.methods
                   ?.interactiveProduct({
                     options: {
-                      product: productWithConsistentId,
+                      product,
                     },
                   })
                   .select();

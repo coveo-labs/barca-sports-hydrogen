@@ -1,11 +1,6 @@
 import {CartForm, type OptimisticCartLineInput} from '@shopify/hydrogen';
-import {
-  useParams,
-  useSearchParams,
-  type FetcherWithComponents,
-} from 'react-router';
+import {useSearchParams, type FetcherWithComponents} from 'react-router';
 import {useCart} from '~/lib/coveo/engine';
-import {colorToShorthand} from '~/lib/coveo/map.coveo.shopify';
 import type {CartReturn} from '~/routes/($locale).cart';
 import type {ProductHandleData} from '~/routes/($locale).products.$handle';
 import '~/types/gtm';
@@ -33,9 +28,12 @@ export function AddToCartButton({
   const quantityToAdd = lines[0].quantity!;
   const newQuantity = currentQuantity + quantityToAdd;
   const [searchParams, _] = useSearchParams();
-  const coveoProductId = `${useParams().handle}_${colorToShorthand(
-    searchParams.get('Color') || '',
-  )}`;
+
+  // UNI-1358
+  let productId = product.id;
+  if (product.selectedVariant) {
+    productId = product.selectedVariant.id;
+  }
 
   return (
     <CartForm
@@ -58,7 +56,7 @@ export function AddToCartButton({
                 coveoCart.methods?.updateItemQuantity({
                   name: product.title,
                   price: Number(product.selectedVariant?.price.amount),
-                  productId: coveoProductId!,
+                  productId,
                   quantity: newQuantity,
                 });
                 window.dataLayer = window.dataLayer || [];
@@ -70,7 +68,7 @@ export function AddToCartButton({
                     value: Number(product.selectedVariant?.price.amount),
                     items: [
                       {
-                        item_id: coveoProductId!,
+                        item_id: productId,
                         item_name: product.title,
                         price: Number(product.selectedVariant?.price.amount),
                         quantity: quantityToAdd,

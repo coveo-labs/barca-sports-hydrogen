@@ -41,10 +41,11 @@ export async function loader(args: LoaderFunctionArgs) {
   const criticalData = await loadCriticalData(args);
   const {product} = criticalData;
   const url = new URL(args.request.url);
-  const selectedColor = url.searchParams.get('Color') || 'Black';
-  const coveoProductId = `${product.handle.toUpperCase()}_${colorToShorthand(
-    selectedColor,
-  )}`;
+
+  // UNI-1358
+  let productId = product.selectedVariant
+    ? product.selectedVariant.id
+    : product.id;
 
   engineDefinition.recommendationEngineDefinition.setNavigatorContextProvider(
     () => new ServerSideNavigatorContextProvider(args.request),
@@ -54,7 +55,7 @@ export async function loader(args: LoaderFunctionArgs) {
       request: args.request,
       k: ['pdpRecommendationsUpperCarousel', 'pdpRecommendationsLowerCarousel'],
       context: args.context,
-      productId: coveoProductId,
+      productId,
     });
 
   return {...criticalData, recommendationStaticState, accessToken};
@@ -179,10 +180,15 @@ export default function Product() {
     setDefaultImageIdx(getColorOptionIdx(product, currentColor));
   }, [product, currentColor]);
 
+  // UNI-1358
+  let productId = product.selectedVariant
+    ? product.selectedVariant.id
+    : product.id;
+
   const logProductView = useCallback(() => {
     productView.methods?.view({
       name: product.title,
-      productId: `${handle?.toUpperCase()!}_${colorToShorthand(currentColor)}`,
+      productId,
       price: Number(selectedVariant.price.amount),
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
