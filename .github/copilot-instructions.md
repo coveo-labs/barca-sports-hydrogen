@@ -317,9 +317,8 @@ Standard pattern for displaying products from Coveo:
 <ProductCard
   product={product}
   onSelect={() => {
-    const productWithId = createProductWithConsistentId(product);
     productList.methods?.interactiveProduct({
-      options: {product: productWithId},
+      options: {product},
     }).select();
   }}
 />

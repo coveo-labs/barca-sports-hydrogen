@@ -5,10 +5,7 @@ import {
 import {ProductCard} from './ProductCard';
 import {Fragment, useEffect} from 'react';
 import type {Product} from '@coveo/headless-react/ssr-commerce';
-import {
-  createProductWithConsistentId,
-  createGTMItemFromProduct,
-} from '~/lib/coveo/map.coveo.shopify';
+import {createGTMItemFromProduct} from '~/lib/coveo/map.coveo.shopify';
 import '~/types/gtm';
 
 let hasRunRefUpper = false;
@@ -122,10 +119,7 @@ export function ProductRecommendations() {
                             recommendationCarousel.methods
                               ?.interactiveProduct({
                                 options: {
-                                  product:
-                                    createProductWithConsistentId(
-                                      relatedProduct,
-                                    ),
+                                  product: relatedProduct,
                                 },
                               })
                               .select();

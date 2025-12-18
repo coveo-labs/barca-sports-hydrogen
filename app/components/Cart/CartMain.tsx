@@ -57,9 +57,7 @@ function CartLineQuantitySelector({
   };
 
   return (
-    <CartLineUpdateButton
-      lines={[{id: lineId, quantity: selectedQuantity}]}
-    >
+    <CartLineUpdateButton lines={[{id: lineId, quantity: selectedQuantity}]}>
       <select
         ref={(el) => {
           formRef.current = el?.form || null;
@@ -116,7 +114,8 @@ export function CartMain({cart: originalCart}: CartMainProps) {
     if (cart.lines.nodes) {
       cart.lines.nodes.forEach((node, index) => {
         items.push({
-          item_id: node.merchandise.product.handle,
+          // UNI-1358
+          item_id: node.merchandise.id,
           item_name: node.merchandise.product.title,
           index,
           price: node.merchandise.price.amount,
