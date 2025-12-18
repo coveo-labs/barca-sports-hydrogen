@@ -5,7 +5,7 @@ import type {
   Product,
   ProductListState,
   ProductList as ProductListType,
-  // DidYouMeanState,
+  DidYouMeanState,
 } from '@coveo/headless/ssr-commerce';
 import {useEffect} from 'react';
 import {createGTMItemFromProduct} from '~/lib/coveo/map.coveo.shopify';
@@ -70,17 +70,20 @@ export function ProductList() {
     });
   }, [productList.state.responseId, productList.state.products]); // Track responseId and products changes
 
-  // let searchQuery = '';
-
-  // const didYouMean = engineDefinition.controllers.useDidYouMean() as {
-  //   state: DidYouMeanState;
-  // };
+  let searchQuery = summary.state.query || '';
+  if (summary.state.query) {
+    // useDidYouMean is avaialble only when ProductList is used with Search, not listing.
+    const didYouMean = engineDefinition.controllers.useDidYouMean() as {
+      state: DidYouMeanState;
+    };
+    searchQuery = didYouMean.state.originalQuery;
+  }
 
   return (
     <section
       aria-labelledby="products-heading"
       data-bam-search-uid={productList.state.responseId}
-      // data-bam-search-query={didYouMean.state.originalQuery || ''}
+      {...(searchQuery && {'data-bam-search-query': searchQuery})}
       data-bam-result-count={summary.state.totalNumberOfProducts}
       className={
         'result-list' +
