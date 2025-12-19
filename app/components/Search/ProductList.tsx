@@ -5,12 +5,10 @@ import type {
   Product,
   ProductListState,
   ProductList as ProductListType,
+  DidYouMeanState,
 } from '@coveo/headless/ssr-commerce';
 import {useEffect} from 'react';
-import {
-  createProductWithConsistentId,
-  createGTMItemFromProduct,
-} from '~/lib/coveo/map.coveo.shopify';
+import {createGTMItemFromProduct} from '~/lib/coveo/map.coveo.shopify';
 import '~/types/gtm';
 
 // Global tracking to ensure analytics only fire once per response
@@ -27,6 +25,7 @@ export function ProductList() {
   const summary = engineDefinition.controllers.useSummary() as {
     state: SearchSummaryState;
   };
+
   const noResultClass = !productList.state.products.length
     ? ' no-results '
     : ' ';
@@ -71,11 +70,20 @@ export function ProductList() {
     });
   }, [productList.state.responseId, productList.state.products]); // Track responseId and products changes
 
+  let searchQuery = summary.state.query || '';
+  if (summary.state.query) {
+    // useDidYouMean is avaialble only when ProductList is used with Search, not listing.
+    const didYouMean = engineDefinition.controllers.useDidYouMean() as {
+      state: DidYouMeanState;
+    };
+    searchQuery = didYouMean.state.originalQuery;
+  }
+
   return (
     <section
       aria-labelledby="products-heading"
       data-bam-search-uid={productList.state.responseId}
-      data-bam-search-query={summary.state.query}
+      {...(searchQuery && {'data-bam-search-query': searchQuery})}
       data-bam-result-count={summary.state.totalNumberOfProducts}
       className={
         'result-list' +
@@ -95,13 +103,10 @@ export function ProductList() {
               key={product.permanentid}
               product={product}
               onSelect={() => {
-                const productWithConsistentId =
-                  createProductWithConsistentId(product);
-
                 productList.methods
                   ?.interactiveProduct({
                     options: {
-                      product: productWithConsistentId,
+                      product,
                     },
                   })
                   .select();

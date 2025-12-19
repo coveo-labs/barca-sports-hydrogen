@@ -30,6 +30,7 @@ export interface ConversationMessage {
   createdAt: string;
   kind: ConversationMessageKind;
   ephemeral?: boolean;
+  isAutoRetry?: boolean;
   metadata?: ConversationMessageMetadata;
 }
 

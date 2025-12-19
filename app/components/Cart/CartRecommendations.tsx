@@ -2,10 +2,7 @@ import {useCartRecommendations} from '~/lib/coveo/engine';
 import {ProductCard} from '../Products/ProductCard';
 import {useEffect, useRef} from 'react';
 import type {Product} from '@coveo/headless-react/ssr-commerce';
-import {
-  createProductWithConsistentId,
-  createGTMItemFromProduct,
-} from '~/lib/coveo/map.coveo.shopify';
+import {createGTMItemFromProduct} from '~/lib/coveo/map.coveo.shopify';
 import '~/types/gtm';
 
 type itemsList = {
@@ -55,10 +52,7 @@ export function CartRecommendations() {
     window.dataLayer.push({
       event: 'view_item_list',
       ecommerce: {
-        item_list_id: `recommendations_${recs.state.headline
-          .toString()
-          .replaceAll(' ', '_')
-          .toLowerCase()}`,
+        item_list_id: `recommendations_${recs.state.headline.toString().replaceAll(' ', '_').toLowerCase()}`,
         item_list_name: recs.state.headline,
         items: recommendationsItemsArray,
       },
@@ -85,7 +79,7 @@ export function CartRecommendations() {
               recs.methods
                 ?.interactiveProduct({
                   options: {
-                    product: createProductWithConsistentId(relatedProduct),
+                    product: relatedProduct,
                   },
                 })
                 .select();

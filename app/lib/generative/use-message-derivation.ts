@@ -34,11 +34,16 @@ export function useMessageDerivation({
 
   const visibleMessages = useMemo(
     () =>
-      messages.filter(
-        (message) =>
+      messages.filter((message) => {
+        // Hide auto-retry messages from the UI
+        if (message.isAutoRetry) {
+          return false;
+        }
+        return (
           !message.ephemeral ||
-          (message.kind !== 'status' && message.kind !== 'tool'),
-      ),
+          (message.kind !== 'status' && message.kind !== 'tool')
+        );
+      }),
     [messages],
   );
 

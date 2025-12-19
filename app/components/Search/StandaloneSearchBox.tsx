@@ -13,7 +13,6 @@ import {
   SparklesIcon,
 } from '@heroicons/react/24/outline';
 import {ProductCard} from '../Products/ProductCard';
-import {createProductWithConsistentId} from '~/lib/coveo/map.coveo.shopify';
 import '~/types/gtm';
 import {useNavigate} from 'react-router';
 
@@ -110,7 +109,10 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
             </ComboboxButton>
             <ComboboxButton
               as="button"
-              onClick={(e) => {e.preventDefault();handleGenerativeSearch()}}
+              onClick={(e) => {
+                e.preventDefault();
+                handleGenerativeSearch();
+              }}
               className="inline-flex items-center gap-1.5 rounded-full border border-indigo-600 bg-indigo-50 px-3 py-1 text-sm font-semibold text-indigo-700 shadow-sm transition hover:bg-indigo-100"
             >
               <SparklesIcon className="size-4" />
@@ -160,7 +162,7 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
                           instantProducts.methods
                             ?.interactiveProduct({
                               options: {
-                                product: createProductWithConsistentId(product),
+                                product,
                               },
                             })
                             .select();
@@ -185,7 +187,7 @@ function useRedirect(
 ) {
   useEffect(() => {
     if (searchBox.state.redirectTo === '/search') {
-       const url = `${searchBox.state.redirectTo}?q=${encodeURIComponent(searchBox.state.value)}`;
+      const url = `${searchBox.state.redirectTo}?q=${encodeURIComponent(searchBox.state.value)}`;
 
       navigate(url);
       // Reset the redirectTo state to prevent re-triggering on popover reopen

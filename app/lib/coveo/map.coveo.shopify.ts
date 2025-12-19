@@ -12,36 +12,10 @@ export function mapShopifyMerchandiseToCoveoCartItem(
     (opt) => opt.name === 'Color',
   );
   return {
-    productId: `${merchandise.product.handle.toUpperCase()}_${colorToShorthand(
-      selectedColor?.value || '',
-    )}`,
+    productId: merchandise.id, // UNI-1358
     name: merchandise.product.title,
     price: Number(merchandise.price.amount),
     quantity: node.quantity,
-  };
-}
-
-/**
- * Constructs a consistent product ID from a Coveo product object
- * by extracting the handle from clickUri and combining with color shorthand
- */
-export function constructConsistentProductId(product: Product): string {
-  const productHandle = new URL(product.clickUri).pathname.split('/').pop();
-  const productColor = product.ec_color || 'Black';
-  const consistentId = `${productHandle?.toUpperCase()}_${colorToShorthand(
-    productColor,
-  )}`;
-
-  return consistentId;
-}
-
-/**
- * Creates a product object with consistent product ID for click tracking
- */
-export function createProductWithConsistentId(product: Product): Product {
-  return {
-    ...product,
-    ec_product_id: constructConsistentProductId(product),
   };
 }
 
@@ -58,55 +32,12 @@ export function createGTMItemFromProduct(
   price: number;
   quantity: number;
 } {
-  const consistentId = constructConsistentProductId(product);
-
+  // UNI-1358: Use ec_product_id for consistent product IDs across events
   return {
-    item_id: consistentId,
+    item_id: product.ec_product_id || '',
     item_name: product.ec_name || '',
     index,
     price: product.ec_price || 0,
     quantity: 1,
   };
-}
-
-export function colorToShorthand(color: string) {
-  const colorMap: {[key: string]: string} = {
-    'birchwood brown': 'BB',
-    black: 'BK',
-    blue: 'BL',
-    brown: 'BR',
-    clear: 'CL',
-    cyan: 'CY',
-    'deep red': 'DR',
-    'forest green': 'FG',
-    gray: 'GY',
-    green: 'GN',
-    grey: 'GY',
-    khaki: 'KH',
-    lime: 'LM',
-    'multi color': 'MC',
-    'multi-colored': 'MC',
-    natural: 'NT',
-    navy: 'NY',
-    'olive green': 'OG',
-    olive: 'OL',
-    one: '01',
-    orange: 'OR',
-    pink: 'PK',
-    purple: 'PL',
-    red: 'RD',
-    'rustic yellow': 'RY',
-    silver: 'SV',
-    'sky blue': 'SB',
-    white: 'WH',
-    yellow: 'YL',
-    beige: 'BG',
-    gold: 'GD',
-    striped: 'ST',
-    neon: 'NE',
-    pastel: 'PS',
-    tan: 'TN',
-  };
-
-  return colorMap[color.toLowerCase() as keyof typeof colorMap] || 'BK';
 }

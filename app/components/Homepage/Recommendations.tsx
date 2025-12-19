@@ -2,10 +2,7 @@ import {useHomepageRecommendations} from '~/lib/coveo/engine';
 import {ProductCard} from '../Products/ProductCard';
 import {useEffect, useRef} from 'react';
 import type {Product} from '@coveo/headless-react/ssr-commerce';
-import {
-  createProductWithConsistentId,
-  createGTMItemFromProduct,
-} from '~/lib/coveo/map.coveo.shopify';
+import {createGTMItemFromProduct} from '~/lib/coveo/map.coveo.shopify';
 import '~/types/gtm';
 
 // Global tracking to ensure analytics only fire once
@@ -88,13 +85,13 @@ export function Recommendations() {
 
         <div className="recommendation-list mt-6 grid grid-cols-1 gap-y-10 sm:grid-cols-3 sm:gap-x-6 sm:gap-y-0 lg:gap-x-8">
           {homepageRecommendations.state.products.map(
-            (recommendation: Product) => {
+            (relatedProduct: Product) => {
               // Exclude children to prevent color swatches on recs carousel
-              const {children, ...productWithoutEcColor} = recommendation;
+              const {children, ...productWithoutEcColor} = relatedProduct;
 
               return (
                 <div
-                  key={recommendation.permanentid}
+                  key={relatedProduct.permanentid}
                   className="group relative"
                 >
                   <ProductCard
@@ -104,8 +101,7 @@ export function Recommendations() {
                       homepageRecommendations.methods
                         ?.interactiveProduct({
                           options: {
-                            product:
-                              createProductWithConsistentId(recommendation),
+                            product: relatedProduct,
                           },
                         })
                         .select();

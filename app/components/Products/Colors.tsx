@@ -2,7 +2,7 @@ import {Radio, RadioGroup} from '@headlessui/react';
 import {useState} from 'react';
 import cx from '~/lib/cx';
 
-const mapColor = (color: string) => {
+const mapColor = (color: string, gradient = false) => {
   switch (color.toLowerCase()) {
     case 'black':
       return 'zinc-950';
@@ -16,6 +16,16 @@ const mapColor = (color: string) => {
       return 'slate-200';
     case 'yellow':
       return 'yellow-300';
+    case 'navy':
+      return 'blue-900';
+    case 'multi-colored':
+    case 'multi color':
+      return (
+        'indigo-500' +
+        (gradient
+          ? ' bg-gradient-to-r from-yellow-500 via-red-400 to-yellow-500'
+          : '')
+      ); // keep leading space for bg class
     default:
       return `${color.toLowerCase()}-700`;
   }
@@ -32,10 +42,13 @@ export function Colors({
   headline?: string;
   onSelect?: (color: string) => void;
 }) {
+  if (availableColors.length === 0) {
+    return null;
+  }
+
   return (
     <div>
       <h3 className="text-sm text-gray-600">{headline}</h3>
-
       <fieldset aria-label="Choose a color" className="mt-2">
         <RadioGroup
           value={currentColor}
@@ -58,7 +71,7 @@ export function Colors({
                 aria-hidden="true"
                 className={cx(
                   'color-swatch',
-                  `bg-${mapColor(color)}`,
+                  `bg-${mapColor(color, true)}`,
                   'size-8 rounded-full border border-black/10',
                 )}
               />
