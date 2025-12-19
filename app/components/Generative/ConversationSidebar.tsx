@@ -9,7 +9,7 @@ import {
 export function ConversationSidebar() {
   const [isCollapsed, setIsCollapsed] = useState(true);
   const {conversations, activeConversationId} = useConversationsState();
-  const {onNewConversation, onSelectConversation, onDeleteConversation} =
+  const {onSelectConversation, onDeleteConversation} =
     useConversationActions();
   return (
     <aside
