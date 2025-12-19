@@ -26,7 +26,11 @@ export function PageLayout({
 
   return (
     <div
-      className={isGenerativePage ? "flex h-screen flex-col bg-white" : "flex min-h-screen flex-col bg-white"}
+      className={
+        isGenerativePage
+          ? 'flex h-screen flex-col bg-white overflow-hidden'
+          : 'flex min-h-screen flex-col bg-white'
+      }
       style={isGenerativePage ? {height: '100svh'} : {minHeight: '100svh'}}
     >
       <Header
@@ -35,7 +39,9 @@ export function PageLayout({
         publicStoreDomain={publicStoreDomain}
       />
 
-      <main className="flex flex-1 flex-col min-h-0">{children}</main>
+      <main className="flex flex-1 flex-col min-h-0">
+        {children}
+      </main>
       {!isGenerativePage && <Footer header={header} />}
     </div>
   );
