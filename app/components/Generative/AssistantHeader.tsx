@@ -9,7 +9,7 @@ export function AssistantHeader() {
   const {onStop} = useStreamingActions();
   const {onNewConversation} = useConversationActions();
   return (
-    <header className="border-b border-slate-200 bg-white px-4 py-4 shadow-sm sm:px-6 lg:px-10">
+    <header className="flex-shrink-0 border-b border-slate-200 bg-white px-4 py-4 shadow-sm sm:px-6 lg:px-10">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold text-slate-900">

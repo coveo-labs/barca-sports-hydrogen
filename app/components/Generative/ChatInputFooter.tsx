@@ -33,7 +33,7 @@ export function ChatInputFooter({
   };
 
   return (
-    <footer className="sticky bottom-0 z-10 border-t border-slate-200 bg-white px-4 py-4 shadow-lg sm:px-6 lg:px-10">
+    <footer className="flex-shrink-0 border-t border-slate-200 bg-white px-4 py-4 shadow-lg sm:px-6 lg:px-10">
       {streamError && (
         <div className="mb-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">
           {streamError}

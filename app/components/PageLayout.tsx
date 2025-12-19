@@ -3,6 +3,7 @@ import type {
   FooterQuery,
   HeaderQuery,
 } from 'storefrontapi.generated';
+import {useLocation} from 'react-router';
 import {Footer} from '~/components/Footer';
 import {Header} from '~/components/Header';
 
@@ -20,10 +21,13 @@ export function PageLayout({
   header,
   publicStoreDomain,
 }: PageLayoutProps) {
+  const location = useLocation();
+  const isGenerativePage = location.pathname.includes('/generative');
+
   return (
     <div
-      className="flex min-h-screen flex-col bg-white"
-      style={{minHeight: '100svh'}}
+      className={isGenerativePage ? "flex h-screen flex-col bg-white" : "flex min-h-screen flex-col bg-white"}
+      style={isGenerativePage ? {height: '100svh'} : {minHeight: '100svh'}}
     >
       <Header
         header={header}
@@ -32,7 +36,7 @@ export function PageLayout({
       />
 
       <main className="flex flex-1 flex-col min-h-0">{children}</main>
-      <Footer header={header} />
+      {!isGenerativePage && <Footer header={header} />}
     </div>
   );
 }
