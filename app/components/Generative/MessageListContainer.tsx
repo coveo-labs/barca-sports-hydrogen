@@ -33,9 +33,6 @@ export function MessageListContainer({
           )}
         </div>
       )}
-      {hasContent && (
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-slate-50 via-slate-50/80 to-transparent backdrop-blur-sm" />
-      )}
     </div>
   );
 }

@@ -31,7 +31,7 @@ function ProductResultsMessageComponent({
 
   return (
     <div className="flex w-full justify-start">
-      <div className="inline-block max-w-full rounded-2xl bg-white px-4 py-4 shadow-sm ring-1 ring-slate-200">
+      <div className="flex max-w-full flex-col rounded-2xl bg-white px-4 py-4 shadow-sm ring-1 ring-slate-200">
         {hasHeadline ? (
           <p className="text-sm font-semibold text-slate-900">
             {message.content}

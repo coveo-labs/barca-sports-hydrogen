@@ -128,7 +128,7 @@ export function ProductCarousel({
   }
 
   return (
-    <div className="my-4 inline-block rounded-2xl bg-gray-50 px-3 py-4 shadow-sm ring-1 ring-slate-200/70">
+    <div className="my-4 flex max-w-full flex-col rounded-2xl bg-gray-50 px-3 py-4 shadow-sm ring-1 ring-slate-200/70">
       <ul
         className="flex gap-3 list-none overflow-x-auto"
         aria-label="Product carousel"
