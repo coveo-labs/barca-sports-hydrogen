@@ -13,7 +13,7 @@ export function Sizes({
   selectedVariant: ProductVariantFragment;
   product: ProductFragment;
   selectedSize: string;
-  onSelect?: (size: string) => void;
+  onSelect: (size: string) => void;
 }) {
   const sizeValues =
     product.options.find((opt) => opt.name === 'Size')?.optionValues || [];
