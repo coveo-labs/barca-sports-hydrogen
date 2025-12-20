@@ -3,6 +3,7 @@ import {hydrogen} from '@shopify/hydrogen/vite';
 import {oxygen} from '@shopify/mini-oxygen/vite';
 import {reactRouter} from '@react-router/dev/vite';
 import tsconfigPaths from 'vite-tsconfig-paths';
+import path from 'path';
 
 // Plugin to fix dayjs imports for Coveo Headless in SSR
 function dayjsEsmPlugin(): Plugin {
@@ -29,8 +30,46 @@ function dayjsEsmPlugin(): Plugin {
   };
 }
 
+// Plugin to stub pino for edge/worker environments where CommonJS require is not available
+function pinoStubPlugin(): Plugin {
+  return {
+    name: 'pino-stub',
+    enforce: 'pre',
+    resolveId(id) {
+      if (id === 'pino' || id.startsWith('pino/')) {
+        return '\0pino-stub';
+      }
+      return null;
+    },
+    load(id) {
+      if (id === '\0pino-stub') {
+        // Return a minimal pino stub that works in edge environments
+        return `
+          const noop = () => {};
+          const noopLogger = {
+            trace: noop,
+            debug: noop,
+            info: noop,
+            warn: noop,
+            error: noop,
+            fatal: noop,
+            child: () => noopLogger,
+            level: 'silent',
+          };
+          function pino() { return noopLogger; }
+          export { pino };
+          export default pino;
+          export const logger = noopLogger;
+        `;
+      }
+      return null;
+    },
+  };
+}
+
 export default defineConfig({
   plugins: [
+    pinoStubPlugin(),
     dayjsEsmPlugin(),
     hydrogen(),
     oxygen(),
@@ -50,7 +89,6 @@ export default defineConfig({
       '@coveo/headless',
       'dayjs',
       'exponential-backoff',
-      'pino',
     ],
     optimizeDeps: {
       /**
@@ -70,7 +108,6 @@ export default defineConfig({
         'use-sync-external-store/shim',
         'use-sync-external-store/with-selector',
         'exponential-backoff',
-        'pino',
       ],
       exclude: ['dayjs', '@coveo/headless'],
     },

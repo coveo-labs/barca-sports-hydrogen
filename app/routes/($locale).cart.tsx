@@ -14,9 +14,15 @@ import {
 import {CartEmpty} from '~/components/Cart/CartEmpty';
 import {CartMain} from '~/components/Cart/CartMain';
 import {CartRecommendations} from '~/components/Cart/CartRecommendations';
-import {RecommendationProvider} from '~/components/Search/Context';
+import {
+  RecommendationProvider,
+  StandaloneProvider,
+} from '~/components/Search/Context';
 import {engineDefinition} from '~/lib/coveo/engine';
-import {fetchRecommendationStaticState} from '~/lib/coveo/engine.server';
+import {
+  fetchRecommendationStaticState,
+  fetchStandaloneStaticState,
+} from '~/lib/coveo/engine.server';
 import {
   ClientSideNavigatorContextProvider,
   ServerSideNavigatorContextProvider,
@@ -111,17 +117,34 @@ export async function action({request, context}: ActionFunctionArgs) {
 }
 
 export async function loader({request, context}: LoaderFunctionArgs) {
+  // Set up navigator context for recommendations
   engineDefinition.recommendationEngineDefinition.setNavigatorContextProvider(
     () => new ServerSideNavigatorContextProvider(request),
   );
-  const {staticState: recommendationStaticState, accessToken} =
-    await fetchRecommendationStaticState({
+
+  // Set up navigator context for standalone (cart)
+  engineDefinition.standaloneEngineDefinition.setNavigatorContextProvider(
+    () => new ServerSideNavigatorContextProvider(request),
+  );
+
+  // Fetch both static states in parallel
+  const [recommendationResult, standaloneResult] = await Promise.all([
+    fetchRecommendationStaticState({
       request,
       k: ['cartRecommendations'],
       context,
-    });
+    }),
+    fetchStandaloneStaticState({
+      request,
+      context,
+    }),
+  ]);
 
-  return {recommendationStaticState, accessToken};
+  return {
+    recommendationStaticState: recommendationResult.staticState,
+    standaloneStaticState: standaloneResult.staticState,
+    accessToken: standaloneResult.accessToken,
+  };
 }
 
 export default function Cart() {
@@ -141,7 +164,13 @@ export default function Cart() {
           }
           return (
             <main className="cart-container mx-auto max-w-2xl px-4 pb-24 pt-16 sm:px-6 lg:max-w-7xl lg:px-8">
-              <CartMain cart={cart} />
+              <StandaloneProvider
+                navigatorContext={new ClientSideNavigatorContextProvider()}
+                staticState={loaderData.standaloneStaticState}
+                accessToken={loaderData.accessToken}
+              >
+                <CartMain cart={cart} />
+              </StandaloneProvider>
               <RecommendationProvider
                 navigatorContext={new ClientSideNavigatorContextProvider()}
                 staticState={loaderData.recommendationStaticState}
