@@ -55,6 +55,48 @@ export async function fetchStaticState({
   return {staticState, accessToken};
 }
 
+/**
+ * Fetches standalone static state for pages that need cart tracking
+ * (like the cart page) without search/listing functionality.
+ */
+export async function fetchStandaloneStaticState({
+  context,
+  request,
+}: {
+  context: AppLoadContext;
+  request: Request;
+}) {
+  const cart = await context.cart.get();
+  const {country, language, currency} = getLocaleFromRequest(request);
+
+  await updateTokenIfNeeded('standaloneEngineDefinition', request);
+
+  const accessToken =
+    engineDefinition.standaloneEngineDefinition.getAccessToken();
+
+  // Map Shopify cart to Coveo cart format
+  const coveoCartData = mapShopifyCartToCoveoCart(cart);
+
+  const staticState =
+    await engineDefinition.standaloneEngineDefinition.fetchStaticState({
+      controllers: {
+        cart: {
+          initialState: coveoCartData,
+        },
+        context: {
+          language: language.toLowerCase(),
+          country,
+          currency: currency as any,
+          view: {
+            url: 'https://shop.barca.group',
+          },
+        },
+      },
+    });
+
+  return {staticState, accessToken};
+}
+
 export async function fetchRecommendationStaticState({
   k,
   context,

@@ -2,7 +2,7 @@ import {Money, useOptimisticCart} from '@shopify/hydrogen';
 import type {CartApiQueryFragment} from 'storefrontapi.generated';
 import {CheckIcon, QuestionMarkCircleIcon} from '@heroicons/react/20/solid';
 import {CartLineRemoveButton, CartLineUpdateButton} from './CartLineItem';
-import {useCart} from '~/lib/coveo/engine';
+import {useCart, useEngine} from '~/lib/coveo/engine';
 import cx from '~/lib/cx';
 import type {CartLine} from '@shopify/hydrogen/storefront-api-types';
 import {mapShopifyMerchandiseToCoveoCartItem} from '~/lib/coveo/map.coveo.shopify';
@@ -83,7 +83,22 @@ export function CartMain({cart: originalCart}: CartMainProps) {
   // so the user immediately sees feedback when they modify the cart.
   const cart = useOptimisticCart(originalCart);
   const coveoCart = useCart();
-  const hasCartItems = coveoCart.state.totalQuantity > 0;
+  const engine = useEngine();
+  const hasCartItems = (coveoCart.state as any)?.totalQuantity > 0;
+
+  // Sync Coveo cart with Shopify cart whenever cart changes
+  useEffect(() => {
+    if (!cart?.lines.nodes || !coveoCart.methods) return;
+
+    cart.lines.nodes.forEach((node) => {
+      (coveoCart.methods as any)?.updateItemQuantity?.({
+        name: node.merchandise.product.title,
+        price: Number(node.merchandise.price.amount),
+        productId: node.merchandise.id,
+        quantity: node.quantity,
+      });
+    });
+  }, [cart?.lines.nodes, coveoCart.methods]);
 
   const buildDataLayerForPurchase = (cart: any) => {
     if (!cart) {
@@ -91,29 +106,24 @@ export function CartMain({cart: originalCart}: CartMainProps) {
       return;
     }
     const purchaseDataLayerObject = {
-      event: 'purchase',
-      ecommerce: {},
+      event: 'purchase' as const,
+      ecommerce: {
+        transaction_id: cart.id?.split('key=')[1] || null,
+        value: Number(cart.cost?.totalAmount?.amount) || null,
+        currency: cart.cost?.totalAmount?.currencyCode || 'USD',
+        items: [] as Array<{
+          item_id: string;
+          item_name: string;
+          index: number;
+          price: string;
+          quantity: number;
+        }>,
+      },
     };
 
-    // Assigning the transaction_id
-    const transaction_id = cart.id.split('key=')[1] || null;
-    purchaseDataLayerObject.ecommerce.transaction_id = transaction_id;
-
-    //Assigning the total value
-    const value = cart.cost.totalAmount.amount || null;
-    purchaseDataLayerObject.ecommerce.value = value;
-
-    //Assigning transaction currency
-    const currency = cart.cost.totalAmount.currencyCode || null;
-    purchaseDataLayerObject.ecommerce.currency = currency;
-
-    // Constructing the items array
-
-    const items = [];
-
-    if (cart.lines.nodes) {
-      cart.lines.nodes.forEach((node, index) => {
-        items.push({
+    if (cart.lines?.nodes) {
+      cart.lines.nodes.forEach((node: any, index: number) => {
+        purchaseDataLayerObject.ecommerce.items.push({
           // UNI-1358
           item_id: node.merchandise.id,
           item_name: node.merchandise.product.title,
@@ -124,10 +134,9 @@ export function CartMain({cart: originalCart}: CartMainProps) {
       });
     }
 
-    purchaseDataLayerObject.ecommerce.items = items;
-
     return purchaseDataLayerObject;
   };
+
   return (
     <div>
       <h1 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
@@ -322,17 +331,46 @@ export function CartMain({cart: originalCart}: CartMainProps) {
 
           <div className="mt-6">
             <NavLink
-              onClick={(e) =>
-                hasCartItems && cart
-                  ? ((window.dataLayer = window.dataLayer || []),
-                    window.dataLayer.push({ecommerce: null}),
-                    window.dataLayer.push(buildDataLayerForPurchase(cart)),
-                    coveoCart.methods?.purchase({
-                      id: cart?.id || '',
-                      revenue: Number(cart?.cost?.totalAmount?.amount),
-                    }))
-                  : e.preventDefault()
-              }
+              onClick={(e) => {
+                if (!hasCartItems || !cart) {
+                  e.preventDefault();
+                  return;
+                }
+
+                // Push to dataLayer for GTM
+                window.dataLayer = window.dataLayer || [];
+                window.dataLayer.push({ecommerce: null});
+                const purchaseData = buildDataLayerForPurchase(cart);
+                if (purchaseData) {
+                  window.dataLayer.push(purchaseData);
+                }
+
+                // Track purchase in Coveo using relay.emit directly
+                // This bypasses the cart controller state and uses Shopify cart data
+                // using coveoCart.methods?.purchase() was only sending invalid data (no products - sync issue?)
+                if (engine?.relay) {
+                  const currency =
+                    cart.cost?.totalAmount?.currencyCode || 'CAD';
+                  const products = cart.lines.nodes.map((node) => ({
+                    product: {
+                      productId: node.merchandise.product.id,
+                      name: node.merchandise.product.title,
+                      price: Number(node.merchandise.price.amount),
+                    },
+                    quantity: node.quantity,
+                  }));
+                  const revenue = Number(cart.cost?.totalAmount?.amount || 0);
+
+                  engine.relay.emit('ec.purchase', {
+                    currency,
+                    products,
+                    transaction: {
+                      id: cart.id || `order-${Date.now()}`,
+                      revenue,
+                    },
+                  });
+                }
+              }}
               to={cart?.checkoutUrl || ''}
               className={cx(
                 'checkout block w-full rounded-md border border-transparent bg-indigo-600 px-4 py-3',
