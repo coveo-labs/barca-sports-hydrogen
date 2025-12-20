@@ -44,7 +44,7 @@
     "@react-router/dev": "7.9.2",
     "@react-router/fs-routes": "7.9.2",
     "@remix-run/eslint-config": "^2.17.2",
-    "@shopify/cli": "^3.88.1",
+    "@shopify/cli": "3.88.0",
     "@shopify/hydrogen-codegen": "^0.3.3",
     "@shopify/mini-oxygen": "^4.0.0",
     "@shopify/oxygen-workers-types": "^4.2.0",
