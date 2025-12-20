@@ -357,7 +357,7 @@ export function CartMain({cart: originalCart}: CartMainProps) {
                       name: node.merchandise.product.title,
                       price: Number(node.merchandise.price.amount),
                     },
-                    quantity: node.quantity,
+                    quantity: node.quantity >= 1 ? node.quantity : 1,
                   }));
                   const revenue = Number(cart.cost?.totalAmount?.amount || 0);
 
