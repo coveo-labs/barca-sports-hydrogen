@@ -1,4 +1,7 @@
-import type {ProductFragment} from 'storefrontapi.generated';
+import type {
+  ProductFragment,
+  ProductVariantFragment,
+} from 'storefrontapi.generated';
 import {
   getSelectedProductOptions,
   useOptimisticVariant,
@@ -174,6 +177,25 @@ export default function Product() {
   const [defaultImageIdx, setDefaultImageIdx] = useState(
     getColorOptionIdx(product, currentColor),
   );
+  const [selectedSize, setSelectedSize] = useState(
+    selectedVariant?.selectedOptions.find(
+      (option: SelectedOption) => option.name === 'Size',
+    )?.value || 'Medium',
+  );
+
+  // Find the variant that matches the current color and selected size
+  const variantForCart =
+    variants?.product?.variants.nodes.find(
+      (variant: ProductVariantFragment) => {
+        const variantColor = variant.selectedOptions.find(
+          (opt: SelectedOption) => opt.name === 'Color',
+        )?.value;
+        const variantSize = variant.selectedOptions.find(
+          (opt: SelectedOption) => opt.name === 'Size',
+        )?.value;
+        return variantColor === currentColor && variantSize === selectedSize;
+      },
+    ) || selectedVariant;
 
   useEffect(() => {
     setDefaultImageIdx(getColorOptionIdx(product, currentColor));
@@ -236,20 +258,25 @@ export default function Product() {
                 }}
               />
 
-              <Sizes product={product} selectedVariant={selectedVariant} />
+              <Sizes
+                product={product}
+                selectedVariant={selectedVariant}
+                selectedSize={selectedSize}
+                onSelect={setSelectedSize}
+              />
 
               <div className="mt-10 flex">
                 <AddToCartButton
-                  disabled={!selectedVariant}
+                  disabled={!variantForCart}
                   product={product}
                   redirectTo={`/products/${useParams().handle}`}
                   lines={
-                    selectedVariant
+                    variantForCart
                       ? [
                           {
-                            merchandiseId: selectedVariant.id,
+                            merchandiseId: variantForCart.id,
                             quantity: 1,
-                            selectedVariant,
+                            selectedVariant: variantForCart,
                           },
                         ]
                       : []

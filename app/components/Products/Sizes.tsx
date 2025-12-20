@@ -1,5 +1,4 @@
 import {Radio, RadioGroup} from '@headlessui/react';
-import {useState} from 'react';
 import type {
   ProductFragment,
   ProductVariantFragment,
@@ -8,15 +7,14 @@ import type {
 export function Sizes({
   selectedVariant,
   product,
+  selectedSize,
+  onSelect,
 }: {
   selectedVariant: ProductVariantFragment;
   product: ProductFragment;
+  selectedSize: string;
+  onSelect: (size: string) => void;
 }) {
-  const [selectedSize, setSelectedSize] = useState(
-    selectedVariant?.selectedOptions.find((option) => option.name === 'Size')
-      ?.value || 'Medium',
-  );
-
   const sizeValues =
     product.options.find((opt) => opt.name === 'Size')?.optionValues || [];
 
@@ -33,7 +31,7 @@ export function Sizes({
       <fieldset aria-label="Choose a size" className="mt-2">
         <RadioGroup
           value={selectedSize}
-          onChange={setSelectedSize}
+          onChange={onSelect}
           className="grid grid-cols-3 gap-3 sm:grid-cols-6"
         >
           {sizeValues.map(({name: size}) => (
