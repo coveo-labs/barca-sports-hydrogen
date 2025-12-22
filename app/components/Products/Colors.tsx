@@ -10,6 +10,8 @@ const mapColor = (color: string, gradient = false) => {
       return 'stone-700';
     case 'khaki':
       return 'yellow-600';
+    case 'olive':
+      return 'stone-600';
     case 'silver':
       return 'zinc-100';
     case 'white':
