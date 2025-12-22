@@ -8,14 +8,12 @@ export function mapShopifyMerchandiseToCoveoCartItem(
   node: CartLine | ComponentizableCartLine,
 ) {
   const {merchandise} = node;
-  const selectedColor = merchandise.selectedOptions.find(
-    (opt) => opt.name === 'Color',
-  );
   return {
-    productId: merchandise.id, // UNI-1358
     name: merchandise.product.title,
     price: Number(merchandise.price.amount),
+    productId: merchandise.product.id, // UNI-1358
     quantity: node.quantity,
+    variantId: merchandise.id,
   };
 }
 

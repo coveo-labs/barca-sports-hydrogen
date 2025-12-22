@@ -353,9 +353,10 @@ export function CartMain({cart: originalCart}: CartMainProps) {
                     cart.cost?.totalAmount?.currencyCode || 'CAD';
                   const products = cart.lines.nodes.map((node) => ({
                     product: {
-                      productId: node.merchandise.product.id,
                       name: node.merchandise.product.title,
                       price: Number(node.merchandise.price.amount),
+                      productId: node.merchandise.product.id,
+                      variantId: node.merchandise.id,
                     },
                     quantity: node.quantity >= 1 ? node.quantity : 1,
                   }));
