@@ -79,11 +79,12 @@ async function loadCriticalData({
     throw new Error('Expected product handle to be defined');
   }
 
+  const selectedOptions = getSelectedProductOptions(request);
   const [{product}] = await Promise.all([
     storefront.query(PRODUCT_QUERY, {
       variables: {
         handle,
-        selectedOptions: getSelectedProductOptions(request),
+        selectedOptions,
       },
     }),
     // Add other queries here, so that they are loaded in parallel
@@ -98,15 +99,20 @@ async function loadCriticalData({
       .query(VARIANTS_QUERY, {
         variables: {handle: params.handle!},
       })
-      .catch((error) => {
+      .catch((error: any) => {
         // Log query errors, but don't throw them so the page can still render
         console.error(error);
         return null;
       });
 
-  const variants = productWithAllVariants.product.variants.nodes;
-  // If the selected options do not map to a variant, redirect to the first available variant
-  let firstVariant =
+  const variants = productWithAllVariants?.product.variants.nodes || [];
+
+  if (selectedOptions.length < 1) {
+    // If selected options don't match any variant, redirect to first available variant
+    throw redirectToAvailableFirstVariant({product, variants, request});
+  }
+
+  const firstVariant =
     variants.find((n: ProductVariantFragment) => n.availableForSale) ||
     variants[0];
   product.selectedVariant = firstVariant;
@@ -115,6 +121,33 @@ async function loadCriticalData({
     product,
     variants,
   } as {product: ProductFragment; variants: ProductVariantFragment[]};
+}
+
+function redirectToAvailableFirstVariant({
+  product,
+  variants,
+  request,
+}: {
+  product: ProductFragment;
+  variants: ProductVariantFragment[];
+  request: Request;
+}) {
+  const url = new URL(request.url);
+  const firstVariant =
+    variants.find((n: ProductVariantFragment) => n.availableForSale) ||
+    variants[0];
+
+  return redirect(
+    getVariantUrl({
+      pathname: url.pathname,
+      handle: product.handle,
+      selectedOptions: firstVariant.selectedOptions,
+      searchParams: new URLSearchParams(url.search),
+    }),
+    {
+      status: 302,
+    },
+  );
 }
 
 function getProductColors(product: ProductFragment) {
@@ -141,13 +174,9 @@ export default function Product() {
   const [searchParams, setSearchParams] = useSearchParams();
   const {handle} = useParams();
   const currentColor = searchParams.get('Color') || 'Black';
+  const currentSize = searchParams.get('Size') || 'S';
   const [defaultImageIdx, setDefaultImageIdx] = useState(
     getColorOptionIdx(product, currentColor),
-  );
-  const [selectedSize, setSelectedSize] = useState(
-    selectedVariant?.selectedOptions.find(
-      (option: SelectedOption) => option.name === 'Size',
-    )?.value || 'Medium',
   );
   const [availableSizes, setAvailableSizes] = useState<{
     [key: string]: boolean;
@@ -162,7 +191,7 @@ export default function Product() {
       const variantSize = variant.selectedOptions.find(
         (opt: SelectedOption) => opt.name === 'Size',
       )?.value;
-      return variantColor === currentColor && variantSize === selectedSize;
+      return variantColor === currentColor && variantSize === currentSize;
     }) || selectedVariant;
 
   useEffect(() => {
@@ -211,6 +240,13 @@ export default function Product() {
     });
   };
 
+  const setSizeParam = (size: string) => {
+    setSearchParams((prev) => {
+      prev.set('Size', size);
+      return prev;
+    });
+  };
+
   return (
     <main className="pdp-container mx-auto max-w-7xl sm:px-6 sm:pt-16 lg:px-8">
       <div className="mx-auto max-w-2xl lg:max-w-none">
@@ -245,8 +281,8 @@ export default function Product() {
 
               <Sizes
                 product={product}
-                selectedSize={selectedSize}
-                onSelect={setSelectedSize}
+                selectedSize={currentSize}
+                onSelect={setSizeParam}
                 availableSizes={availableSizes}
               />
 
