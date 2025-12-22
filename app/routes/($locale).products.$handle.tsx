@@ -93,61 +93,28 @@ async function loadCriticalData({
     throw new Response(null, {status: 404});
   }
 
-  const firstVariant = product.variants.nodes[0];
-  const firstVariantIsDefault = Boolean(
-    firstVariant.selectedOptions.find(
-      (option: SelectedOption) =>
-        option.name === 'Title' && option.value === 'Default Title',
-    ),
-  );
+  const productWithAllVariants: {product: ProductFragment} =
+    await context.storefront
+      .query(VARIANTS_QUERY, {
+        variables: {handle: params.handle!},
+      })
+      .catch((error) => {
+        // Log query errors, but don't throw them so the page can still render
+        console.error(error);
+        return null;
+      });
 
-  if (firstVariantIsDefault) {
-    product.selectedVariant = firstVariant;
-  } else {
-    // if no selected variant was returned from the selected options,
-    // we redirect to the first variant's url with it's selected options applied
-    if (!product.selectedVariant) {
-      throw redirectToFirstVariant({product, request});
-    }
-  }
-
-  const variants = await context.storefront
-    .query(VARIANTS_QUERY, {
-      variables: {handle: params.handle!},
-    })
-    .catch((error) => {
-      // Log query errors, but don't throw them so the page can still render
-      console.error(error);
-      return null;
-    });
+  const variants = productWithAllVariants.product.variants.nodes;
+  // If the selected options do not map to a variant, redirect to the first available variant
+  let firstVariant =
+    variants.find((n: ProductVariantFragment) => n.availableForSale) ||
+    variants[0];
+  product.selectedVariant = firstVariant;
 
   return {
     product,
     variants,
-  };
-}
-
-function redirectToFirstVariant({
-  product,
-  request,
-}: {
-  product: ProductFragment;
-  request: Request;
-}) {
-  const url = new URL(request.url);
-  const firstVariant = product.variants.nodes[0];
-
-  return redirect(
-    getVariantUrl({
-      pathname: url.pathname,
-      handle: product.handle,
-      selectedOptions: firstVariant.selectedOptions,
-      searchParams: new URLSearchParams(url.search),
-    }),
-    {
-      status: 302,
-    },
-  );
+  } as {product: ProductFragment; variants: ProductVariantFragment[]};
 }
 
 function getProductColors(product: ProductFragment) {
@@ -182,24 +149,42 @@ export default function Product() {
       (option: SelectedOption) => option.name === 'Size',
     )?.value || 'Medium',
   );
+  const [availableSizes, setAvailableSizes] = useState<{
+    [key: string]: boolean;
+  }>({});
 
   // Find the variant that matches the current color and selected size
   const variantForCart =
-    variants?.product?.variants.nodes.find(
-      (variant: ProductVariantFragment) => {
-        const variantColor = variant.selectedOptions.find(
-          (opt: SelectedOption) => opt.name === 'Color',
-        )?.value;
-        const variantSize = variant.selectedOptions.find(
-          (opt: SelectedOption) => opt.name === 'Size',
-        )?.value;
-        return variantColor === currentColor && variantSize === selectedSize;
-      },
-    ) || selectedVariant;
+    variants.find((variant: ProductVariantFragment) => {
+      const variantColor = variant.selectedOptions.find(
+        (opt: SelectedOption) => opt.name === 'Color',
+      )?.value;
+      const variantSize = variant.selectedOptions.find(
+        (opt: SelectedOption) => opt.name === 'Size',
+      )?.value;
+      return variantColor === currentColor && variantSize === selectedSize;
+    }) || selectedVariant;
 
   useEffect(() => {
     setDefaultImageIdx(getColorOptionIdx(product, currentColor));
   }, [product, currentColor]);
+
+  useEffect(() => {
+    // Update available sizes based on the selected color
+    const sizesForColor: {[key: string]: boolean} = {};
+    variants.forEach((variant: ProductVariantFragment) => {
+      const variantColor = variant.selectedOptions.find(
+        (opt: SelectedOption) => opt.name === 'Color',
+      )?.value;
+      const variantSize = variant.selectedOptions.find(
+        (opt: SelectedOption) => opt.name === 'Size',
+      )?.value;
+      if (variantColor === currentColor) {
+        sizesForColor[variantSize!] = variant.availableForSale;
+      }
+    });
+    setAvailableSizes(sizesForColor);
+  }, [variants, currentColor]);
 
   // UNI-1358
   const productId = product.selectedVariant
@@ -260,9 +245,9 @@ export default function Product() {
 
               <Sizes
                 product={product}
-                selectedVariant={selectedVariant}
                 selectedSize={selectedSize}
                 onSelect={setSelectedSize}
+                availableSizes={availableSizes}
               />
 
               <div className="mt-10 flex">
