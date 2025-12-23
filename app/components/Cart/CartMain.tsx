@@ -355,8 +355,9 @@ export function CartMain({cart: originalCart}: CartMainProps) {
                     product: {
                       name: node.merchandise.product.title,
                       price: Number(node.merchandise.price.amount),
-                      productId: node.merchandise.product.id,
-                      variantId: node.merchandise.id,
+                      // swap productId and variantId to match permanentids in Coveo (the variants are the products in Coveo)
+                      productId: node.merchandise.id,
+                      variantId: node.merchandise.product.id,
                     },
                     quantity: node.quantity >= 1 ? node.quantity : 1,
                   }));
