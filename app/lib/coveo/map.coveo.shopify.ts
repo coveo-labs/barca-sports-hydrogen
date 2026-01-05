@@ -11,7 +11,7 @@ export function mapShopifyMerchandiseToCoveoCartItem(
   return {
     name: merchandise.product.title,
     price: Number(merchandise.price.amount),
-    productId: merchandise.product.id, // UNI-1358
+    productId: merchandise.id, // UNI-1358 use variant ID as product ID to match events
     quantity: node.quantity,
     variantId: merchandise.id,
   };
