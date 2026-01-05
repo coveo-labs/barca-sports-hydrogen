@@ -1,20 +1,14 @@
-import {
-  Combobox,
-  ComboboxButton,
-  ComboboxInput,
-  ComboboxOption,
-  ComboboxOptions,
-} from '@headlessui/react';
-import {useCallback, useEffect, useRef} from 'react';
+import {Input, Switch} from '@headlessui/react';
+import {useCallback, useEffect, useRef, useState, useMemo} from 'react';
 import {useInstantProducts, useStandaloneSearchBox} from '~/lib/coveo/engine';
 import {
   MagnifyingGlassIcon,
-  ChatBubbleBottomCenterIcon,
   SparklesIcon,
 } from '@heroicons/react/24/outline';
 import {ProductCard} from '../Products/ProductCard';
 import '~/types/gtm';
 import {useNavigate} from 'react-router';
+import cx from '~/lib/cx';
 
 interface StandaloneSearchBoxProps {
   close?: () => void;
@@ -23,160 +17,290 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
   const searchBox = useStandaloneSearchBox();
   const instantProducts = useInstantProducts();
   const input = useRef<HTMLInputElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
-  const handleGenerativeSearch = useCallback(() => {
-    const query = searchBox.state.value?.trim();
-    const url = query
-      ? `/generative?q=${encodeURIComponent(query)}`
-      : '/generative';
+  const [isConversationalMode, setIsConversationalMode] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [inputValue, setInputValue] = useState('');
 
-    navigate(url);
-    close?.();
-  }, [searchBox.state.value, navigate, close]);
+  const conversationalPrompts = useMemo(
+    () => [
+      'Suggest a paddleboarding accessory kit for beginners',
+      'What safety gear do I need for a twilight kayak tour?',
+      'Compare waterproof deck bags for a weekend surf trip',
+      'Build a surf travel checklist with board protection and repairs',
+    ],
+    [],
+  );
 
-  // Focus input and show suggestions when component mounts/remounts
+  const handleGenerativeSearch = useCallback(
+    (query?: string) => {
+      // For conversational mode, use local inputValue
+      const searchQuery = query?.trim() || inputValue.trim();
+      const url = searchQuery
+        ? `/generative?q=${encodeURIComponent(searchQuery)}`
+        : '/generative';
+
+      navigate(url);
+      close?.();
+      searchBox.methods?.updateText('')
+    },
+    [inputValue, navigate, close],
+  );
+
+  const toggleConversationalMode = useCallback(
+    (enabled: boolean) => {
+      setIsConversationalMode(enabled);
+      setInputValue('');
+      searchBox.methods?.updateText('');
+
+      // Focus input and show appropriate dropdown
+      setTimeout(() => {
+        if (input.current) {
+          input.current.focus();
+          setShowDropdown(true);
+          if (!enabled) {
+            searchBox.methods?.showSuggestions();
+          }
+        }
+      }, 0);
+    },
+    [searchBox.methods],
+  );
+
+  // Initialize on mount: sync inputValue with searchBox state and show dropdown
   useEffect(() => {
-    // Small delay to ensure the popover is fully rendered
+    // Initialize inputValue from searchBox if available
+    if (searchBox.state.value && !isConversationalMode) {
+      setInputValue(searchBox.state.value);
+    }
+
     const timer = setTimeout(() => {
       if (input.current) {
         input.current.focus();
-        searchBox.methods?.showSuggestions();
+        setShowDropdown(true);
+        if (!isConversationalMode) {
+          searchBox.methods?.showSuggestions();
+        }
       }
     }, 50);
     return () => clearTimeout(timer);
   }, []);
 
+  // Handle clicks outside to close dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node) &&
+        !input.current?.contains(event.target as Node)
+      ) {
+        setShowDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   useRedirect(searchBox, navigate, close);
   useUpdateInstantProducts(searchBox, instantProducts);
+
+  const handleInputChange = (value: string) => {
+    setInputValue(value);
+    
+    // Count words and determine target mode
+    const query = value.trim();
+    const wordCount = query ? query.split(/\s+/).filter(word => word.length > 0).length : 0;
+    
+    const shouldBeConversational = wordCount > 3;
+    
+    if (shouldBeConversational !== isConversationalMode) {
+      setIsConversationalMode(shouldBeConversational);
+    }
+    
+    // Only update Coveo searchBox when in normal mode
+    if (!shouldBeConversational) {
+      searchBox.methods?.updateText(value);
+    }
+  };
 
   const onSubmit = useCallback(
     (e?: React.FormEvent) => {
       e?.preventDefault();
 
-      const query = searchBox.state.value?.trim();
-      if (!query) {
+      const query = inputValue.trim();
+      if (!query) return;
+
+      // In conversational mode, use local inputValue
+      if (isConversationalMode) {
+        handleGenerativeSearch(query);
         return;
       }
+
+      // Normal search mode - use searchBox state (Coveo's source of truth)
+      const searchQuery = searchBox.state.value?.trim();
+      if (!searchQuery) return;
 
       searchBox.methods?.submit();
       window.dataLayer = window.dataLayer || [];
       window.dataLayer.push({
         event: 'search',
         search_type: 'search_box',
-        search_term: encodeURIComponent(query),
+        search_term: encodeURIComponent(searchQuery),
       });
     },
-    [searchBox.state.value, searchBox.methods],
+    [inputValue, searchBox.state.value, searchBox.methods, isConversationalMode, handleGenerativeSearch],
   );
-  return (
-    <>
-      <Combobox
-        immediate
-        value={searchBox.state.value}
-        onChange={(val) => {
-          if (val === null) {
-            return;
-          }
-          if (val !== 'products') {
-            searchBox.methods?.updateText(val);
-            onSubmit();
-          }
-          if (val === 'products') {
-            close?.();
-          }
-        }}
-      >
-        <form onSubmit={onSubmit} className="relative">
-          <ComboboxInput
-            ref={input}
-            onFocus={() => {
-              searchBox.methods?.showSuggestions();
-            }}
-            className="search-box w-full h-12 border p-4 pr-36"
-            aria-label="Search"
-            placeholder="Search"
-            onChange={(event) => {
-              searchBox.methods?.updateText(event.target.value);
-            }}
-          />
-          <div className="absolute inset-y-0 right-0 flex items-center gap-2 pr-2">
-            <ComboboxButton
-              as="button"
-              type="submit"
-              className="group flex h-9 w-9 items-center justify-center"
-            >
-              <MagnifyingGlassIcon className="size-6" />
-            </ComboboxButton>
-            <ComboboxButton
-              as="button"
-              onClick={(e) => {
-                e.preventDefault();
-                handleGenerativeSearch();
-              }}
-              className="inline-flex items-center gap-1.5 rounded-full border border-indigo-600 bg-indigo-50 px-3 py-1 text-sm font-semibold text-indigo-700 shadow-sm transition hover:bg-indigo-100"
-            >
-              <SparklesIcon className="size-4" />
-              <span className="text-sm font-semibold leading-none">
-                Conversational
-              </span>
-            </ComboboxButton>
-          </div>
-        </form>
 
-        <ComboboxOptions
-          transition
-          anchor="bottom start"
-          className="origin-top border transition duration-200 ease-out empty:invisible data-[closed]:scale-95 data-[closed]:opacity-0 w-[var(--input-width)] z-20 bg-white l-0"
+  const handleSuggestionClick = (suggestion: string) => {
+    setInputValue(suggestion);
+    searchBox.methods?.updateText(suggestion);
+    searchBox.methods?.submit();
+    window.dataLayer = window.dataLayer || [];
+    window.dataLayer.push({
+      event: 'search',
+      search_type: 'search_box',
+      search_term: encodeURIComponent(suggestion),
+    });
+  };
+
+  const handlePromptClick = (prompt: string) => {
+    handleGenerativeSearch(prompt);
+  };
+
+  return (
+    <div className="relative">
+      <form onSubmit={onSubmit} className="relative">
+        <Input
+          ref={input}
+          type="text"
+          value={inputValue}
+          onChange={(e) => handleInputChange(e.target.value)}
+          onFocus={() => {
+            setShowDropdown(true);
+            if (!isConversationalMode) {
+              searchBox.methods?.showSuggestions();
+            }
+          }}
+          className="search-box w-full h-12 border p-4 pr-32"
+          aria-label="Search"
+          aria-expanded={showDropdown}
+          aria-controls="search-dropdown"
+          aria-autocomplete="list"
+          placeholder={isConversationalMode ? 'Ask me anything...' : 'Search'}
+        />
+        <div className="absolute inset-y-0 right-0 flex items-center gap-3 pr-3">
+          <button
+            type="submit"
+            className="group h-9 w-9 items-center justify-center hidden"
+          >
+            <MagnifyingGlassIcon className="size-6" />
+          </button>
+          <div className="flex items-center gap-2" title="Conversational mode">
+            <SparklesIcon
+              className={cx(
+                'size-6 transition-colors',
+                isConversationalMode ? 'text-indigo-600' : 'text-slate-400',
+              )}
+            />
+            <Switch
+              checked={isConversationalMode}
+              onChange={toggleConversationalMode}
+              className={cx(
+                'relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2',
+                isConversationalMode ? 'bg-indigo-600' : 'bg-slate-200',
+              )}
+            >
+              <span className="sr-only">Enable conversational mode</span>
+              <span
+                className={cx(
+                  'inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform',
+                  isConversationalMode ? 'translate-x-5' : 'translate-x-0.5',
+                )}
+              />
+            </Switch>
+          </div>
+        </div>
+      </form>
+
+      {showDropdown && (
+        <div
+          ref={dropdownRef}
+          id="search-dropdown"
+          role="listbox"
+          className="absolute top-full left-0 right-0 z-20 bg-white border border-t-0 shadow-lg max-h-[600px] overflow-y-auto"
         >
-          {searchBox.state.value && (
-            <ComboboxOption value={searchBox.state.value} className="hidden">
-              {searchBox.state.value}
-            </ComboboxOption>
-          )}
-          {searchBox.state.suggestions.map((suggestion, i) => {
-            return (
-              <ComboboxOption
-                key={suggestion.rawValue}
-                value={suggestion.rawValue}
-                className="query-suggestion data-[focus]:text-indigo-600 cursor-pointer p-2 z-20"
-                dangerouslySetInnerHTML={{
-                  __html: suggestion.highlightedValue,
-                }}
-              ></ComboboxOption>
-            );
-          })}
-          {searchBox.state.suggestions.length > 0 && (
-            <ComboboxOption value="products">
-              <div className="mt-6 pt-3 border-t bg-gray-50">
-                <p className="pl-2 text-2xl font-bold tracking-tight text-gray-900">
-                  Popular products
-                </p>
-                <div className="grid gap-x-8 gap-y-10 grid-cols-3 grid-rows-1 mt-6 sm:grid-cols-2 lg:grid-cols-5 xl:gap-x-8 p-4">
-                  {instantProducts.state.products.map((product) => {
-                    return (
-                      <ProductCard
-                        key={product.permanentid}
-                        product={product}
-                        className="product-suggestion"
-                        onSelect={() => {
-                          instantProducts.methods
-                            ?.interactiveProduct({
-                              options: {
-                                product,
-                              },
-                            })
-                            .select();
+          {isConversationalMode ? (
+            // Conversational prompts
+            <div className="p-4">
+              <p className="mb-3 text-sm font-semibold text-slate-900">
+                Try asking:
+              </p>
+              <div className="flex flex-col gap-2">
+                {conversationalPrompts.map((prompt) => (
+                  <button
+                    key={prompt}
+                    type="button"
+                    role="option"
+                    onClick={() => handlePromptClick(prompt)}
+                    className="rounded-lg border border-slate-200 bg-white px-4 py-3 text-left text-sm text-slate-700 shadow-sm transition-colors hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-600"
+                  >
+                    {prompt}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            // Search suggestions and products
+            <>
+              {searchBox.state.suggestions.length > 0 && (
+                <>
+                  <div>
+                    {searchBox.state.suggestions.map((suggestion) => (
+                      <button
+                        key={suggestion.rawValue}
+                        type="button"
+                        role="option"
+                        onClick={() => handleSuggestionClick(suggestion.rawValue)}
+                        className="query-suggestion w-full text-left hover:text-indigo-600 hover:bg-gray-50 cursor-pointer p-2 transition-colors"
+                        dangerouslySetInnerHTML={{
+                          __html: suggestion.highlightedValue,
                         }}
                       />
-                    );
-                  })}
-                </div>
-              </div>
-            </ComboboxOption>
+                    ))}
+                  </div>
+                  {instantProducts.state.products.length > 0 && (
+                    <div className="mt-6 pt-3 border-t bg-gray-50">
+                      <p className="pl-2 text-2xl font-bold tracking-tight text-gray-900">
+                        Popular products
+                      </p>
+                      <div className="grid gap-x-8 gap-y-10 grid-cols-3 grid-rows-1 mt-6 sm:grid-cols-2 lg:grid-cols-5 xl:gap-x-8 p-4">
+                        {instantProducts.state.products.map((product) => (
+                          <ProductCard
+                            key={product.permanentid}
+                            product={product}
+                            className="product-suggestion"
+                            onSelect={() => {
+                              instantProducts.methods
+                                ?.interactiveProduct({
+                                  options: {product},
+                                })
+                                .select();
+                              close?.();
+                            }}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </>
           )}
-        </ComboboxOptions>
-      </Combobox>
-    </>
+        </div>
+      )}
+    </div>
   );
 }
 
