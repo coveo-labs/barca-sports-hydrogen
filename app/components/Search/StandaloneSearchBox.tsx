@@ -107,7 +107,19 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
 
   const handleInputChange = (value: string) => {
     setInputValue(value);
-    if (!isConversationalMode) {
+    
+    // Count words and determine target mode
+    const query = value.trim();
+    const wordCount = query ? query.split(/\s+/).filter(word => word.length > 0).length : 0;
+    
+    const shouldBeConversational = wordCount > 3;
+    
+    if (shouldBeConversational !== isConversationalMode) {
+      setIsConversationalMode(shouldBeConversational);
+    }
+    
+    // Only update Coveo searchBox when in normal mode
+    if (!shouldBeConversational) {
       searchBox.methods?.updateText(value);
     }
   };
@@ -116,24 +128,25 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
     (e?: React.FormEvent) => {
       e?.preventDefault();
 
+      const query = inputValue.trim();
+      if (!query) return;
+
       // In conversational mode, use local inputValue
       if (isConversationalMode) {
-        const query = inputValue.trim();
-        if (!query) return;
         handleGenerativeSearch(query);
         return;
       }
 
       // Normal search mode - use searchBox state (Coveo's source of truth)
-      const query = searchBox.state.value?.trim();
-      if (!query) return;
+      const searchQuery = searchBox.state.value?.trim();
+      if (!searchQuery) return;
 
       searchBox.methods?.submit();
       window.dataLayer = window.dataLayer || [];
       window.dataLayer.push({
         event: 'search',
         search_type: 'search_box',
-        search_term: encodeURIComponent(query),
+        search_term: encodeURIComponent(searchQuery),
       });
     },
     [inputValue, searchBox.state.value, searchBox.methods, isConversationalMode, handleGenerativeSearch],
