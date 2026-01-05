@@ -43,6 +43,7 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
 
       navigate(url);
       close?.();
+      searchBox.methods?.updateText('')
     },
     [inputValue, navigate, close],
   );
