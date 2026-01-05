@@ -181,7 +181,7 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
           >
             <MagnifyingGlassIcon className="size-6" />
           </button>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2" title="Conversational mode">
             <SparklesIcon
               className={cx(
                 'size-6 transition-colors',
