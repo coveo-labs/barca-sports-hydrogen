@@ -3,7 +3,6 @@ import {useCallback, useEffect, useRef, useState, useMemo} from 'react';
 import {useInstantProducts, useStandaloneSearchBox} from '~/lib/coveo/engine';
 import {
   MagnifyingGlassIcon,
-  ChatBubbleBottomCenterIcon,
   SparklesIcon,
 } from '@heroicons/react/24/outline';
 import {ProductCard} from '../Products/ProductCard';
@@ -172,6 +171,9 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
           }}
           className="search-box w-full h-12 border p-4 pr-32"
           aria-label="Search"
+          aria-expanded={showDropdown}
+          aria-controls="search-dropdown"
+          aria-autocomplete="list"
           placeholder={isConversationalMode ? 'Ask me anything...' : 'Search'}
         />
         <div className="absolute inset-y-0 right-0 flex items-center gap-3 pr-3">
@@ -211,6 +213,8 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
       {showDropdown && (
         <div
           ref={dropdownRef}
+          id="search-dropdown"
+          role="listbox"
           className="absolute top-full left-0 right-0 z-20 bg-white border border-t-0 shadow-lg max-h-[600px] overflow-y-auto"
         >
           {isConversationalMode ? (
@@ -224,6 +228,7 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
                   <button
                     key={prompt}
                     type="button"
+                    role="option"
                     onClick={() => handlePromptClick(prompt)}
                     className="rounded-lg border border-slate-200 bg-white px-4 py-3 text-left text-sm text-slate-700 shadow-sm transition-colors hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-600"
                   >
@@ -242,6 +247,7 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
                       <button
                         key={suggestion.rawValue}
                         type="button"
+                        role="option"
                         onClick={() => handleSuggestionClick(suggestion.rawValue)}
                         className="query-suggestion w-full text-left hover:text-indigo-600 hover:bg-gray-50 cursor-pointer p-2 transition-colors"
                         dangerouslySetInnerHTML={{
