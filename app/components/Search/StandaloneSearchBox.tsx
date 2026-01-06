@@ -22,6 +22,7 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
   const [isConversationalMode, setIsConversationalMode] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [inputValue, setInputValue] = useState('');
+  const manualModeSelectionRef = useRef(false);
 
   const conversationalPrompts = useMemo(
     () => [
@@ -53,6 +54,7 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
       setIsConversationalMode(enabled);
       setInputValue('');
       searchBox.methods?.updateText('');
+      manualModeSelectionRef.current = true; // User manually toggled
 
       // Focus input and show appropriate dropdown
       setTimeout(() => {
@@ -109,18 +111,21 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
   const handleInputChange = (value: string) => {
     setInputValue(value);
     
-    // Count words and determine target mode
-    const query = value.trim();
-    const wordCount = query ? query.split(/\s+/).filter(word => word.length > 0).length : 0;
-    
-    const shouldBeConversational = wordCount > 3;
-    
-    if (shouldBeConversational !== isConversationalMode) {
-      setIsConversationalMode(shouldBeConversational);
+    // Only auto-switch modes if user hasn't manually selected a mode
+    if (!manualModeSelectionRef.current) {
+      // Count words and determine target mode
+      const query = value.trim();
+      const wordCount = query ? query.split(/\s+/).filter(word => word.length > 0).length : 0;
+      
+      const shouldBeConversational = wordCount > 3;
+      
+      if (shouldBeConversational !== isConversationalMode) {
+        setIsConversationalMode(shouldBeConversational);
+      }
     }
     
     // Only update Coveo searchBox when in normal mode
-    if (!shouldBeConversational) {
+    if (!isConversationalMode) {
       searchBox.methods?.updateText(value);
     }
   };
@@ -131,6 +136,9 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
 
       const query = inputValue.trim();
       if (!query) return;
+
+      // Reset manual mode selection on submit
+      manualModeSelectionRef.current = false;
 
       // In conversational mode, use local inputValue
       if (isConversationalMode) {
