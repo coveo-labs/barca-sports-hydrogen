@@ -56,6 +56,7 @@ export function ProductCard({
     >
       <NavLink
         key={product.permanentid}
+        data-product-id={product.permanentid}
         onClick={onSelect}
         to={`${productLink}?Color=${selectedColor}`}
         className={`${className} group`}
