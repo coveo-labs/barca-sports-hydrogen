@@ -59,9 +59,7 @@ export function renderTextSegmentWithInlineProducts(
     if (ref.startIndex > cursor) {
       const textSegment = text.slice(cursor, ref.startIndex);
       // Render text segments with markdown support
-      nodes.push(
-        <Answer key={`${key}-text-${index}`} text={textSegment} />,
-      );
+      nodes.push(<Answer key={`${key}-text-${index}`} text={textSegment} />);
     }
 
     nodes.push(
@@ -95,22 +93,15 @@ type InlineProductProps = Readonly<{
 function InlineProduct({identifier, productIndex}: InlineProductProps) {
   const product = lookupProduct(identifier, productIndex);
 
-  if (product) {
-    return (
-      <div className="my-3">
-        <ProductCard product={product} variant="compact" />
-      </div>
-    );
+  if (!product) {
+    // Silently skip products that aren't in the index
+    return null;
   }
 
-  const fallbackLabel = identifier?.length
-    ? `Product ${identifier} unavailable`
-    : 'Product unavailable';
-
   return (
-    <span className="inline-flex items-center rounded bg-amber-100 px-2 py-1 text-xs font-medium text-amber-900">
-      {fallbackLabel}
-    </span>
+    <div className="my-3">
+      <ProductCard product={product} variant="compact" />
+    </div>
   );
 }
 
@@ -123,7 +114,18 @@ export function ProductCarousel({
   identifiers,
   productIndex,
 }: ProductCarouselProps) {
-  if (identifiers.length === 0) {
+  // Filter to only include products that exist in the index
+  const availableProducts = identifiers
+    .map((identifier) => ({
+      identifier,
+      product: lookupProduct(identifier, productIndex),
+    }))
+    .filter(
+      (item): item is {identifier: string; product: Product} =>
+        item.product !== null,
+    );
+
+  if (availableProducts.length === 0) {
     return null;
   }
 
@@ -133,44 +135,15 @@ export function ProductCarousel({
         className="flex gap-3 list-none overflow-x-auto"
         aria-label="Product carousel"
       >
-        {identifiers.map((identifier, index) => (
-          <CarouselItem
-            key={identifier || `missing-${index}`}
-            identifier={identifier}
-            productIndex={productIndex}
-          />
+        {availableProducts.map(({identifier, product}) => (
+          <li key={identifier} className="shrink-0">
+            <div className="rounded-xl bg-white p-2 shadow-sm ring-1 ring-slate-200 h-full">
+              <ProductCard product={product} variant="compact" />
+            </div>
+          </li>
         ))}
       </ul>
     </div>
-  );
-}
-
-type CarouselItemProps = Readonly<{
-  identifier: string;
-  productIndex: ReadonlyMap<string, Product>;
-}>;
-
-function CarouselItem({identifier, productIndex}: CarouselItemProps) {
-  const product = lookupProduct(identifier, productIndex);
-
-  if (product) {
-    return (
-      <li className="shrink-0">
-        <div className="rounded-xl bg-white p-2 shadow-sm ring-1 ring-slate-200 h-full">
-          <ProductCard product={product} variant="compact" />
-        </div>
-      </li>
-    );
-  }
-
-  const fallbackLabel = identifier?.length
-    ? `Product ${identifier} unavailable`
-    : 'Product unavailable';
-
-  return (
-    <li className="rounded-xl border border-dashed border-amber-200 bg-amber-50/80 px-3 py-4 text-xs font-medium text-amber-900 flex items-center justify-center">
-      {fallbackLabel}
-    </li>
   );
 }
 

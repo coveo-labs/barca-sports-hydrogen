@@ -305,15 +305,15 @@ const TABLE_DETECTION = {
 
 /**
  * Detects if content contains an incomplete markdown table during streaming.
- * 
+ *
  * A table is considered incomplete if:
  * 1. It has pipes but no separator row yet (header being typed)
  * 2. It has a separator but fewer than 2 data rows and is near the end (data rows being typed)
- * 
+ *
  * Validates table-like structure to avoid false positives from:
  * - Single pipes in regular text ("this | that")
  * - Pipes in code blocks or URLs
- * 
+ *
  * @param content - The message content to check
  * @returns PendingRichContent if incomplete table detected, null otherwise
  */
@@ -329,16 +329,16 @@ function detectIncompleteTable(content: string): PendingRichContent | null {
   }
 
   const lines = content.split('\n');
-  
+
   // Improved regex: allow separators with or without pipes, e.g., "---", "| --- |" or ":---:"
-  const hasSeparator = lines.some(line => {
+  const hasSeparator = lines.some((line) => {
     const trimmed = line.trim();
     return /^\|?[\s]*[-:]+[\s]*\|?$/.test(trimmed) && trimmed.includes('-');
   });
 
   if (!hasSeparator) {
     // Has pipes but no separator - validate it looks like a table header
-    const lastLineWithPipe = lines.filter(l => l.includes('|')).pop();
+    const lastLineWithPipe = lines.filter((l) => l.includes('|')).pop();
     if (lastLineWithPipe) {
       const pipeCount = (lastLineWithPipe.match(/\|/g) || []).length;
       // Only consider it a table if there are multiple pipes (table-like structure)
@@ -346,7 +346,10 @@ function detectIncompleteTable(content: string): PendingRichContent | null {
         return {
           type: 'table',
           partialText: content.slice(
-            Math.max(0, lastPipeIndex - TABLE_DETECTION.PARTIAL_TEXT_CONTEXT_LENGTH)
+            Math.max(
+              0,
+              lastPipeIndex - TABLE_DETECTION.PARTIAL_TEXT_CONTEXT_LENGTH,
+            ),
           ),
         };
       }
@@ -355,15 +358,22 @@ function detectIncompleteTable(content: string): PendingRichContent | null {
   }
 
   // Check if table looks incomplete
-  const separatorIndex = lines.findIndex(line => {
+  const separatorIndex = lines.findIndex((line) => {
     const trimmed = line.trim();
     return /^\|?[\s]*[-:]+[\s]*\|?$/.test(trimmed) && trimmed.includes('-');
   });
-  const linesAfterSeparator = lines.slice(separatorIndex + 1).filter(l => l.trim());
+  const linesAfterSeparator = lines
+    .slice(separatorIndex + 1)
+    .filter((l) => l.trim());
 
   // If separator is in the last few lines with few data rows, table might be incomplete
-  const isNearEnd = separatorIndex >= lines.length - TABLE_DETECTION.LINES_FROM_END_THRESHOLD;
-  if (linesAfterSeparator.length < TABLE_DETECTION.MIN_DATA_ROWS_FOR_COMPLETE_TABLE && isNearEnd) {
+  const isNearEnd =
+    separatorIndex >= lines.length - TABLE_DETECTION.LINES_FROM_END_THRESHOLD;
+  if (
+    linesAfterSeparator.length <
+      TABLE_DETECTION.MIN_DATA_ROWS_FOR_COMPLETE_TABLE &&
+    isNearEnd
+  ) {
     const tableStart = Math.max(0, content.indexOf('|'));
     return {type: 'table', partialText: content.slice(tableStart)};
   }
@@ -373,13 +383,13 @@ function detectIncompleteTable(content: string): PendingRichContent | null {
 
 /**
  * Detects if content contains an incomplete markdown code block during streaming.
- * 
- * A code block is incomplete if the last occurrence of triple backticks (```) 
+ *
+ * A code block is incomplete if the last occurrence of triple backticks (```)
  * in the content is an opening delimiter without a matching closing delimiter.
- * 
- * Handles multiple code blocks correctly by checking if the total count of 
+ *
+ * Handles multiple code blocks correctly by checking if the total count of
  * backtick delimiters is odd (indicating an unclosed block).
- * 
+ *
  * @param content - The message content to check
  * @returns PendingRichContent if incomplete code block detected, null otherwise
  */
@@ -392,8 +402,10 @@ function detectIncompleteCodeBlock(content: string): PendingRichContent | null {
   let count = 0;
   let lastIndex = -1;
   let searchIndex = 0;
-  
-  while ((searchIndex = content.indexOf(codeBlockDelimiter, searchIndex)) !== -1) {
+
+  while (
+    (searchIndex = content.indexOf(codeBlockDelimiter, searchIndex)) !== -1
+  ) {
     count++;
     lastIndex = searchIndex;
     searchIndex += codeBlockDelimiter.length;
