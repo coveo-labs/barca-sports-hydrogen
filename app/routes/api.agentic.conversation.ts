@@ -13,7 +13,7 @@ const AGENTIC_BASE_URL =
 const MAX_CONVERSATIONS = 10;
 const MAX_MESSAGES_PER_CONVERSATION = 20;
 const MAX_CONTENT_LENGTH = 4000;
-const DEFAULT_TRACKING_ID = 'sports';
+const DEFAULT_TRACKING_ID = 'market_88728731922';
 
 export async function action({request, context}: ActionFunctionArgs) {
   if (request.method === 'POST') {
