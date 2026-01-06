@@ -1,5 +1,4 @@
 import {marked} from 'marked';
-import './answer.css';
 
 // Configure marked to use GitHub Flavored Markdown
 marked.setOptions({
@@ -12,12 +11,12 @@ const renderer = new marked.Renderer();
 
 renderer.heading = function (text, level) {
   const styles = {
-    1: 'text-2xl font-bold',      // 24px bold
-    2: 'text-xl font-bold',        // 20px bold
-    3: 'text-base font-bold',      // 16px bold
-    4: 'text-sm font-semibold',    // 14px semibold
-    5: 'text-sm font-semibold',    // 14px semibold
-    6: 'text-xs font-semibold',    // 12px semibold
+    1: 'text-2xl font-bold', // 24px bold
+    2: 'text-xl font-bold', // 20px bold
+    3: 'text-base font-bold', // 16px bold
+    4: 'text-sm font-semibold', // 14px semibold
+    5: 'text-sm font-semibold', // 14px semibold
+    6: 'text-xs font-semibold', // 12px semibold
   };
   const style = styles[level as keyof typeof styles] || 'text-base font-bold';
   return `<h${level} class="mt-6 mb-2 ${style} tracking-tight text-gray-900">${text}</h${level}>`;
@@ -32,25 +31,27 @@ renderer.strong = function (text) {
 };
 
 renderer.em = function (text) {
-  return `<em class="answer-emphasis">${text}</em>`;
+  return `<em class="italic text-gray-600">${text}</em>`;
 };
 
 renderer.codespan = function (code) {
-  return `<code class="answer-inline-code">${code}</code>`;
+  return `<code class="bg-gray-100 px-1.5 py-0.5 rounded text-sm font-mono break-all">${code}</code>`;
 };
 
 renderer.code = function (code) {
-  return `<pre class="answer-code-block"><code>${code}</code></pre>`;
+  return `<pre class="bg-gray-800 text-gray-200 p-4 rounded-lg my-4 overflow-x-auto text-sm leading-relaxed"><code class="font-mono whitespace-pre-wrap break-words">${code}</code></pre>`;
 };
 
 renderer.blockquote = function (quote) {
-  return `<blockquote class="answer-quote-block">${quote}</blockquote>`;
+  return `<blockquote class="border-l-4 border-indigo-500 pl-4 my-4 text-gray-500 italic [&>p]:my-0">${quote}</blockquote>`;
 };
 
 renderer.list = function (body, ordered, start) {
   const type = ordered ? 'ol' : 'ul';
   const startAttr = ordered && start !== 1 ? ` start="${start}"` : '';
-  const listClass = ordered ? 'list-decimal list-inside' : 'list-disc list-inside';
+  const listClass = ordered
+    ? 'list-decimal list-inside'
+    : 'list-disc list-inside';
   return `<${type} class="mt-4 mb-4 space-y-2 ${listClass}"${startAttr}>${body}</${type}>`;
 };
 
@@ -64,7 +65,7 @@ renderer.listitem = function (text) {
 };
 
 renderer.table = function (header, body) {
-  return `<div class="overflow-hidden shadow ring-1 ring-black/5 sm:rounded-lg my-6">
+  return `<div class="overflow-x-auto shadow ring-1 ring-black/5 sm:rounded-lg my-6">
     <table class="min-w-full divide-y divide-gray-300">
       <thead class="bg-gray-50">${header}</thead>
       <tbody class="divide-y divide-gray-200 bg-white">${body}</tbody>
@@ -91,7 +92,7 @@ export function Answer({text}: {text: string}) {
   const html = marked.parse(text) as string;
   return (
     <div
-      className="text-gray-500"
+      className="text-gray-500 overflow-hidden"
       dangerouslySetInnerHTML={{__html: html}}
     />
   );
