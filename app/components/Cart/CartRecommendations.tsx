@@ -59,6 +59,10 @@ export function CartRecommendations() {
     });
   }, [recs.state.headline, recs.state.products]);
 
+  if (recs.state.products.length === 0) {
+    return null;
+  }
+
   return (
     <section
       aria-labelledby="related-heading"
