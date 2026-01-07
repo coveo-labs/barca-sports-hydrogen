@@ -1,45 +1,159 @@
-# Hydrogen template: Skeleton
+# Barca Sports Hydrogen
 
-Hydrogen is Shopify’s stack for headless commerce. Hydrogen is designed to dovetail with [Remix](https://remix.run/), Shopify’s full stack web framework. This template contains a **minimal setup** of components, queries and tooling to get started with Hydrogen.
+A headless commerce storefront built with [Shopify Hydrogen](https://shopify.dev/custom-storefronts/hydrogen) featuring a generative AI shopping assistant powered by [Coveo](https://www.coveo.com/).
 
-[Check out Hydrogen docs](https://shopify.dev/custom-storefronts/hydrogen)
-[Get familiar with Remix](https://remix.run/docs/en/v1)
+This project is configured to work with the **Barca Shop** Shopify store (`barca-sports.myshopify.com`). If you need access, contact olamothe.
 
-## What's included
+## Features
 
-- Remix
-- Hydrogen
-- Oxygen
+- **Shopify Hydrogen** - React-based headless commerce framework
+- **Coveo Commerce Search** - Product search, facets, and recommendations
+- **Generative AI Assistant** - Conversational shopping experience with streaming responses
+- **React Router 7** - File-based routing with SSR support
+- **Tailwind CSS 4** - Utility-first styling
+
+## Tech Stack
+
+- React 18
+- React Router 7
+- Shopify Hydrogen 2025.7
+- Coveo Headless
+- Tailwind CSS
+- TypeScript
 - Vite
-- Shopify CLI
-- ESLint
-- Prettier
-- GraphQL generator
-- TypeScript and JavaScript flavors
-- Minimal setup of components and routes
 
-## Getting started
+## Getting Started
 
-**Requirements:**
+### Prerequisites
 
-- Node.js version 18.0.0 or higher
+- Node.js >= 18.0.0
+- A Shopify store with Hydrogen channel installed
+- Coveo organization with Commerce configuration
+
+### Installation
 
 ```bash
-npm create @shopify/hydrogen@latest
+npm install
 ```
 
-## Building for production
+### Connect to Shopify
+
+Link your local project to the Barca Shop store:
 
 ```bash
-npm run build
+npx shopify hydrogen link
 ```
 
-## Local development
+This will prompt you to:
+
+1. Log in to your Shopify account (you need access to Barca Shop - contact olamothe if needed)
+2. Select the `barca-sports.myshopify.com` store
+3. Select the "Barca Sports Hydrogen" storefront
+
+The configuration is stored in `.shopify/project.json`.
+
+To pull environment variables from the store:
+
+```bash
+npx shopify hydrogen env pull
+```
+
+### Environment Variables
+
+After running `env pull`, you should have the following Shopify variables in `.env`:
+
+```env
+# Storefront API
+PUBLIC_STORE_DOMAIN="barca-sports.myshopify.com"
+PUBLIC_STOREFRONT_ID="..."
+PUBLIC_STOREFRONT_API_TOKEN="..."
+PRIVATE_STOREFRONT_API_TOKEN="..."
+PUBLIC_CHECKOUT_DOMAIN="..."
+
+# Customer Account API
+PUBLIC_CUSTOMER_ACCOUNT_API_CLIENT_ID="..."
+PUBLIC_CUSTOMER_ACCOUNT_API_URL="..."
+
+# Shop & Session
+SHOP_ID="..."
+SESSION_SECRET="..."
+```
+
+You'll need to manually add these additional variables:
+
+```env
+# Coveo Generative AI Assistant (temporary - will be replaced by app proxy)
+# This is just an API key for the Coveo org in dev.
+AGENTIC_ACCESS_TOKEN="..."
+
+# Coveo API Key (optional - tokens are fetched via app proxy by default)
+COVEO_API_KEY=""
+```
+
+Note: Coveo search tokens are fetched automatically via the [Coveo app for Shopify](https://docs.coveo.com/en/p2la0421) app proxy installed on Barca Shop.
+
+### Development
 
 ```bash
 npm run dev
 ```
 
-## Setup for using Customer Account API (`/account` section)
+This starts the development server with hot module replacement at `http://localhost:3000`.
 
-Follow step 1 and 2 of <https://shopify.dev/docs/custom-storefronts/building-with-the-customer-account-api/hydrogen#step-1-set-up-a-public-domain-for-local-development>
+### Build
+
+```bash
+npm run build
+```
+
+### Preview Production Build
+
+```bash
+npm run preview
+```
+
+## Project Structure
+
+```
+app/
+├── components/
+│   ├── Generative/          # AI assistant components
+│   │   ├── ConversationTranscript.tsx
+│   │   ├── MessageBubble.tsx
+│   │   ├── ChatInputFooter.tsx
+│   │   └── ...
+│   ├── Search/              # Search & facet components
+│   └── ...
+├── lib/
+│   ├── generative/          # AI assistant hooks & utilities
+│   │   ├── use-assistant-streaming.ts
+│   │   ├── use-conversation-state.ts
+│   │   └── ...
+│   └── ...
+├── routes/
+│   ├── ($locale).generative.tsx    # AI assistant page
+│   ├── ($locale).search.tsx        # Search results
+│   ├── ($locale).products.$handle.tsx
+│   └── ...
+└── types/
+```
+
+## Available Scripts
+
+| Command         | Description              |
+| --------------- | ------------------------ |
+| `npm run dev`   | Start development server |
+| `npm run build` | Build for production     |
+
+## Deployment
+
+Deployment to [Shopify Oxygen](https://shopify.dev/custom-storefronts/oxygen) is handled automatically by a deployment bot when you push to the GitHub repository.
+
+It's recommended to use PR branches if you want to see a build preview before merging.
+
+## Resources
+
+- [Hydrogen Documentation](https://shopify.dev/custom-storefronts/hydrogen)
+- [Shopify CLI for Hydrogen](https://shopify.dev/docs/api/shopify-cli/hydrogen)
+- [Coveo Headless Documentation](https://docs.coveo.com/en/headless/)
+- [React Router Documentation](https://reactrouter.com/)
