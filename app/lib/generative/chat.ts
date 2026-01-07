@@ -5,8 +5,7 @@ import type {
 } from '~/types/conversation';
 
 export const STORAGE_KEY = 'agentic:conversations:v1';
-export const MAX_MESSAGES = 20;
-export const MAX_CONVERSATIONS = 10;
+export const MAX_CONVERSATIONS = 50;
 
 export type ConversationRecord = {
   localId: string;
@@ -24,24 +23,22 @@ type ToolResultParse = {
 };
 
 export function parseToolResultPayload(raw: unknown): ToolResultParse {
-  const message =
-    typeof raw === 'object' && raw !== null
-      ? (() => {
-          const candidate = raw as Record<string, unknown>;
-          const value = candidate.message ?? candidate.status ?? candidate.text;
-          if (typeof value === 'string' && value.trim()) {
-            return value.trim();
-          }
-          return null;
-        })()
-      : typeof raw === 'string'
-        ? raw.trim()
-        : null;
+  let message: string | null = null;
+
+  if (typeof raw === 'object' && raw !== null) {
+    const candidate = raw as Record<string, unknown>;
+    const value = candidate.message ?? candidate.status ?? candidate.text;
+    if (typeof value === 'string' && value.trim()) {
+      message = value.trim();
+    }
+  } else if (typeof raw === 'string') {
+    message = raw.trim();
+  }
 
   const products = extractProductArray(raw);
 
   return {
-    message: message && message.length ? message : null,
+    message: message?.length ? message : null,
     products,
   };
 }
@@ -188,40 +185,6 @@ export function getBoundaryLength(buffer: string, index: number) {
   return buffer.startsWith('\r\n\r\n', index) ? 4 : 2;
 }
 
-export function loadConversationsFromStorage(): ConversationRecord[] {
-  if (typeof window === 'undefined') {
-    return [];
-  }
-
-  const raw = window.localStorage.getItem(STORAGE_KEY);
-  if (!raw) {
-    return [];
-  }
-
-  try {
-    const parsed = JSON.parse(raw) as ConversationSummary[];
-    if (!Array.isArray(parsed)) {
-      return [];
-    }
-    return parsed.map(mapSummaryToRecord);
-  } catch {
-    return [];
-  }
-}
-
-export function persistConversationsToStorage(records: ConversationRecord[]) {
-  if (typeof window === 'undefined') {
-    return;
-  }
-
-  const summaries = records
-    .filter((conversation) => conversation.sessionId)
-    .map(recordToSummary)
-    .slice(0, 10);
-
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(summaries));
-}
-
 export function formatRelativeTime(value: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) {
@@ -262,7 +225,7 @@ export function mapSummaryToRecord(
     title: summary.title,
     createdAt: summary.createdAt,
     updatedAt: summary.updatedAt,
-    messages: limitMessages(messages),
+    messages,
     isPersisted: true,
   };
 }
@@ -275,7 +238,7 @@ export function recordToSummary(
     title: record.title,
     createdAt: record.createdAt,
     updatedAt: record.updatedAt,
-    messages: limitMessages(record.messages),
+    messages: record.messages,
   };
 }
 
@@ -305,10 +268,7 @@ export function mergeConversations(
     const key = record.sessionId ?? record.localId;
     const current = merged.get(key);
     if (!current) {
-      merged.set(key, {
-        ...record,
-        messages: limitMessages(record.messages),
-      });
+      merged.set(key, record);
       return;
     }
 
@@ -322,9 +282,7 @@ export function mergeConversations(
       localId: preserveLocalId ?? current.localId,
       sessionId: newer.sessionId ?? older.sessionId ?? null,
       title: newer.title || older.title,
-      messages: limitMessages(
-        newer.messages.length ? newer.messages : older.messages,
-      ),
+      messages: newer.messages.length ? newer.messages : older.messages,
       isPersisted: newer.isPersisted ?? older.isPersisted,
     });
   };
@@ -350,15 +308,6 @@ export function sortConversations(
   return [...records].sort((a, b) =>
     b.updatedAt.localeCompare(a.updatedAt, undefined, {numeric: true}),
   );
-}
-
-export function limitMessages(
-  messages: ConversationMessage[],
-): ConversationMessage[] {
-  if (messages.length <= MAX_MESSAGES) {
-    return messages;
-  }
-  return messages.slice(-MAX_MESSAGES);
 }
 
 export function generateId(): string {

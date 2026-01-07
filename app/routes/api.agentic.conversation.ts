@@ -10,8 +10,7 @@ import {CONVERSATIONS_SESSION_KEY} from '~/types/conversation';
 const AGENTIC_BASE_URL =
   'https://platformdev.cloud.coveo.com/rest/organizations/barcasportsmcy01fvu/commerce/unstable/agentic';
 
-const MAX_CONVERSATIONS = 10;
-const MAX_MESSAGES_PER_CONVERSATION = 20;
+const MAX_CONVERSATIONS = 50;
 const MAX_CONTENT_LENGTH = 4000;
 const DEFAULT_TRACKING_ID = 'market_88728731922';
 
@@ -43,15 +42,18 @@ async function handleStreamConversation(
   request: Request,
   context: ActionFunctionArgs['context'],
 ) {
-  const body = (await request.json().catch(() => null)) as
-    | ConversationStreamPayload
-    | null;
+  const body = (await request
+    .json()
+    .catch(() => null)) as ConversationStreamPayload | null;
 
   if (!body || typeof body.message !== 'string' || !body.message.trim()) {
     console.warn('[api.agentic.conversation] missing message payload');
-    return Response.json({error: 'A non-empty message is required.'}, {
-      status: 400,
-    });
+    return Response.json(
+      {error: 'A non-empty message is required.'},
+      {
+        status: 400,
+      },
+    );
   }
 
   console.info('[api.agentic.conversation] streaming conversation', {
@@ -82,7 +84,7 @@ async function handleStreamConversation(
       cart: Array.isArray(body.cart) ? body.cart : [],
     },
     conversationSessionId: body.sessionId || undefined,
-    targetEngine: 'AGENT_CORE'
+    targetEngine: 'AGENT_CORE',
   } satisfies Record<string, unknown>;
 
   const abortController = new AbortController();
@@ -155,21 +157,27 @@ async function handlePersistConversation(
   request: Request,
   session: HydrogenSessionWithPending,
 ) {
-  const body = (await request.json().catch(() => null)) as
-    | PersistConversationPayload
-    | null;
+  const body = (await request
+    .json()
+    .catch(() => null)) as PersistConversationPayload | null;
 
   if (!body?.conversation) {
-    return Response.json({error: 'Conversation payload is required.'}, {
-      status: 400,
-    });
+    return Response.json(
+      {error: 'Conversation payload is required.'},
+      {
+        status: 400,
+      },
+    );
   }
 
   const sanitized = sanitizeConversation(body.conversation);
   if (!sanitized.id) {
-    return Response.json({error: 'Conversation id is required.'}, {
-      status: 400,
-    });
+    return Response.json(
+      {error: 'Conversation id is required.'},
+      {
+        status: 400,
+      },
+    );
   }
 
   const conversations = getStoredConversations(session);
@@ -182,25 +190,33 @@ async function handlePersistConversation(
     headers['Set-Cookie'] = await session.commit();
   }
 
-  return Response.json({ok: true}, Object.keys(headers).length ? {headers} : undefined);
+  return Response.json(
+    {ok: true},
+    Object.keys(headers).length ? {headers} : undefined,
+  );
 }
 
 async function handleDeleteConversation(
   request: Request,
   session: HydrogenSessionWithPending,
 ) {
-  const body = (await request.json().catch(() => null)) as
-    | DeleteConversationPayload
-    | null;
+  const body = (await request
+    .json()
+    .catch(() => null)) as DeleteConversationPayload | null;
 
   if (!body?.id) {
-    return Response.json({error: 'Conversation id is required.'}, {
-      status: 400,
-    });
+    return Response.json(
+      {error: 'Conversation id is required.'},
+      {
+        status: 400,
+      },
+    );
   }
 
   const conversations = getStoredConversations(session);
-  const filtered = conversations.filter((conversation) => conversation.id !== body.id);
+  const filtered = conversations.filter(
+    (conversation) => conversation.id !== body.id,
+  );
 
   if (filtered.length === conversations.length) {
     return Response.json({ok: true});
@@ -213,10 +229,15 @@ async function handleDeleteConversation(
     headers['Set-Cookie'] = await session.commit();
   }
 
-  return Response.json({ok: true}, Object.keys(headers).length ? {headers} : undefined);
+  return Response.json(
+    {ok: true},
+    Object.keys(headers).length ? {headers} : undefined,
+  );
 }
 
-function sanitizeConversation(conversation: ConversationSummary): ConversationSummary {
+function sanitizeConversation(
+  conversation: ConversationSummary,
+): ConversationSummary {
   const title = (conversation.title || 'Conversation').slice(0, 120);
   const createdAt = conversation.createdAt || new Date().toISOString();
   const updatedAt = conversation.updatedAt || createdAt;
@@ -226,7 +247,6 @@ function sanitizeConversation(conversation: ConversationSummary): ConversationSu
         .filter((message): message is ConversationMessage =>
           Boolean(message && typeof message.content === 'string'),
         )
-        .slice(-MAX_MESSAGES_PER_CONVERSATION)
         .map((message) => sanitizeMessage(message))
     : [];
 
@@ -262,9 +282,7 @@ function sanitizeMessage(message: ConversationMessage): ConversationMessage {
     'products',
     'error',
   ];
-  const kind = allowedKinds.includes(message.kind)
-    ? message.kind
-    : 'text';
+  const kind = allowedKinds.includes(message.kind) ? message.kind : 'text';
 
   const metadata = message.metadata;
 
@@ -281,9 +299,8 @@ function sanitizeMessage(message: ConversationMessage): ConversationMessage {
 function extractAgenticAccessToken(
   context: ActionFunctionArgs['context'],
 ): string | undefined {
-  const token =
-    (context as {env?: {AGENTIC_ACCESS_TOKEN?: string}})?.env
-      ?.AGENTIC_ACCESS_TOKEN;
+  const token = (context as {env?: {AGENTIC_ACCESS_TOKEN?: string}})?.env
+    ?.AGENTIC_ACCESS_TOKEN;
 
   if (typeof token === 'string' && token.trim()) {
     return token;
@@ -366,10 +383,7 @@ function isConversationSummary(value: unknown): value is ConversationSummary {
     messages?: unknown;
   };
 
-  return (
-    typeof candidate.id === 'string' &&
-    Array.isArray(candidate.messages)
-  );
+  return typeof candidate.id === 'string' && Array.isArray(candidate.messages);
 }
 
 function createConversationId() {

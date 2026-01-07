@@ -9,11 +9,13 @@ import {
 import type {ConversationSummary} from '~/types/conversation';
 import {
   type ConversationRecord,
-  loadConversationsFromStorage,
   mapSummaryToRecord,
   mergeConversations,
-  persistConversationsToStorage,
 } from '~/lib/generative/chat';
+import {
+  loadConversations,
+  saveAllConversations,
+} from '~/lib/generative/storage';
 
 type UseConversationStateOptions = {
   initialSummaries: ConversationSummary[];
@@ -37,9 +39,8 @@ export function useConversationState({
     [initialSummaries],
   );
 
-  const [conversations, setConversations] = useState<ConversationRecord[]>(
-    initialRecords,
-  );
+  const [conversations, setConversations] =
+    useState<ConversationRecord[]>(initialRecords);
 
   useEffect(() => {
     setConversations((prev) => mergeConversations(prev, initialRecords));
@@ -101,19 +102,32 @@ export function useConversationState({
       return;
     }
 
-    const stored = loadConversationsFromStorage();
-    if (stored.length > 0) {
-      setConversations((prev) => mergeConversations(prev, stored));
-    }
-
-    storageLoadedRef.current = true;
+    loadConversations().then((stored) => {
+      if (stored.length > 0) {
+        setConversations((prev) => mergeConversations(prev, stored));
+      }
+      storageLoadedRef.current = true;
+    });
   }, [isHydrated]);
 
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   useEffect(() => {
-    if (!isHydrated) {
-      return;
+    if (!isHydrated) return;
+
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
     }
-    persistConversationsToStorage(conversations);
+
+    saveTimeoutRef.current = setTimeout(() => {
+      saveAllConversations(conversations);
+    }, 500);
+
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
   }, [conversations, isHydrated]);
 
   return {
