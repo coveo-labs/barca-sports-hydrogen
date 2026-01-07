@@ -5,7 +5,6 @@ import type {
 } from '~/types/conversation';
 
 export const STORAGE_KEY = 'agentic:conversations:v1';
-export const MAX_MESSAGES = 100;
 export const MAX_CONVERSATIONS = 50;
 
 export type ConversationRecord = {
@@ -24,24 +23,22 @@ type ToolResultParse = {
 };
 
 export function parseToolResultPayload(raw: unknown): ToolResultParse {
-  const message =
-    typeof raw === 'object' && raw !== null
-      ? (() => {
-          const candidate = raw as Record<string, unknown>;
-          const value = candidate.message ?? candidate.status ?? candidate.text;
-          if (typeof value === 'string' && value.trim()) {
-            return value.trim();
-          }
-          return null;
-        })()
-      : typeof raw === 'string'
-        ? raw.trim()
-        : null;
+  let message: string | null = null;
+
+  if (typeof raw === 'object' && raw !== null) {
+    const candidate = raw as Record<string, unknown>;
+    const value = candidate.message ?? candidate.status ?? candidate.text;
+    if (typeof value === 'string' && value.trim()) {
+      message = value.trim();
+    }
+  } else if (typeof raw === 'string') {
+    message = raw.trim();
+  }
 
   const products = extractProductArray(raw);
 
   return {
-    message: message && message.length ? message : null,
+    message: message?.length ? message : null,
     products,
   };
 }
@@ -311,15 +308,6 @@ export function sortConversations(
   return [...records].sort((a, b) =>
     b.updatedAt.localeCompare(a.updatedAt, undefined, {numeric: true}),
   );
-}
-
-export function limitMessages(
-  messages: ConversationMessage[],
-): ConversationMessage[] {
-  if (messages.length <= MAX_MESSAGES) {
-    return messages;
-  }
-  return messages.slice(-MAX_MESSAGES);
 }
 
 export function generateId(): string {

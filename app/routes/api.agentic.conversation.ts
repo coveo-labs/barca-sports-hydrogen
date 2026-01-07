@@ -11,7 +11,6 @@ const AGENTIC_BASE_URL =
   'https://platformdev.cloud.coveo.com/rest/organizations/barcasportsmcy01fvu/commerce/unstable/agentic';
 
 const MAX_CONVERSATIONS = 50;
-const MAX_MESSAGES_PER_CONVERSATION = 100;
 const MAX_CONTENT_LENGTH = 4000;
 const DEFAULT_TRACKING_ID = 'market_88728731922';
 
@@ -248,7 +247,6 @@ function sanitizeConversation(
         .filter((message): message is ConversationMessage =>
           Boolean(message && typeof message.content === 'string'),
         )
-        .slice(-MAX_MESSAGES_PER_CONVERSATION)
         .map((message) => sanitizeMessage(message))
     : [];
 
