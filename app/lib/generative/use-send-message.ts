@@ -5,7 +5,6 @@ import {
   type ConversationRecord,
   createEmptyConversation,
   generateId,
-  limitMessages,
 } from '~/lib/generative/chat';
 import {logDebug} from '~/lib/logger';
 
@@ -108,7 +107,7 @@ export function useSendMessage({
         ...base,
         title,
         updatedAt: now,
-        messages: limitMessages([...base.messages, userMessage]),
+        messages: [...base.messages, userMessage],
       };
 
       logDebug('sending message', {

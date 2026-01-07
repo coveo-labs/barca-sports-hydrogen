@@ -5,8 +5,8 @@ import type {
 } from '~/types/conversation';
 
 export const STORAGE_KEY = 'agentic:conversations:v1';
-export const MAX_MESSAGES = 20;
-export const MAX_CONVERSATIONS = 10;
+export const MAX_MESSAGES = 100;
+export const MAX_CONVERSATIONS = 50;
 
 export type ConversationRecord = {
   localId: string;
@@ -188,40 +188,6 @@ export function getBoundaryLength(buffer: string, index: number) {
   return buffer.startsWith('\r\n\r\n', index) ? 4 : 2;
 }
 
-export function loadConversationsFromStorage(): ConversationRecord[] {
-  if (typeof window === 'undefined') {
-    return [];
-  }
-
-  const raw = window.localStorage.getItem(STORAGE_KEY);
-  if (!raw) {
-    return [];
-  }
-
-  try {
-    const parsed = JSON.parse(raw) as ConversationSummary[];
-    if (!Array.isArray(parsed)) {
-      return [];
-    }
-    return parsed.map(mapSummaryToRecord);
-  } catch {
-    return [];
-  }
-}
-
-export function persistConversationsToStorage(records: ConversationRecord[]) {
-  if (typeof window === 'undefined') {
-    return;
-  }
-
-  const summaries = records
-    .filter((conversation) => conversation.sessionId)
-    .map(recordToSummary)
-    .slice(0, 10);
-
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(summaries));
-}
-
 export function formatRelativeTime(value: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) {
@@ -262,7 +228,7 @@ export function mapSummaryToRecord(
     title: summary.title,
     createdAt: summary.createdAt,
     updatedAt: summary.updatedAt,
-    messages: limitMessages(messages),
+    messages,
     isPersisted: true,
   };
 }
@@ -275,7 +241,7 @@ export function recordToSummary(
     title: record.title,
     createdAt: record.createdAt,
     updatedAt: record.updatedAt,
-    messages: limitMessages(record.messages),
+    messages: record.messages,
   };
 }
 
@@ -305,10 +271,7 @@ export function mergeConversations(
     const key = record.sessionId ?? record.localId;
     const current = merged.get(key);
     if (!current) {
-      merged.set(key, {
-        ...record,
-        messages: limitMessages(record.messages),
-      });
+      merged.set(key, record);
       return;
     }
 
@@ -322,9 +285,7 @@ export function mergeConversations(
       localId: preserveLocalId ?? current.localId,
       sessionId: newer.sessionId ?? older.sessionId ?? null,
       title: newer.title || older.title,
-      messages: limitMessages(
-        newer.messages.length ? newer.messages : older.messages,
-      ),
+      messages: newer.messages.length ? newer.messages : older.messages,
       isPersisted: newer.isPersisted ?? older.isPersisted,
     });
   };

@@ -8,7 +8,6 @@ import type {
 import {
   type ConversationRecord,
   generateId,
-  limitMessages,
   sortConversations,
 } from '~/lib/generative/chat';
 import {logDebug, logError, logInfo, logWarn} from '~/lib/logger';
@@ -28,7 +27,10 @@ import {
   TOOL_RESULT_FALLBACK_MESSAGE,
 } from '~/lib/generative/streaming';
 
-export type {ThinkingUpdateSnapshot, StreamArgs} from '~/lib/generative/streaming';
+export type {
+  ThinkingUpdateSnapshot,
+  StreamArgs,
+} from '~/lib/generative/streaming';
 
 type UseAssistantStreamingOptions = {
   locale: unknown;
@@ -97,16 +99,8 @@ export function useAssistantStreaming({
                 return conversation;
               }
               const updated = mutator(conversation);
-              const limitedMessages = limitMessages(updated.messages);
-              const limited =
-                limitedMessages === updated.messages
-                  ? updated
-                  : {
-                      ...updated,
-                      messages: limitedMessages,
-                    };
-              latestSnapshot = limited;
-              return limited;
+              latestSnapshot = updated;
+              return updated;
             }),
           ),
         );
@@ -208,16 +202,16 @@ export function useAssistantStreaming({
         });
       };
 
-      const getAssistantMetadataSnapshot = (): ConversationMessage['metadata'] | undefined => {
+      const getAssistantMetadataSnapshot = ():
+        | ConversationMessage['metadata']
+        | undefined => {
         const hasThinking = thinkingUpdates.length > 0;
         const hasProducts = collectedProducts.length > 0;
         if (!hasThinking && !hasProducts) {
           return undefined;
         }
         return {
-          ...(hasThinking
-            ? {thinkingUpdates: [...thinkingUpdates]}
-            : {}),
+          ...(hasThinking ? {thinkingUpdates: [...thinkingUpdates]} : {}),
           ...(hasProducts ? {products: [...collectedProducts]} : {}),
         } satisfies ConversationMessage['metadata'];
       };
