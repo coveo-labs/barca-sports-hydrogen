@@ -1,10 +1,13 @@
-import {memo} from 'react';
+import {memo, useRef} from 'react';
 import type {Product} from '@coveo/headless-react/ssr-commerce';
 import cx from '~/lib/cx';
 import type {ConversationMessage} from '~/types/conversation';
 import {ProductResultsMessage} from '~/components/Generative/ProductResultsMessage';
 import {registerProducts} from '~/lib/generative/product-index';
-import {NextActionsSkeleton} from '~/components/Generative/Skeletons';
+import {
+  NextActionsSkeleton,
+  RefinementChipsSkeleton,
+} from '~/components/Generative/Skeletons';
 import {
   detectPendingRichContent,
   extractNextActions,
@@ -27,7 +30,6 @@ import {Answer} from '~/components/Generative/Answer';
 type MessageBubbleProps = {
   message: ConversationMessage;
   isStreaming: boolean;
-  showTrailingSpinner: boolean;
   productLookup?: ReadonlyMap<string, Product>;
   onFollowUpClick?: (message: string) => void;
 };
@@ -35,7 +37,6 @@ type MessageBubbleProps = {
 function MessageBubbleComponent({
   message,
   isStreaming,
-  showTrailingSpinner,
   productLookup,
   onFollowUpClick,
 }: Readonly<MessageBubbleProps>) {
@@ -62,7 +63,6 @@ function MessageBubbleComponent({
 
   const assistantClass =
     assistantVariants[normalizedKind] ?? assistantVariants.text;
-  const shouldShowTrailingSpinner = showTrailingSpinner;
   const shouldShowLeadingSpinner =
     isAssistant &&
     isStreaming &&
@@ -78,14 +78,16 @@ function MessageBubbleComponent({
     ? cx(assistantWidthClass, assistantClass)
     : 'max-w-xl bg-indigo-600 text-white';
 
-  const contentBody = isAssistant
-    ? renderAssistantMessageContent(
-        message,
-        isStreaming,
-        productLookup,
-        onFollowUpClick,
-      )
-    : message.content;
+  const contentBody = isAssistant ? (
+    <AssistantMessageContent
+      message={message}
+      isStreaming={isStreaming}
+      productLookup={productLookup}
+      onFollowUpClick={onFollowUpClick}
+    />
+  ) : (
+    message.content
+  );
 
   return (
     <div
@@ -120,9 +122,6 @@ function MessageBubbleComponent({
             {contentBody}
           </div>
         </div>
-        {shouldShowTrailingSpinner ? (
-          <span className="mt-2 inline-flex h-2.5 w-2.5 animate-pulse rounded-full bg-indigo-500" />
-        ) : null}
       </div>
     </div>
   );
@@ -133,9 +132,6 @@ function arePropsEqual(
   next: Readonly<MessageBubbleProps>,
 ) {
   if (prev.isStreaming !== next.isStreaming) {
-    return false;
-  }
-  if (prev.showTrailingSpinner !== next.showTrailingSpinner) {
     return false;
   }
   if (prev.productLookup !== next.productLookup) {
@@ -159,15 +155,25 @@ function arePropsEqual(
 
 export const MessageBubble = memo(MessageBubbleComponent, arePropsEqual);
 
-function renderAssistantMessageContent(
-  message: ConversationMessage,
-  isStreaming: boolean,
-  productLookup?: ReadonlyMap<string, Product>,
-  onFollowUpClick?: (message: string) => void,
-) {
+type AssistantMessageContentProps = Readonly<{
+  message: ConversationMessage;
+  isStreaming: boolean;
+  productLookup?: ReadonlyMap<string, Product>;
+  onFollowUpClick?: (message: string) => void;
+}>;
+
+function AssistantMessageContent({
+  message,
+  isStreaming,
+  productLookup,
+  onFollowUpClick,
+}: AssistantMessageContentProps) {
+  const hasShownChipsRef = useRef(false);
+  const hasShownActionsRef = useRef(false);
+
   const {content = ''} = message;
   if (message.kind !== 'text') {
-    return content;
+    return <>{content}</>;
   }
 
   const hasPotentialMarkup =
@@ -230,17 +236,39 @@ function renderAssistantMessageContent(
     message.id,
   );
 
-  const hasNextActions = nextActions.length > 0;
   const hasRefinementChips = refinementChips.length > 0;
+  const hasNextActions = nextActions.length > 0;
+
+  if (hasRefinementChips) {
+    hasShownChipsRef.current = true;
+  }
+  if (hasNextActions) {
+    hasShownActionsRef.current = true;
+  }
+
   const isActivelyStreaming = isStreaming && pendingContent !== null;
-  // Only show nextactions skeleton if we're specifically streaming a nextaction tag
-  const showNextActionsSkeleton = isActivelyStreaming && pendingContent.type === 'nextaction';
+
+  const showRefinementChipsSkeleton =
+    isActivelyStreaming &&
+    pendingContent.type === 'refinement_chip' &&
+    !hasShownChipsRef.current;
+
+  const showNextActionsSkeleton =
+    isActivelyStreaming &&
+    pendingContent.type === 'nextaction' &&
+    !hasShownActionsRef.current;
+
   const showNextActionsBar = hasNextActions && !showNextActionsSkeleton;
 
   return (
     <>
       {renderedSegments}
       {pendingSkeleton}
+      {showRefinementChipsSkeleton && (
+        <RefinementChipsSkeleton
+          key={`${message.id}-refinement-chips-skeleton`}
+        />
+      )}
       {hasRefinementChips && (
         <RefinementChipsBar chips={refinementChips} messageId={message.id} />
       )}

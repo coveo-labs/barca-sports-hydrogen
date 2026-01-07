@@ -65,6 +65,16 @@ export function NextActionsSkeleton() {
   );
 }
 
+export function RefinementChipsSkeleton() {
+  return (
+    <div className="mt-3 flex flex-wrap gap-2 animate-pulse">
+      {['chip-1', 'chip-2'].map((chipId) => (
+        <div key={chipId} className="h-7 w-20 rounded-full bg-slate-200" />
+      ))}
+    </div>
+  );
+}
+
 export function MarkdownSkeleton() {
   return (
     <div className="mt-2 flex items-center gap-2 text-xs text-gray-500">

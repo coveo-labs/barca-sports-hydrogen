@@ -69,7 +69,6 @@ function buildConversationItems({
   visibleMessages,
   latestStreamingAssistantId,
   activeThinkingSnapshot,
-  pendingThinkingSnapshot,
   latestUserMessageId,
   thinkingExpandedByMessage,
   onToggleThinking,
@@ -80,39 +79,63 @@ function buildConversationItems({
   const queuedProductItems: JSX.Element[] = [];
   const knownProducts = new Map<string, Product>();
 
-  for (const message of visibleMessages) {
+  const isActivelyStreaming =
+    activeThinkingSnapshot !== null && !activeThinkingSnapshot.isComplete;
+
+  const latestUserMessageIndex = latestUserMessageId
+    ? visibleMessages.findIndex((m) => m.id === latestUserMessageId)
+    : -1;
+
+  for (let i = 0; i < visibleMessages.length; i++) {
+    const message = visibleMessages[i];
+    const isCurrentTurnAssistant =
+      message.role === 'assistant' &&
+      latestUserMessageIndex !== -1 &&
+      i > latestUserMessageIndex;
+
     processMessage({
       message,
       latestStreamingAssistantId,
-      activeThinkingSnapshot,
-      pendingThinkingSnapshot,
-      latestUserMessageId,
+      isActivelyStreaming,
+      isCurrentTurnAssistant,
       thinkingExpandedByMessage,
       onToggleThinking,
-      onTogglePendingThinking,
       onFollowUpClick,
       items,
       queuedProductItems,
       knownProducts,
     });
+
+    const shouldShowPendingPanel =
+      message.role === 'user' &&
+      message.id === latestUserMessageId &&
+      isActivelyStreaming;
+
+    if (shouldShowPendingPanel) {
+      const pendingExpanded =
+        thinkingExpandedByMessage[PENDING_THINKING_KEY] ?? false;
+      items.push(
+        createPendingPanel({
+          key: 'thinking-pending',
+          updates: activeThinkingSnapshot!.updates,
+          isExpanded: pendingExpanded,
+          onToggle: () => onTogglePendingThinking(!pendingExpanded),
+        }),
+      );
+    }
   }
 
   flushQueuedProductItems(items, queuedProductItems);
 
-  if (
-    pendingThinkingSnapshot &&
-    latestUserMessageId === null &&
-    visibleMessages.length === 0
-  ) {
+  if (isActivelyStreaming && visibleMessages.length === 0) {
     const pendingExpanded =
       thinkingExpandedByMessage[PENDING_THINKING_KEY] ?? false;
     items.push(
       createPendingPanel({
         key: 'thinking-pending',
-        updates: pendingThinkingSnapshot.updates,
+        updates: activeThinkingSnapshot!.updates,
         isExpanded: pendingExpanded,
         onToggle: () => onTogglePendingThinking(!pendingExpanded),
-        isStreaming: !pendingThinkingSnapshot.isComplete,
       }),
     );
   }
@@ -125,7 +148,6 @@ type CreatePendingPanelArgs = {
   updates: ThinkingUpdateSnapshot['updates'];
   isExpanded: boolean;
   onToggle: () => void;
-  isStreaming: boolean;
 };
 
 function createPendingPanel({
@@ -133,14 +155,13 @@ function createPendingPanel({
   updates,
   isExpanded,
   onToggle,
-  isStreaming,
 }: CreatePendingPanelArgs) {
   return (
     <div key={key} className="flex w-full flex-col gap-3">
       <div className="flex w-full">
         <ThinkingStatusPanel
           updates={updates}
-          isStreaming={isStreaming}
+          isStreaming={true}
           isExpanded={isExpanded}
           onToggle={onToggle}
         />
@@ -152,12 +173,10 @@ function createPendingPanel({
 type ProcessMessageArgs = {
   message: ConversationMessage;
   latestStreamingAssistantId: string | null;
-  activeThinkingSnapshot: ThinkingUpdateSnapshot | null;
-  pendingThinkingSnapshot: ThinkingUpdateSnapshot | null;
-  latestUserMessageId: string | null;
+  isActivelyStreaming: boolean;
+  isCurrentTurnAssistant: boolean;
   thinkingExpandedByMessage: Record<string, boolean>;
   onToggleThinking: (messageId: string, next: boolean) => void;
-  onTogglePendingThinking: (next: boolean) => void;
   onFollowUpClick?: (message: string) => void;
   items: JSX.Element[];
   queuedProductItems: JSX.Element[];
@@ -167,33 +186,27 @@ type ProcessMessageArgs = {
 function processMessage({
   message,
   latestStreamingAssistantId,
-  activeThinkingSnapshot,
-  pendingThinkingSnapshot,
-  latestUserMessageId,
+  isActivelyStreaming,
+  isCurrentTurnAssistant,
   thinkingExpandedByMessage,
   onToggleThinking,
-  onTogglePendingThinking,
   onFollowUpClick,
   items,
   queuedProductItems,
   knownProducts,
-}: ProcessMessageArgs) {
+}: ProcessMessageArgs): void {
   const isAssistant = message.role === 'assistant';
   const isProductList = message.kind === 'products';
-  const kind = message.kind;
   const isStreamingMessage =
     isAssistant && message.id === latestStreamingAssistantId;
-  const showTrailingSpinner = isStreamingMessage && kind === 'text';
 
   registerProducts(knownProducts, message.metadata?.products);
 
   const metadataUpdates = message.metadata?.thinkingUpdates ?? [];
-  const isActiveSnapshotForMessage =
-    activeThinkingSnapshot?.messageId === message.id;
-  const updatesForMessage = isActiveSnapshotForMessage
-    ? (activeThinkingSnapshot?.updates ?? [])
-    : metadataUpdates;
-  const hasThinkingUpdates = isAssistant && updatesForMessage.length > 0;
+  const hideForCurrentTurn = isActivelyStreaming && isCurrentTurnAssistant;
+  const shouldShowThinking =
+    isAssistant && metadataUpdates.length > 0 && !hideForCurrentTurn;
+
   const storedExpansion = thinkingExpandedByMessage[message.id];
   const isExpanded = storedExpansion ?? false;
 
@@ -203,13 +216,11 @@ function processMessage({
       id={`message-${message.id}`}
       className="flex w-full flex-col gap-3"
     >
-      {hasThinkingUpdates ? (
+      {shouldShowThinking ? (
         <div className="flex w-full">
           <ThinkingStatusPanel
-            updates={updatesForMessage}
-            isStreaming={Boolean(
-              isActiveSnapshotForMessage && !activeThinkingSnapshot?.isComplete,
-            )}
+            updates={metadataUpdates}
+            isStreaming={false}
             isExpanded={isExpanded}
             onToggle={() => onToggleThinking(message.id, !isExpanded)}
           />
@@ -218,7 +229,6 @@ function processMessage({
       <MessageBubble
         message={message}
         isStreaming={isStreamingMessage}
-        showTrailingSpinner={showTrailingSpinner}
         productLookup={knownProducts}
         onFollowUpClick={onFollowUpClick}
       />
@@ -232,57 +242,9 @@ function processMessage({
 
   items.push(messageBlock);
 
-  maybeAddPendingPanel({
-    pendingThinkingSnapshot,
-    latestUserMessageId,
-    messageId: message.id,
-    thinkingExpandedByMessage,
-    onTogglePendingThinking,
-    items,
-  });
-
   if (isAssistant) {
     flushQueuedProductItems(items, queuedProductItems);
   }
-}
-
-type MaybeAddPendingPanelArgs = {
-  pendingThinkingSnapshot: ThinkingUpdateSnapshot | null;
-  latestUserMessageId: string | null;
-  messageId: string;
-  thinkingExpandedByMessage: Record<string, boolean>;
-  onTogglePendingThinking: (next: boolean) => void;
-  items: JSX.Element[];
-};
-
-function maybeAddPendingPanel({
-  pendingThinkingSnapshot,
-  latestUserMessageId,
-  messageId,
-  thinkingExpandedByMessage,
-  onTogglePendingThinking,
-  items,
-}: MaybeAddPendingPanelArgs) {
-  if (
-    !pendingThinkingSnapshot ||
-    !latestUserMessageId ||
-    messageId !== latestUserMessageId
-  ) {
-    return;
-  }
-
-  const pendingExpanded =
-    thinkingExpandedByMessage[PENDING_THINKING_KEY] ?? false;
-
-  items.push(
-    createPendingPanel({
-      key: 'thinking-pending',
-      updates: pendingThinkingSnapshot.updates,
-      isExpanded: pendingExpanded,
-      onToggle: () => onTogglePendingThinking(!pendingExpanded),
-      isStreaming: !pendingThinkingSnapshot.isComplete,
-    }),
-  );
 }
 
 function flushQueuedProductItems(target: JSX.Element[], queue: JSX.Element[]) {
