@@ -1,5 +1,5 @@
 import {buildProviderWithDefinition} from '@coveo/headless-react/ssr-commerce';
-import type {NavigatorContext} from '@coveo/headless-react/ssr-commerce';
+import type {NavigatorContext,InferStaticState} from '@coveo/headless-react/ssr-commerce';
 import type {PropsWithChildren} from 'react';
 import {useRef} from 'react';
 
@@ -12,7 +12,6 @@ import {
   type ListingStaticState,
   type StandaloneStaticState,
 } from '~/lib/coveo/engine';
-import type {InferStaticState} from '@coveo/headless-react/ssr-commerce';
 
 type RecommendationStaticState = InferStaticState<
   typeof recommendationEngineDefinition

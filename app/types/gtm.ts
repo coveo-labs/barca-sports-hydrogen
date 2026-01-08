@@ -45,7 +45,7 @@ export interface RemoveFromCartEcommerce extends EcommerceBase {
 // Base event interface
 export interface BaseDataLayerEvent {
   event: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 // Specific event interfaces

@@ -255,7 +255,6 @@ function getFacetContent({
       break;
     case 'dateRange':
     case 'location':
-      // eslint-disable-next-line no-console
       console.log('TODO facet: ', facet.type);
   }
 
@@ -402,9 +401,11 @@ function CategoryFacetContent({
                 type="radio"
                 className="hidden size-4 rounded border-gray-300 text-indigo-600 focus:ring-0"
                 onClick={() => {
-                  facetValue.state === 'selected'
-                    ? facetController?.deselectAll()
-                    : facetController?.toggleSelect(facetValue);
+                  if (facetValue.state === 'selected') {
+                    facetController?.deselectAll();
+                  } else {
+                    facetController?.toggleSelect(facetValue);
+                  }
                 }}
               />
               <label

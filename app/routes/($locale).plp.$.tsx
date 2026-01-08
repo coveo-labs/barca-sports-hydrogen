@@ -17,7 +17,7 @@ import {
   ServerSideNavigatorContextProvider,
 } from '~/lib/coveo/navigator.provider';
 
-export const meta: MetaFunction<typeof loader> = ({data}) => {
+export const meta: MetaFunction<typeof loader> = () => {
   return [{title: `Coveo ProductListingPage Work in progress`}];
 };
 

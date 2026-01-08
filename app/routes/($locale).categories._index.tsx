@@ -23,7 +23,7 @@ interface CategoryTree {
   children: Map<string, CategoryTree>;
 }
 
-export const meta: MetaFunction<typeof loader> = ({data}) => {
+export const meta: MetaFunction<typeof loader> = () => {
   return [{title: `Shop by Category | Barca Sports`}];
 };
 
@@ -65,7 +65,7 @@ function buildCategoryTree(categories: CategoryValue[]): CategoryTree {
   return root;
 }
 
-export async function loader({context, request}: LoaderFunctionArgs) {
+export async function loader({request}: LoaderFunctionArgs) {
   getLocaleFromRequest(request);
 
   // Update token if needed, same as search.tsx
@@ -108,8 +108,10 @@ export async function loader({context, request}: LoaderFunctionArgs) {
     throw new Error(`Values API error: ${response.status}`);
   }
 
-  const data = (await response.json()) as any;
-  const categories: CategoryValue[] = (data.values || []).map((item: any) => ({
+  const data = (await response.json()) as {
+    values?: Array<{value: string; numberOfResults: number}>;
+  };
+  const categories: CategoryValue[] = (data.values || []).map((item) => ({
     value: item.value,
     numberOfResults: item.numberOfResults,
     path: item.value.split('|').map((part: string) => part.trim()),
@@ -157,7 +159,7 @@ export default function CategoriesIndex() {
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
         <div className="space-y-12">
           {Array.from(tree.children.entries()).map(([name, node]) => (
-            <CategorySection key={name} node={node} level={0} />
+            <CategorySection key={name} node={node} />
           ))}
         </div>
       </div>
@@ -165,12 +167,12 @@ export default function CategoriesIndex() {
   );
 }
 
-function CategorySection({node, level}: {node: CategoryTree; level: number}) {
+function CategorySection({node}: {node: CategoryTree}) {
   const hasChildren = node.children.size > 0;
   const categorySlug = node.fullPath
     .join('/')
     .toLowerCase()
-    .replace(/[^a-z0-9\s-\/]+/g, '')
+    .replace(/[^a-z0-9\s\-/]+/g, '')
     .replace(/\s+/g, '-');
   const plpUrl = `/plp/${categorySlug}`;
 
@@ -219,7 +221,7 @@ function CategoryItem({node, level}: {node: CategoryTree; level: number}) {
   const categorySlug = node.fullPath
     .join('/')
     .toLowerCase()
-    .replace(/[^a-z0-9\s-\/]+/g, '')
+    .replace(/[^a-z0-9\s\-/]+/g, '')
     .replace(/\s+/g, '-');
   const plpUrl = `/plp/${categorySlug}`;
 

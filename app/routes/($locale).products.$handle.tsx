@@ -98,7 +98,7 @@ async function loadCriticalData({
       .query(VARIANTS_QUERY, {
         variables: {handle: params.handle!},
       })
-      .catch((error: any) => {
+      .catch((error: Error) => {
         // Log query errors, but don't throw them so the page can still render
         console.error(error);
         return null;

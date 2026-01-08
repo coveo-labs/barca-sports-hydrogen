@@ -82,13 +82,13 @@ export function useThinkingState({
 
       if (hasMessageEntry) {
         if (Object.hasOwn(prev, PENDING_THINKING_KEY)) {
-          const {[PENDING_THINKING_KEY]: _ignored, ...rest} = prev;
+          const {[PENDING_THINKING_KEY]: _, ...rest} = prev;
           return rest;
         }
         return prev;
       }
 
-      const {[PENDING_THINKING_KEY]: _ignored, ...rest} = prev;
+      const {[PENDING_THINKING_KEY]: _, ...rest} = prev;
       return {
         ...rest,
         [messageId]: false,
@@ -104,7 +104,7 @@ export function useThinkingState({
       if (!(PENDING_THINKING_KEY in prev)) {
         return prev;
       }
-      const {[PENDING_THINKING_KEY]: _ignored, ...rest} = prev;
+      const {[PENDING_THINKING_KEY]: __, ...rest} = prev;
       return rest;
     });
   }, [activeSnapshot]);
@@ -125,12 +125,15 @@ export function useThinkingState({
     return hasMatchingMessage ? null : activeSnapshot;
   }, [activeSnapshot, visibleMessages]);
 
-  const toggleMessageExpansion = useCallback((messageId: string, next: boolean) => {
-    setExpandedByMessage((prev) => ({
-      ...prev,
-      [messageId]: next,
-    }));
-  }, []);
+  const toggleMessageExpansion = useCallback(
+    (messageId: string, next: boolean) => {
+      setExpandedByMessage((prev) => ({
+        ...prev,
+        [messageId]: next,
+      }));
+    },
+    [],
+  );
 
   const togglePendingExpansion = useCallback((next: boolean) => {
     setExpandedByMessage((prev) => ({

@@ -87,7 +87,7 @@ export function Recommendations() {
           {homepageRecommendations.state.products.map(
             (relatedProduct: Product) => {
               // Exclude children to prevent color swatches on recs carousel
-              const {children, ...productWithoutEcColor} = relatedProduct;
+              const {children: _, ...productWithoutEcColor} = relatedProduct;
 
               return (
                 <div

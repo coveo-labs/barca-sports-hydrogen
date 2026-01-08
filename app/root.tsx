@@ -260,6 +260,7 @@ export default function App() {
       >
         <StandaloneProvider
           navigatorContext={new ClientSideNavigatorContextProvider()}
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           staticState={data.staticStateStandalone as any}
           accessToken={data.accessTokenStandalone}
         >

@@ -1,6 +1,6 @@
 import {NavLink, useParams, type NavLinkProps} from 'react-router';
 
-interface NavLinkWithLocaleProps extends NavLinkProps {}
+type NavLinkWithLocaleProps = NavLinkProps;
 export function NavLinkWithLocale(props: NavLinkWithLocaleProps) {
   const params = useParams();
   let redirectURL = props.to as string;

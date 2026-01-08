@@ -116,7 +116,7 @@ function MenuMobile({header, open, setOpen}: MenuMobileProps) {
                         <div className="aspect-h-1 aspect-w-1 overflow-hidden rounded-lg bg-gray-100 group-hover:opacity-75">
                           <img
                             alt={menuItem.title}
-                            src={currentCollection?.node.image?.url!}
+                            src={currentCollection?.node.image?.url ?? ''}
                             className="object-cover object-center"
                           />
                         </div>
@@ -301,7 +301,7 @@ function MenuDesktop({header, setOpen, cart}: MenuDesktopProps) {
                                             alt={'replace'}
                                             src={
                                               currentCollection?.node.image
-                                                ?.url! || 'replace'
+                                                ?.url ?? ''
                                             }
                                             className="object-cover object-center"
                                           />

@@ -1,4 +1,5 @@
 import {type CommerceSearchParameters} from '@coveo/headless-react/ssr-commerce';
+import type {ContextOptions} from '@coveo/headless/ssr-commerce';
 import type {AppLoadContext} from 'react-router';
 import {getLocaleFromRequest} from '~/lib/i18n';
 import {updateTokenIfNeeded} from '~/lib/auth/token-utils.server';
@@ -10,6 +11,9 @@ import {
 } from '~/lib/coveo/engine';
 import type {CartReturn} from '@shopify/hydrogen';
 import {mapShopifyMerchandiseToCoveoCartItem} from './map.coveo.shopify';
+
+// Extract currency type from Coveo's ContextOptions
+type CoveoCurrency = ContextOptions['currency'];
 
 type EngineKey =
   | 'listingEngineDefinition'
@@ -57,7 +61,7 @@ export async function fetchStaticState<K extends EngineKey>({
       context: {
         language: language.toLowerCase(),
         country,
-        currency: currency as any,
+        currency: currency as CoveoCurrency,
         view: {
           url,
         },
@@ -99,7 +103,7 @@ export async function fetchStandaloneStaticState({
         context: {
           language: language.toLowerCase(),
           country,
-          currency: currency as any,
+          currency: currency as CoveoCurrency,
           view: {
             url: 'https://shop.barca.group',
           },
@@ -160,7 +164,7 @@ export async function fetchRecommendationStaticState({
         context: {
           language: language.toLowerCase(),
           country,
-          currency: currency as any,
+          currency: currency as CoveoCurrency,
           view: {
             url: 'https://shop.barca.group',
           },

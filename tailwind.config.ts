@@ -1,5 +1,8 @@
 import type {Config} from 'tailwindcss';
 import defaultTheme from 'tailwindcss/defaultTheme';
+import aspectRatio from '@tailwindcss/aspect-ratio';
+import forms from '@tailwindcss/forms';
+import typography from '@tailwindcss/typography';
 
 export default {
   content: ['./html', './app/**/*.{js,ts,jsx,tsx}'],
@@ -10,11 +13,7 @@ export default {
       },
     },
   },
-  plugins: [
-    require('@tailwindcss/aspect-ratio'),
-    require('@tailwindcss/forms'),
-    require('@tailwindcss/typography'),
-  ],
+  plugins: [aspectRatio, forms, typography],
   safelist: [
     {
       pattern: /bg-/,

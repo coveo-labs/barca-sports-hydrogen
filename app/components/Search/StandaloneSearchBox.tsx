@@ -1,10 +1,7 @@
 import {Input, Switch} from '@headlessui/react';
 import {useCallback, useEffect, useRef, useState, useMemo} from 'react';
 import {useInstantProducts, useStandaloneSearchBox} from '~/lib/coveo/engine';
-import {
-  MagnifyingGlassIcon,
-  SparklesIcon,
-} from '@heroicons/react/24/outline';
+import {MagnifyingGlassIcon, SparklesIcon} from '@heroicons/react/24/outline';
 import {ProductCard} from '../Products/ProductCard';
 import '~/types/gtm';
 import {useNavigate} from 'react-router';
@@ -44,9 +41,9 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
 
       navigate(url);
       close?.();
-      searchBox.methods?.updateText('')
+      searchBox.methods?.updateText('');
     },
-    [inputValue, navigate, close],
+    [inputValue, navigate, close, searchBox.methods],
   );
 
   const toggleConversationalMode = useCallback(
@@ -87,6 +84,7 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
       }
     }, 50);
     return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Handle clicks outside to close dropdown
@@ -110,20 +108,22 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
 
   const handleInputChange = (value: string) => {
     setInputValue(value);
-    
+
     // Only auto-switch modes if user hasn't manually selected a mode
     if (!manualModeSelectionRef.current) {
       // Count words and determine target mode
       const query = value.trim();
-      const wordCount = query ? query.split(/\s+/).filter(word => word.length > 0).length : 0;
-      
+      const wordCount = query
+        ? query.split(/\s+/).filter((word) => word.length > 0).length
+        : 0;
+
       const shouldBeConversational = wordCount > 3;
-      
+
       if (shouldBeConversational !== isConversationalMode) {
         setIsConversationalMode(shouldBeConversational);
       }
     }
-    
+
     // Only update Coveo searchBox when in normal mode
     if (!isConversationalMode) {
       searchBox.methods?.updateText(value);
@@ -158,7 +158,13 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
         search_term: encodeURIComponent(searchQuery),
       });
     },
-    [inputValue, searchBox.state.value, searchBox.methods, isConversationalMode, handleGenerativeSearch],
+    [
+      inputValue,
+      searchBox.state.value,
+      searchBox.methods,
+      isConversationalMode,
+      handleGenerativeSearch,
+    ],
   );
 
   const handleSuggestionClick = (suggestion: string) => {
@@ -251,6 +257,7 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
                     key={prompt}
                     type="button"
                     role="option"
+                    aria-selected={false}
                     onClick={() => handlePromptClick(prompt)}
                     className="rounded-lg border border-slate-200 bg-white px-4 py-3 text-left text-sm text-slate-700 shadow-sm transition-colors hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-600"
                   >
@@ -270,7 +277,10 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
                         key={suggestion.rawValue}
                         type="button"
                         role="option"
-                        onClick={() => handleSuggestionClick(suggestion.rawValue)}
+                        aria-selected={false}
+                        onClick={() =>
+                          handleSuggestionClick(suggestion.rawValue)
+                        }
                         className="query-suggestion w-full text-left hover:text-indigo-600 hover:bg-gray-50 cursor-pointer p-2 transition-colors"
                         dangerouslySetInnerHTML={{
                           __html: suggestion.highlightedValue,

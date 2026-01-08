@@ -8,7 +8,7 @@ const isDev = (() => {
         return Boolean(meta.env.DEV);
       }
     }
-  } catch (error) {
+  } catch {
     // ignore - falls through to process check
   }
 
@@ -19,13 +19,20 @@ const isDev = (() => {
   return true;
 })();
 
-function log(method: 'debug' | 'info' | 'warn' | 'error', message: string, payload?: unknown) {
+function log(
+  method: 'debug' | 'info' | 'warn' | 'error',
+  message: string,
+  payload?: unknown,
+) {
   const shouldLog = method === 'error' || method === 'warn' ? true : isDev;
   if (!shouldLog) {
     return;
   }
 
-  const args = payload === undefined ? [LOG_PREFIX, message] : [LOG_PREFIX, message, payload];
+  const args =
+    payload === undefined
+      ? [LOG_PREFIX, message]
+      : [LOG_PREFIX, message, payload];
   const target = console[method] ?? console.log;
   target(...args);
 }

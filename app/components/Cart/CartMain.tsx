@@ -84,14 +84,14 @@ export function CartMain({cart: originalCart}: CartMainProps) {
   const cart = useOptimisticCart(originalCart);
   const coveoCart = useCart();
   const engine = useEngine();
-  const hasCartItems = (coveoCart.state as any)?.totalQuantity > 0;
+  const hasCartItems = (coveoCart.state.totalQuantity ?? 0) > 0;
 
   // Sync Coveo cart with Shopify cart whenever cart changes
   useEffect(() => {
     if (!cart?.lines.nodes || !coveoCart.methods) return;
 
     cart.lines.nodes.forEach((node) => {
-      (coveoCart.methods as any)?.updateItemQuantity?.({
+      coveoCart.methods?.updateItemQuantity({
         name: node.merchandise.product.title,
         price: Number(node.merchandise.price.amount),
         productId: node.merchandise.id,
@@ -100,17 +100,19 @@ export function CartMain({cart: originalCart}: CartMainProps) {
     });
   }, [cart?.lines.nodes, coveoCart.methods]);
 
-  const buildDataLayerForPurchase = (cart: any) => {
-    if (!cart) {
+  type OptimisticCart = NonNullable<typeof cart>;
+
+  const buildDataLayerForPurchase = (cartData: OptimisticCart) => {
+    if (!cartData) {
       console.error('Failed to fetch cart object. Aborting tracking!');
       return;
     }
     const purchaseDataLayerObject = {
       event: 'purchase' as const,
       ecommerce: {
-        transaction_id: cart.id?.split('key=')[1] || null,
-        value: Number(cart.cost?.totalAmount?.amount) || null,
-        currency: cart.cost?.totalAmount?.currencyCode || 'USD',
+        transaction_id: cartData.id?.split('key=')[1] || null,
+        value: Number(cartData.cost?.totalAmount?.amount) || null,
+        currency: cartData.cost?.totalAmount?.currencyCode || 'USD',
         items: [] as Array<{
           item_id: string;
           item_name: string;
@@ -121,8 +123,8 @@ export function CartMain({cart: originalCart}: CartMainProps) {
       },
     };
 
-    if (cart.lines?.nodes) {
-      cart.lines.nodes.forEach((node: any, index: number) => {
+    if (cartData.lines?.nodes) {
+      cartData.lines.nodes.forEach((node, index: number) => {
         purchaseDataLayerObject.ecommerce.items.push({
           // UNI-1358
           item_id: node.merchandise.id,
@@ -154,7 +156,7 @@ export function CartMain({cart: originalCart}: CartMainProps) {
               <li key={cartLine.id} className="flex py-6 sm:py-10">
                 <div className="shrink-0">
                   <img
-                    alt={cartLine.merchandise.image?.altText!}
+                    alt={cartLine.merchandise.image?.altText ?? ''}
                     src={cartLine.merchandise.image?.url}
                     className="size-24 rounded-md object-cover sm:size-48"
                   />

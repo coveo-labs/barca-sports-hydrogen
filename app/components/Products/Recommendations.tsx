@@ -92,7 +92,6 @@ export function ProductRecommendations() {
             return null;
           }
           return (
-            // eslint-disable-next-line react/no-array-index-key
             <Fragment key={`product-recs-${i}`}>
               <div className="recommendation-container">
                 <h2
@@ -107,7 +106,7 @@ export function ProductRecommendations() {
                     .slice(0, 4)
                     .map((relatedProduct: Product) => {
                       // Exclude children to prevent color swatches on recs carousel
-                      const {children, ...productWithoutEcColor} =
+                      const {children: _, ...productWithoutEcColor} =
                         relatedProduct;
 
                       return (

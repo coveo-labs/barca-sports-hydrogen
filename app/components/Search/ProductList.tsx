@@ -53,7 +53,8 @@ export function ProductList({searchQuery = ''}: ProductListProps) {
     // Mark this response as tracked
     trackedResponseIds.add(responseId);
 
-    const listingsItemsArray: any[] = [];
+    const listingsItemsArray: ReturnType<typeof createGTMItemFromProduct>[] =
+      [];
     productList.state.products.forEach(
       (recommendationItem: Product, index: number) => {
         listingsItemsArray.push(

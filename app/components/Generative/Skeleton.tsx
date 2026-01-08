@@ -17,7 +17,7 @@ export function Skeleton({numLines, tick}: {numLines: number; tick: number}) {
     <div className="h-2 animate-pulse">
       {Array.from({length: numLines}, (_, i) => i).map((_, i) => (
         <div
-          // eslint-disable-next-line react/no-array-index-key
+           
           key={i}
           className={cx(
             'mt-2 h-full bg-gradient-to-r from-gray-50 to-gray-400 transition-all duration-500 ease-in-out rounded w-0 pulse',

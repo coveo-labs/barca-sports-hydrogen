@@ -17,8 +17,10 @@ export function NoProductsFound() {
 
       {query && (
         <p className="text-base text-gray-600 mb-6 max-w-md text-center">
-          We couldn't find any products matching{' '}
-          <span className="font-semibold text-gray-900">"{query}"</span>
+          We couldn&apos;t find any products matching{' '}
+          <span className="font-semibold text-gray-900">
+            &quot;{query}&quot;
+          </span>
         </p>
       )}
 

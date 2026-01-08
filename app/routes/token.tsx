@@ -12,7 +12,7 @@ interface ParsedToken {
   exp: number;
 }
 
-export const loader = async ({request, context}: LoaderFunctionArgs) => {
+export const loader = async ({request}: LoaderFunctionArgs) => {
   // In an SSR scenario, we recommend storing the search token in a cookie to minimize the number of network requests.
   // This is not mandatory, but it can help improve the performance of your application.
   const accessTokenCookieValue = await accessTokenCookie.parse(

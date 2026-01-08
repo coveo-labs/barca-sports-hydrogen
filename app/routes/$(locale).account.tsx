@@ -103,7 +103,7 @@ export async function action({request, context}: ActionFunctionArgs) {
   });
 }
 
-export default function () {
+export default function AccountPage() {
   const {customer} = useLoaderData<typeof loader>();
   const fetcher = useFetcher<typeof action>();
   const customerInterests = (

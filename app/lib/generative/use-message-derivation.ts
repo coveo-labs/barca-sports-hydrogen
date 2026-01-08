@@ -2,6 +2,8 @@ import {useMemo} from 'react';
 import type {ConversationMessage} from '~/types/conversation';
 import type {ConversationRecord} from '~/lib/generative/chat';
 
+const EMPTY_MESSAGES: ConversationMessage[] = [];
+
 type UseMessageDerivationOptions = {
   conversations: ConversationRecord[];
   activeConversationId: string | null;
@@ -30,7 +32,7 @@ export function useMessageDerivation({
     [conversations, activeConversationId],
   );
 
-  const messages = activeConversation?.messages ?? [];
+  const messages = activeConversation?.messages ?? EMPTY_MESSAGES;
 
   const visibleMessages = useMemo(
     () =>
