@@ -56,7 +56,7 @@ export function ChatInputFooter({
             <button
               type="button"
               onClick={onStop}
-              className="absolute top-2 right-2 inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-sm font-medium shadow-sm transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black bg-gray-500 text-white hover:bg-gray-600"
+              className="absolute top-2 right-2 inline-flex items-center gap-1 rounded-full p-1 text-sm font-medium shadow-sm transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black bg-slate-600 text-white hover:bg-slate-700"
             >
               <svg
                 className="h-4 w-4"
