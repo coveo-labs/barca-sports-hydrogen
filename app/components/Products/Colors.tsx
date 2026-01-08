@@ -1,5 +1,4 @@
 import {Radio, RadioGroup} from '@headlessui/react';
-import {useState} from 'react';
 import cx from '~/lib/cx';
 
 const mapColor = (color: string, gradient = false) => {

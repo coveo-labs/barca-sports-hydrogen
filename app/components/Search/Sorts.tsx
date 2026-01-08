@@ -1,5 +1,5 @@
 import {MenuItem} from '@headlessui/react';
-import {engineDefinition} from '~/lib/coveo/engine';
+import {useSort} from '~/lib/coveo/engine';
 import {SortBy} from '@coveo/headless/commerce';
 
 function classNames(...classes: string[]) {
@@ -7,7 +7,7 @@ function classNames(...classes: string[]) {
 }
 
 export function Sorts() {
-  const sort = engineDefinition.controllers.useSort();
+  const sort = useSort();
   return (
     <>
       {sort.state.availableSorts.map((option) => (

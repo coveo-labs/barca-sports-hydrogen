@@ -1,8 +1,5 @@
 import {Radio, RadioGroup} from '@headlessui/react';
-import type {
-  ProductFragment,
-  ProductVariantFragment,
-} from 'storefrontapi.generated';
+import type {ProductFragment} from 'storefrontapi.generated';
 
 export function Sizes({
   product,

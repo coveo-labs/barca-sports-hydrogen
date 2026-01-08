@@ -21,15 +21,13 @@ import {
 } from '@heroicons/react/20/solid';
 import {ChevronRightIcon} from '@heroicons/react/24/outline';
 import {type ReactNode} from 'react';
-import {engineDefinition} from '~/lib/coveo/engine';
+import {useFacetGenerator} from '~/lib/coveo/engine';
 import cx from '~/lib/cx';
 
-type FacetGenerator = ReturnType<
-  typeof engineDefinition.controllers.useFacetGenerator
->;
+type FacetGeneratorHookReturn = ReturnType<typeof useFacetGenerator>;
 
 export function Facets({numFacetsInLine}: {numFacetsInLine: number}) {
-  const facetGenerator = engineDefinition.controllers.useFacetGenerator();
+  const facetGenerator = useFacetGenerator();
   const facetsInline = facetGenerator.state.slice(0, numFacetsInLine);
   const facetsInPanel = facetGenerator.state
     .slice(numFacetsInLine)
@@ -49,8 +47,8 @@ function FacetsInline({
   facets,
   facetGenerator,
 }: {
-  facets: FacetGenerator['state'];
-  facetGenerator: FacetGenerator;
+  facets: FacetGeneratorHookReturn['state'];
+  facetGenerator: FacetGeneratorHookReturn;
 }) {
   return (
     <>
@@ -77,8 +75,8 @@ function FacetsInPanel({
   facets,
   facetGenerator,
 }: {
-  facets: FacetGenerator['state'];
-  facetGenerator: FacetGenerator;
+  facets: FacetGeneratorHookReturn['state'];
+  facetGenerator: FacetGeneratorHookReturn;
 }) {
   if (facets.length === 0) {
     return null;
@@ -213,8 +211,8 @@ function getFacetContent({
   facetGenerator,
   cx,
 }: {
-  facet: FacetGenerator['state'][number];
-  facetGenerator: FacetGenerator;
+  facet: FacetGeneratorHookReturn['state'][number];
+  facetGenerator: FacetGeneratorHookReturn;
   cx: string;
 }) {
   let facetContent: ReactNode | null = null;

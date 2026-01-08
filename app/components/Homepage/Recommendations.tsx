@@ -1,6 +1,6 @@
 import {useHomepageRecommendations} from '~/lib/coveo/engine';
 import {ProductCard} from '../Products/ProductCard';
-import {useEffect, useRef} from 'react';
+import {useEffect} from 'react';
 import type {Product} from '@coveo/headless-react/ssr-commerce';
 import {createGTMItemFromProduct} from '~/lib/coveo/map.coveo.shopify';
 import '~/types/gtm';

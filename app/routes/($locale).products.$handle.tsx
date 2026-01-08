@@ -42,7 +42,6 @@ export async function loader(args: LoaderFunctionArgs) {
   // Await the critical data required to render initial state of the page
   const criticalData = await loadCriticalData(args);
   const {product} = criticalData;
-  const url = new URL(args.request.url);
 
   // UNI-1358
   const productId = product.selectedVariant

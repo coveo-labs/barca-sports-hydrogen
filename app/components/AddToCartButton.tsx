@@ -1,5 +1,5 @@
 import {CartForm, type OptimisticCartLineInput} from '@shopify/hydrogen';
-import {useSearchParams, type FetcherWithComponents} from 'react-router';
+import {type FetcherWithComponents} from 'react-router';
 import {useCart} from '~/lib/coveo/engine';
 import type {CartReturn} from '~/routes/($locale).cart';
 import type {ProductHandleData} from '~/routes/($locale).products.$handle';
@@ -27,7 +27,6 @@ export function AddToCartButton({
 
   const quantityToAdd = lines[0].quantity!;
   const newQuantity = currentQuantity + quantityToAdd;
-  const [searchParams, _] = useSearchParams();
 
   // UNI-1358
   const productId = product.selectedVariant

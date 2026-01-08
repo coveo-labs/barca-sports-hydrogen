@@ -3,7 +3,6 @@ import {hydrogen} from '@shopify/hydrogen/vite';
 import {oxygen} from '@shopify/mini-oxygen/vite';
 import {reactRouter} from '@react-router/dev/vite';
 import tsconfigPaths from 'vite-tsconfig-paths';
-import path from 'path';
 
 // Plugin to fix dayjs imports for Coveo Headless in SSR
 function dayjsEsmPlugin(): Plugin {

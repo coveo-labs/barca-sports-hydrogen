@@ -1,8 +1,8 @@
-import {engineDefinition} from '~/lib/coveo/engine';
+import {useSummary, usePagination} from '~/lib/coveo/engine';
 
 export function PaginationFooter() {
-  const summary = engineDefinition.controllers.useSummary();
-  const pagination = engineDefinition.controllers.usePagination();
+  const summary = useSummary();
+  const pagination = usePagination();
   return (
     <div className="pagination-container flex justify-between">
       <div className="text-sm text-gray-700 self-center mr-auto">

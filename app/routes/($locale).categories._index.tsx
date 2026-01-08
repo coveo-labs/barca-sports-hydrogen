@@ -66,7 +66,7 @@ function buildCategoryTree(categories: CategoryValue[]): CategoryTree {
 }
 
 export async function loader({context, request}: LoaderFunctionArgs) {
-  const {country, language, currency} = getLocaleFromRequest(request);
+  getLocaleFromRequest(request);
 
   // Update token if needed, same as search.tsx
   await updateTokenIfNeeded('searchEngineDefinition', request);

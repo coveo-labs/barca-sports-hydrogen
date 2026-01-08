@@ -44,7 +44,7 @@ const renewAccessToken = async (): Promise<string> => {
   return await fetchToken();
 };
 
-export const engineConfig: CommerceEngineDefinitionOptions = {
+export const engineConfig = {
   configuration: {
     accessToken: PLACEHOLDER_TOKEN,
     renewAccessToken,
@@ -94,7 +94,7 @@ export const engineConfig: CommerceEngineDefinitionOptions = {
     }),
     parameterManager: defineParameterManager(),
   },
-};
+} satisfies CommerceEngineDefinitionOptions;
 
 export const engineDefinition = defineCommerceEngine(engineConfig);
 

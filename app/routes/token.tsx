@@ -1,6 +1,4 @@
-import {engineConfig} from '~/lib/coveo/engine';
-import {getOrganizationEndpoint} from '@coveo/headless-react/ssr-commerce';
-import type {AppLoadContext, LoaderFunctionArgs} from '@remix-run/node';
+import type {LoaderFunctionArgs} from 'react-router';
 import {isTokenExpired, decodeBase64Url} from '~/lib/auth/token-utils.server';
 import {accessTokenCookie} from '~/lib/auth/cookies.server';
 

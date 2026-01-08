@@ -3,7 +3,10 @@ import {
   useFetcher,
   useLoaderData,
   type LoaderFunctionArgs,
+  type ActionFunctionArgs,
   data as reactRouterData,
+  NavLink,
+  Form,
 } from 'react-router';
 import {GET_CUSTOMER_QUERY} from '~/lib/shopify/fragments';
 
@@ -26,28 +29,32 @@ const SET_METAFIELDS_MUTATION = `
   }
 `;
 
-export async function loader({context}: LoaderFunctionArgs) {
-  const {data, errors} = await context.customerAccount.query<{
-    customer: {
-      firstName?: string;
-      lastName?: string;
-      displayName?: string;
-      emailAddress: {emailAddress: string};
-      imageUrl?: string;
-      id: string;
-      defaultAddress?: {
-        address1: string;
-        address2: string;
-        city: string;
-        company: string;
-        country: string;
-        formatted: string;
-        province: string;
-        zip: string;
-      };
-      metafields?: {key?: string; value?: string}[];
+type CustomerQueryResponse = {
+  customer: {
+    firstName?: string;
+    lastName?: string;
+    displayName?: string;
+    emailAddress: {emailAddress: string};
+    imageUrl?: string;
+    id: string;
+    defaultAddress?: {
+      address1: string;
+      address2: string;
+      city: string;
+      company: string;
+      country: string;
+      formatted: string;
+      province: string;
+      zip: string;
     };
-  }>(GET_CUSTOMER_QUERY);
+    metafields?: {key?: string; value?: string}[];
+  };
+};
+
+export async function loader({context}: LoaderFunctionArgs) {
+  const {data, errors} = (await context.customerAccount.query(
+    GET_CUSTOMER_QUERY,
+  )) as {data: CustomerQueryResponse; errors?: unknown[]};
 
   if (errors?.length || !data?.customer) {
     throw new Error('Customer not found');
@@ -99,14 +106,20 @@ export async function action({request, context}: ActionFunctionArgs) {
 export default function () {
   const {customer} = useLoaderData<typeof loader>();
   const fetcher = useFetcher<typeof action>();
-  const customerInterests = customer.metafields
-    ? JSON.parse(
-        customer.metafields.find((m) => m?.key === 'interests')?.value || '[]',
-      )
-    : [];
+  const customerInterests = (
+    customer.metafields
+      ? JSON.parse(
+          customer.metafields.find(
+            (m: {key?: string; value?: string}) => m?.key === 'interests',
+          )?.value || '[]',
+        )
+      : []
+  ) as string[];
 
   const customerNotes = customer.metafields
-    ? customer.metafields?.find((m) => m?.key === 'notes')?.value
+    ? customer.metafields?.find(
+        (m: {key?: string; value?: string}) => m?.key === 'notes',
+      )?.value
     : '';
   return customer ? (
     <main className="space-y-10 divide-y divide-gray-900/10 mx-auto max-w-2xl px-4 pb-24 pt-16 sm:px-6 lg:max-w-7xl lg:px-8">

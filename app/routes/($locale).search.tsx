@@ -54,7 +54,8 @@ export default function SearchPage() {
   }, []);
 
   const hasResults =
-    staticState.controllers?.productList.state?.products?.length > 0;
+    (staticState as SearchStaticState).controllers.productList.state.products
+      .length > 0;
 
   return (
     <SearchProvider

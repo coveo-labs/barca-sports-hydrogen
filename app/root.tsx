@@ -90,11 +90,19 @@ export async function loader(args: LoaderFunctionArgs) {
 
   const {country, currency, language} = getLocaleFromRequest(args.request);
 
-  args.context.customerAccount.getBuyer().then((buyer) => {
-    args.context.cart.updateBuyerIdentity({
-      customerAccessToken: buyer.customerAccessToken,
-    });
-  });
+  args.context.customerAccount
+    .getBuyer()
+    .then(
+      (
+        buyer: Awaited<
+          ReturnType<typeof args.context.customerAccount.getBuyer>
+        >,
+      ) => {
+        args.context.cart.updateBuyerIdentity({
+          customerAccessToken: buyer.customerAccessToken,
+        });
+      },
+    );
 
   const alreadyHasCookie = getCookieFromRequest(
     args.request,
@@ -138,7 +146,7 @@ export async function loader(args: LoaderFunctionArgs) {
  * needed to render the page. If it's unavailable, the whole page should 400 or 500 error.
  */
 async function loadCriticalData({context, request}: Route.LoaderArgs) {
-  const {storefront, customerAccount, cart} = context;
+  const {storefront, customerAccount} = context;
 
   const loggedIn = await customerAccount.isLoggedIn();
 
