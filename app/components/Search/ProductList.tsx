@@ -1,11 +1,10 @@
-import {engineDefinition} from '~/lib/coveo/engine';
+import {useProductList, useSummary} from '~/lib/coveo/engine';
 import {ProductCard} from '../Products/ProductCard';
 import type {
-  SearchSummaryState,
   Product,
-  ProductListState,
   ProductList as ProductListType,
-  DidYouMeanState,
+  ProductListState,
+  SearchSummaryState,
 } from '@coveo/headless/ssr-commerce';
 import {useEffect} from 'react';
 import {createGTMItemFromProduct} from '~/lib/coveo/map.coveo.shopify';
@@ -14,15 +13,19 @@ import '~/types/gtm';
 // Global tracking to ensure analytics only fire once per response
 const trackedResponseIds = new Set<string>();
 
-export function ProductList() {
-  const productList = engineDefinition.controllers.useProductList() as {
+interface ProductListProps {
+  searchQuery?: string;
+}
+
+export function ProductList({searchQuery = ''}: ProductListProps) {
+  const productList = useProductList() as {
     state: ProductListState;
     methods: Pick<
       ProductListType,
       'interactiveProduct' | 'promoteChildToParent'
     >;
   };
-  const summary = engineDefinition.controllers.useSummary() as {
+  const summary = useSummary() as {
     state: SearchSummaryState;
   };
 
@@ -69,15 +72,6 @@ export function ProductList() {
       },
     });
   }, [productList.state.responseId, productList.state.products]); // Track responseId and products changes
-
-  let searchQuery = summary.state.query || '';
-  if (summary.state.query) {
-    // useDidYouMean is avaialble only when ProductList is used with Search, not listing.
-    const didYouMean = engineDefinition.controllers.useDidYouMean() as {
-      state: DidYouMeanState;
-    };
-    searchQuery = didYouMean.state.originalQuery;
-  }
 
   return (
     <section

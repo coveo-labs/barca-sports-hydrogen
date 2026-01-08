@@ -10,7 +10,7 @@ import {useEffect, useState} from 'react';
 import ParameterManager from '~/components/ParameterManager';
 import {ListingProvider} from '~/components/Search/Context';
 import {FullSearch} from '~/components/Search/FullSearch';
-import {engineDefinition, type ListingStaticState} from '~/lib/coveo/engine';
+import {engineDefinition} from '~/lib/coveo/engine';
 import {fetchStaticState} from '~/lib/coveo/engine.server';
 import {
   ClientSideNavigatorContextProvider,
@@ -58,7 +58,7 @@ export default function PLP() {
   return (
     <ListingProvider
       navigatorContext={new ClientSideNavigatorContextProvider()}
-      staticState={staticState as ListingStaticState}
+      staticState={staticState}
       accessToken={accessToken}
     >
       <ParameterManager url={currentUrl.toString()} />

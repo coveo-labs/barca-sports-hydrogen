@@ -7,12 +7,12 @@ import {NoProductsFound} from './NoProductsFound';
 import {Sorts} from './Sorts';
 import {Breadcrumbs} from './Breadcrumbs';
 import {useEffect, useRef, useState} from 'react';
-import {engineDefinition} from '~/lib/coveo/engine';
-import type {ProductListState} from '@coveo/headless/ssr-commerce';
+import {useProductList} from '~/lib/coveo/engine';
 
 interface SearchPageProps {
   headline: string;
   tagline: string;
+  searchQuery?: string;
 }
 
 function useWindowSize() {
@@ -42,12 +42,14 @@ function useNumFacetsInline() {
   return 6;
 }
 
-export function FullSearch({headline, tagline}: SearchPageProps) {
+export function FullSearch({
+  headline,
+  tagline,
+  searchQuery = '',
+}: SearchPageProps) {
   const facetsContainer = useRef<HTMLDivElement>(null);
   const numFacetsInline = useNumFacetsInline();
-  const productList = engineDefinition.controllers.useProductList() as {
-    state: ProductListState;
-  };
+  const productList = useProductList();
 
   const hasResults = productList.state.products.length > 0;
 
@@ -108,7 +110,7 @@ export function FullSearch({headline, tagline}: SearchPageProps) {
         </h2>
         {hasResults ? (
           <>
-            <ProductList />
+            <ProductList searchQuery={searchQuery} />
             <PaginationFooter />
           </>
         ) : (

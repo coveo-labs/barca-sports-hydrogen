@@ -1,7 +1,4 @@
-import {
-  searchEngineDefinition,
-  type SearchStaticState,
-} from '~/lib/coveo/engine';
+import {searchEngineDefinition} from '~/lib/coveo/engine';
 import {fetchStaticState} from '~/lib/coveo/engine.server';
 import {
   ClientSideNavigatorContextProvider,
@@ -53,14 +50,16 @@ export default function SearchPage() {
     setCurrentUrl(new URL(window.location.href));
   }, []);
 
-  const hasResults =
-    (staticState as SearchStaticState).controllers.productList.state.products
-      .length > 0;
+  const {controllers} = staticState;
+  const {productList, didYouMean} = controllers;
+
+  const hasResults = productList.state.products.length > 0;
+  const searchQuery = didYouMean.state.originalQuery || q;
 
   return (
     <SearchProvider
       navigatorContext={new ClientSideNavigatorContextProvider()}
-      staticState={staticState as SearchStaticState}
+      staticState={staticState}
       accessToken={accessToken}
     >
       <ParameterManager url={currentUrl.toString()} />
@@ -81,6 +80,7 @@ export default function SearchPage() {
         <FullSearch
           headline={`Browse ${q}`}
           tagline="Find Your Perfect Splash! Dive into our collection and search for the water sports gear that takes your adventure to the next level. Your journey starts with a click!"
+          searchQuery={searchQuery}
         />
       )}
     </SearchProvider>

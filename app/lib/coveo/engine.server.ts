@@ -2,26 +2,39 @@ import {type CommerceSearchParameters} from '@coveo/headless-react/ssr-commerce'
 import type {AppLoadContext} from 'react-router';
 import {getLocaleFromRequest} from '~/lib/i18n';
 import {updateTokenIfNeeded} from '~/lib/auth/token-utils.server';
-import {engineDefinition} from '~/lib/coveo/engine';
+import {
+  engineDefinition,
+  type ListingStaticState,
+  type SearchStaticState,
+  type StandaloneStaticState,
+} from '~/lib/coveo/engine';
 import type {CartReturn} from '@shopify/hydrogen';
 import {mapShopifyMerchandiseToCoveoCartItem} from './map.coveo.shopify';
 
-export async function fetchStaticState({
+type EngineKey =
+  | 'listingEngineDefinition'
+  | 'searchEngineDefinition'
+  | 'standaloneEngineDefinition';
+
+type StaticStateMap = {
+  listingEngineDefinition: ListingStaticState;
+  searchEngineDefinition: SearchStaticState;
+  standaloneEngineDefinition: StandaloneStaticState;
+};
+
+export async function fetchStaticState<K extends EngineKey>({
   k,
   parameters,
   url,
   context,
   request,
 }: {
-  k:
-    | 'listingEngineDefinition'
-    | 'searchEngineDefinition'
-    | 'standaloneEngineDefinition';
+  k: K;
   parameters: CommerceSearchParameters;
   url: string;
   context: AppLoadContext;
   request: Request;
-}) {
+}): Promise<{staticState: StaticStateMap[K]; accessToken: string}> {
   const {country, language, currency} = getLocaleFromRequest(request);
 
   const cart = await context.cart.get();
@@ -52,7 +65,7 @@ export async function fetchStaticState({
     },
   });
 
-  return {staticState, accessToken};
+  return {staticState: staticState as StaticStateMap[K], accessToken};
 }
 
 /**
