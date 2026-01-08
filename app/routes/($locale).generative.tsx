@@ -328,7 +328,7 @@ export default function GenerativeShoppingAssistant() {
       <div className="flex w-full flex-1 min-h-0 bg-slate-100 border border-slate-300 rounded-lg shadow-sm overflow-hidden">
         <ConversationSidebar />
         <main className="flex flex-1 min-h-0 flex-col overflow-hidden">
-          <AssistantHeader />
+          <AssistantHeader isEmpty={messages.length === 0} />
 
           <MessageListContainer
             containerRef={messageContainerRef}
