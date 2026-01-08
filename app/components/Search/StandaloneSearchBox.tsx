@@ -72,9 +72,9 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
 
   // Initialize on mount: sync inputValue with searchBox state and show dropdown
   useEffect(() => {
-    // Initialize inputValue from searchBox if available
+    // Clear any stale searchBox state from previous session
     if (searchBox.state.value && !isConversationalMode) {
-      setInputValue(searchBox.state.value);
+      searchBox.methods?.updateText('');
     }
 
     const timer = setTimeout(() => {
@@ -324,6 +324,7 @@ function useRedirect(
       navigate(url);
       // Reset the redirectTo state to prevent re-triggering on popover reopen
       searchBox.methods?.afterRedirection();
+      searchBox.methods?.updateText('');
       close?.();
     }
   }, [
