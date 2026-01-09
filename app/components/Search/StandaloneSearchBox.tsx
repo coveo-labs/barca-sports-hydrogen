@@ -295,6 +295,7 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
                       </p>
                       <div className="grid gap-3 grid-cols-4">
                         {instantProducts.state.products.slice(0, 4).map((product) => (
+                          // using scale-90 to slightly reduce size to fit 4 in row since variant=compact removes the swatch from products
                           <div key={product.permanentid} className="scale-90">
                             <ProductCard
                               product={product}
