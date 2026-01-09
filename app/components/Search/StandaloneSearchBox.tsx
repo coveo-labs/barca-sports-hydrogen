@@ -197,7 +197,7 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
               searchBox.methods?.showSuggestions();
             }
           }}
-          className="search-box w-full h-12 border p-4 pr-32"
+          className="search-box w-full h-12 border p-4 pr-32 focus:ring-0"
           aria-label="Search"
           aria-expanded={showDropdown}
           aria-controls="search-dropdown"
