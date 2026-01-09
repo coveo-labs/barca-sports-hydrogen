@@ -197,7 +197,7 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
               searchBox.methods?.showSuggestions();
             }
           }}
-          className="search-box w-full h-12 border p-4 pr-32"
+          className="search-box w-full h-12 border p-4 pr-32 focus:ring-0"
           aria-label="Search"
           aria-expanded={showDropdown}
           aria-controls="search-dropdown"
@@ -270,8 +270,8 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
             // Search suggestions and products
             <>
               {searchBox.state.suggestions.length > 0 && (
-                <>
-                  <div>
+                <div className="flex">
+                  <div className="flex-shrink-0 w-80 border-r">
                     {searchBox.state.suggestions.map((suggestion) => (
                       <button
                         key={suggestion.rawValue}
@@ -289,30 +289,32 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
                     ))}
                   </div>
                   {instantProducts.state.products.length > 0 && (
-                    <div className="mt-6 pt-3 border-t bg-gray-50">
-                      <p className="pl-2 text-2xl font-bold tracking-tight text-gray-900">
+                    <div className="flex-1 bg-gray-50 p-4">
+                      <p className="text-lg font-bold tracking-tight text-gray-900 mb-4">
                         Popular products
                       </p>
-                      <div className="grid gap-x-8 gap-y-10 grid-cols-3 grid-rows-1 mt-6 sm:grid-cols-2 lg:grid-cols-5 xl:gap-x-8 p-4">
-                        {instantProducts.state.products.map((product) => (
-                          <ProductCard
-                            key={product.permanentid}
-                            product={product}
-                            className="product-suggestion"
-                            onSelect={() => {
-                              instantProducts.methods
-                                ?.interactiveProduct({
-                                  options: {product},
-                                })
-                                .select();
-                              close?.();
-                            }}
-                          />
+                      <div className="grid gap-3 grid-cols-4">
+                        {instantProducts.state.products.slice(0, 4).map((product) => (
+                          // using scale-90 to slightly reduce size to fit 4 in row since variant=compact removes the swatch from products
+                          <div key={product.permanentid} className="scale-90">
+                            <ProductCard
+                              product={product}
+                              className="product-suggestion"
+                              onSelect={() => {
+                                instantProducts.methods
+                                  ?.interactiveProduct({
+                                    options: {product},
+                                  })
+                                  .select();
+                                close?.();
+                              }}
+                            />
+                          </div>
                         ))}
                       </div>
                     </div>
                   )}
-                </>
+                </div>
               )}
             </>
           )}
