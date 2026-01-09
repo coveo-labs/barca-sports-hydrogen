@@ -9,7 +9,7 @@ import {
 export function ConversationSidebar() {
   const [isCollapsed, setIsCollapsed] = useState(true);
   const {conversations, activeConversationId} = useConversationsState();
-  const {onSelectConversation, onDeleteConversation} =
+  const {onSelectConversation, onDeleteConversation, onNewConversation} =
     useConversationActions();
   return (
     <aside
@@ -18,38 +18,14 @@ export function ConversationSidebar() {
         isCollapsed ? 'w-16' : 'w-80',
       )}
     >
-      <div className="flex items-center justify-between px-3 py-5">
-        {isCollapsed ? (
-          <button
-            type="button"
-            onClick={() => setIsCollapsed(false)}
-            className="rounded-lg p-2 bg-indigo-600 text-white hover:bg-indigo-500 transition shadow-sm"
-            aria-label="Expand sidebar"
-          >
-            <svg
-              className="h-5 w-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M13 5l7 7-7 7M5 5l7 7-7 7"
-              />
-            </svg>
-          </button>
-        ) : (
-          <>
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
-              Conversations
-            </h2>
+      <div className="flex flex-col gap-3 px-3 py-5">
+        <div className="flex items-center justify-between">
+          {isCollapsed ? (
             <button
               type="button"
-              onClick={() => setIsCollapsed(true)}
-              className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition"
-              aria-label="Collapse sidebar"
+              onClick={() => setIsCollapsed(false)}
+              className="rounded-lg p-2 bg-indigo-600 text-white hover:bg-indigo-500 transition shadow-sm"
+              aria-label="Expand sidebar"
             >
               <svg
                 className="h-5 w-5"
@@ -61,11 +37,68 @@ export function ConversationSidebar() {
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth={2}
-                  d="M11 19l-7-7 7-7m8 14l-7-7 7-7"
+                  d="M13 5l7 7-7 7M5 5l7 7-7 7"
                 />
               </svg>
             </button>
-          </>
+          ) : (
+            <>
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+                Conversations
+              </h2>
+              <button
+                type="button"
+                onClick={() => setIsCollapsed(true)}
+                className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition"
+                aria-label="Collapse sidebar"
+              >
+                <svg
+                  className="h-5 w-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M11 19l-7-7 7-7m8 14l-7-7 7-7"
+                  />
+                </svg>
+              </button>
+            </>
+          )}
+        </div>
+        {isCollapsed ? (
+          <button
+            type="button"
+            onClick={onNewConversation}
+            className="rounded-full p-2 border-2 border-dotted border-indigo-600 text-indigo-600 hover:bg-indigo-600 hover:text-white hover:border-solid transition"
+            aria-label="New conversation"
+            title="New chat"
+          >
+            <svg
+              className="h-5 w-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+              />
+            </svg>
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={onNewConversation}
+            className="rounded-lg border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-500 transition"
+          >
+            New chat
+          </button>
         )}
       </div>
       {!isCollapsed && (
