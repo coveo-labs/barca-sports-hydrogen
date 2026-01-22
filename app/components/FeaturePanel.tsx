@@ -8,71 +8,71 @@ import {
 } from '@headlessui/react';
 import {XMarkIcon, Cog6ToothIcon} from '@heroicons/react/24/outline';
 
-const DEBUG_SETTINGS_KEY = 'barca_debug_settings';
+const FEATURE_SETTINGS_KEY = 'barca_feature_settings';
 
-interface DebugSettings {
+interface FeatureSettings {
   showAISummary: boolean;
 }
 
-function getDebugSettings(): DebugSettings {
+function getFeatureSettings(): FeatureSettings {
   if (typeof window === 'undefined') {
     return {showAISummary: false};
   }
   try {
-    const stored = localStorage.getItem(DEBUG_SETTINGS_KEY);
+    const stored = localStorage.getItem(FEATURE_SETTINGS_KEY);
     if (stored) {
-      return JSON.parse(stored) as DebugSettings;
+      return JSON.parse(stored) as FeatureSettings;
     }
   } catch (e) {
-    console.error('Failed to load debug settings:', e);
+    console.error('Failed to load feature settings:', e);
   }
   return {showAISummary: false};
 }
 
-function saveDebugSettings(settings: DebugSettings) {
+function saveFeatureSettings(settings: FeatureSettings) {
   if (typeof window === 'undefined') return;
   try {
-    localStorage.setItem(DEBUG_SETTINGS_KEY, JSON.stringify(settings));
+    localStorage.setItem(FEATURE_SETTINGS_KEY, JSON.stringify(settings));
   } catch (e) {
-    console.error('Failed to save debug settings:', e);
+    console.error('Failed to save feature settings:', e);
   }
 }
 
-export function DebugPanel() {
+export function FeaturePanel() {
   const [isOpen, setIsOpen] = useState(false);
-  const [settings, setSettings] = useState<DebugSettings>({
+  const [settings, setSettings] = useState<FeatureSettings>({
     showAISummary: false,
   });
 
   useEffect(() => {
-    setSettings(getDebugSettings());
+    setSettings(getFeatureSettings());
   }, []);
 
-  const handleToggle = (key: keyof DebugSettings, value: boolean) => {
+  const handleToggle = (key: keyof FeatureSettings, value: boolean) => {
     const newSettings = {...settings, [key]: value};
     setSettings(newSettings);
-    saveDebugSettings(newSettings);
+    saveFeatureSettings(newSettings);
     
     // Dispatch custom event to notify other components
     if (typeof window !== 'undefined') {
       window.dispatchEvent(
-        new CustomEvent('debugSettingsChanged', {detail: newSettings}),
+        new CustomEvent('featureSettingsChanged', {detail: newSettings}),
       );
     }
   };
 
   return (
     <>
-      {/* Floating Debug Button */}
+      {/* Floating Feature Button */}
       <button
         onClick={() => setIsOpen(true)}
         className="fixed bottom-6 right-6 z-50 rounded-full bg-indigo-400 p-1.5 text-white shadow-md hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:ring-offset-2 transition-colors"
-        aria-label="Open debug panel"
+        aria-label="Open feature panel"
       >
         <Cog6ToothIcon className="h-4 w-4" />
       </button>
 
-      {/* Debug Drawer */}
+      {/* Feature Drawer */}
       <Transition show={isOpen}>
         <Dialog onClose={setIsOpen} className="relative z-50">
           <TransitionChild
@@ -103,7 +103,7 @@ export function DebugPanel() {
                       <div className="bg-gray-800 px-4 py-6 sm:px-6">
                         <div className="flex items-center justify-between">
                           <DialogTitle className="text-base font-semibold text-white">
-                            Debug Settings
+                            Feature Switches
                           </DialogTitle>
                           <button
                             type="button"
@@ -168,8 +168,8 @@ export function DebugPanel() {
   );
 }
 
-export function useDebugSettings() {
-  const [settings, setSettings] = useState<DebugSettings>({
+export function useFeatureSettings() {
+  const [settings, setSettings] = useState<FeatureSettings>({
     showAISummary: false,
   });
 
@@ -177,20 +177,20 @@ export function useDebugSettings() {
     // Guard against SSR
     if (typeof window === 'undefined') return;
 
-    setSettings(getDebugSettings());
+    setSettings(getFeatureSettings());
 
-    const handleSettingsChange = (event: CustomEvent<DebugSettings>) => {
+    const handleSettingsChange = (event: CustomEvent<FeatureSettings>) => {
       setSettings(event.detail);
     };
 
     window.addEventListener(
-      'debugSettingsChanged',
+      'featureSettingsChanged',
       handleSettingsChange as EventListener,
     );
 
     return () => {
       window.removeEventListener(
-        'debugSettingsChanged',
+        'featureSettingsChanged',
         handleSettingsChange as EventListener,
       );
     };
