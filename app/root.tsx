@@ -29,7 +29,7 @@ import {
 } from '~/lib/coveo/navigator.provider';
 import {StandaloneProvider} from './components/Search/Context';
 import {GlobalLoading} from './components/ProgressBar';
-import {DebugPanel} from './components/DebugPanel';
+import {FeaturePanel} from './components/FeaturePanel';
 import {getLocaleFromRequest} from './lib/i18n';
 import {getCookieFromRequest} from '~/lib/shopify/session';
 import type {Route} from './+types/root';
@@ -250,7 +250,7 @@ export default function App() {
   const data = useRouteLoaderData<RootLoader>('root');
   const location = useLocation();
 
-  // Don't show debug panel on generative page
+  // Don't show feature panel on generative page
   const showDebugPanel = !location.pathname.includes('/generative');
 
   if (!data) {
@@ -279,7 +279,7 @@ export default function App() {
         </StandaloneProvider>
       </Analytics.Provider>
       <GlobalLoading />
-      {showDebugPanel && <DebugPanel />}
+      {showDebugPanel && <FeaturePanel />}
       <ScrollRestoration nonce={nonce} />
       <Scripts nonce={nonce} />
     </>
