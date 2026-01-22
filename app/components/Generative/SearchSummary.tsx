@@ -144,7 +144,7 @@ export function SearchSummary({searchQuery}: SearchSummaryProps) {
       abortStream();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchQuery]);
+  }, [searchQuery, currentQuery]);
 
   const handleToggle = useCallback(() => {
     setIsExpanded((prev) => !prev);
