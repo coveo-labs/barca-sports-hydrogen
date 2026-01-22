@@ -9,6 +9,7 @@ import {Breadcrumbs} from './Breadcrumbs';
 import {SearchSummary} from '~/components/Generative/SearchSummary';
 import {useEffect, useRef, useState} from 'react';
 import {useProductList} from '~/lib/coveo/engine';
+import {useDebugSettings} from '~/components/DebugPanel';
 
 interface SearchPageProps {
   headline: string;
@@ -51,6 +52,7 @@ export function FullSearch({
   const facetsContainer = useRef<HTMLDivElement>(null);
   const numFacetsInline = useNumFacetsInline();
   const productList = useProductList();
+  const debugSettings = useDebugSettings();
 
   const hasResults = productList.state.products.length > 0;
 
@@ -101,7 +103,7 @@ export function FullSearch({
         <Breadcrumbs />
       </section>
 
-      {searchQuery && <SearchSummary searchQuery={searchQuery} />}
+      {searchQuery && debugSettings.showAISummary && <SearchSummary searchQuery={searchQuery} />}
 
       <section
         aria-labelledby="products-heading"

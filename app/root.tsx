@@ -9,6 +9,7 @@ import {
   ScrollRestoration,
   useRouteError,
   useRouteLoaderData,
+  useLocation,
   type LoaderFunctionArgs,
   type ShouldRevalidateFunction,
 } from 'react-router';
@@ -28,6 +29,7 @@ import {
 } from '~/lib/coveo/navigator.provider';
 import {StandaloneProvider} from './components/Search/Context';
 import {GlobalLoading} from './components/ProgressBar';
+import {DebugPanel} from './components/DebugPanel';
 import {getLocaleFromRequest} from './lib/i18n';
 import {getCookieFromRequest} from '~/lib/shopify/session';
 import type {Route} from './+types/root';
@@ -246,6 +248,10 @@ export function Layout({children}: {children?: React.ReactNode}) {
 export default function App() {
   const nonce = useNonce();
   const data = useRouteLoaderData<RootLoader>('root');
+  const location = useLocation();
+
+  // Don't show debug panel on generative page
+  const showDebugPanel = !location.pathname.includes('/generative');
 
   if (!data) {
     return <Outlet />;
@@ -273,6 +279,7 @@ export default function App() {
         </StandaloneProvider>
       </Analytics.Provider>
       <GlobalLoading />
+      {showDebugPanel && <DebugPanel />}
       <ScrollRestoration nonce={nonce} />
       <Scripts nonce={nonce} />
     </>
