@@ -15,8 +15,7 @@ export function ProductChip({product}: ProductChipProps) {
   return (
     <NavLink
       to={productLink}
-      className="inline-flex items-center gap-3 px-3 py-2 rounded-lg text-sm bg-white border border-gray-300 hover:bg-gray-50 hover:border-indigo-400 hover:shadow-sm transition-all"
-      style={{width: '180px', height: '62px'}}
+      className="inline-flex items-center gap-3 px-3 py-2 rounded-lg text-sm bg-white border border-gray-300 hover:bg-gray-50 hover:border-indigo-400 hover:shadow-sm transition-all w-[180px] h-[62px]"
     >
       {/* Product image circle */}
       <div className="flex-shrink-0">

@@ -54,9 +54,11 @@ export function DebugPanel() {
     saveDebugSettings(newSettings);
     
     // Dispatch custom event to notify other components
-    window.dispatchEvent(
-      new CustomEvent('debugSettingsChanged', {detail: newSettings}),
-    );
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(
+        new CustomEvent('debugSettingsChanged', {detail: newSettings}),
+      );
+    }
   };
 
   return (
@@ -172,6 +174,9 @@ export function useDebugSettings() {
   });
 
   useEffect(() => {
+    // Guard against SSR
+    if (typeof window === 'undefined') return;
+
     setSettings(getDebugSettings());
 
     const handleSettingsChange = (event: CustomEvent<DebugSettings>) => {

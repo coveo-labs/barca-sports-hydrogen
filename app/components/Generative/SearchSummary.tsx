@@ -4,7 +4,7 @@ import {ChevronDownIcon, ChevronUpIcon} from '@heroicons/react/20/solid';
 import {SparklesIcon} from '@heroicons/react/24/outline';
 import {useNavigate, useRouteLoaderData} from 'react-router';
 import type {RootLoader} from '~/root';
-import {createEmptyConversation} from '~/lib/generative/chat';
+import {createEmptyConversation, type ConversationRecord} from '~/lib/generative/chat';
 import {useAssistantStreaming} from '~/lib/generative/use-assistant-streaming';
 import {useMessageDerivation} from '~/lib/generative/use-message-derivation';
 import {useThinkingState} from '~/lib/generative/use-thinking-state';
@@ -24,7 +24,7 @@ export function SearchSummary({searchQuery}: SearchSummaryProps) {
   const navigate = useNavigate();
 
   const [isExpanded, setIsExpanded] = useState(false);
-  const [conversations, setConversations] = useState<any[]>([]);
+  const [conversations, setConversations] = useState<ConversationRecord[]>([]);
   const [activeConversationId, setActiveConversationId] = useState<
     string | null
   >(null);
@@ -95,7 +95,6 @@ export function SearchSummary({searchQuery}: SearchSummaryProps) {
 
     // If query changed, reset everything
     if (searchQuery !== currentQuery) {
-      abortStream();
       setConversations([]);
       setActiveConversationId(null);
       setIsExpanded(false);
@@ -103,6 +102,7 @@ export function SearchSummary({searchQuery}: SearchSummaryProps) {
       setCurrentQuery(searchQuery);
       setInputValue('');
       clearActiveSnapshot();
+      return; // Exit and let effect re-run with new query
     }
 
     const timestamp = new Date().toISOString();
@@ -113,11 +113,14 @@ export function SearchSummary({searchQuery}: SearchSummaryProps) {
 
     // Send the search query as a message
     const sendQuery = async () => {
+      const timestamp = new Date().toISOString();
       const userMessage = {
         id: crypto.randomUUID(),
         role: 'user' as const,
         content: searchQuery,
-        timestamp: new Date().toISOString(),
+        timestamp,
+        createdAt: timestamp,
+        kind: undefined,
       };
 
       setConversations((prev) =>
@@ -215,9 +218,9 @@ export function SearchSummary({searchQuery}: SearchSummaryProps) {
                   </h3>
                   {isActivelyThinking && (
                     <div className="flex items-center gap-1.5">
-                      <div className="w-1.5 h-1.5 bg-indigo-600 rounded-full animate-pulse" style={{animationDelay: '0ms'}}></div>
-                      <div className="w-1.5 h-1.5 bg-indigo-600 rounded-full animate-pulse" style={{animationDelay: '150ms'}}></div>
-                      <div className="w-1.5 h-1.5 bg-indigo-600 rounded-full animate-pulse" style={{animationDelay: '300ms'}}></div>
+                      <div className="w-1.5 h-1.5 bg-indigo-600 rounded-full animate-pulse"></div>
+                      <div className="w-1.5 h-1.5 bg-indigo-600 rounded-full animate-pulse"></div>
+                      <div className="w-1.5 h-1.5 bg-indigo-600 rounded-full animate-pulse"></div>
                     </div>
                   )}
                 </div>
