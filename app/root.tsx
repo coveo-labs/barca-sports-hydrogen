@@ -251,7 +251,7 @@ export default function App() {
   const location = useLocation();
 
   // Don't show feature panel on generative page
-  const showDebugPanel = !location.pathname.includes('/generative');
+  const showFeaturePanel = !location.pathname.includes('/generative');
 
   if (!data) {
     return <Outlet />;
@@ -279,7 +279,7 @@ export default function App() {
         </StandaloneProvider>
       </Analytics.Provider>
       <GlobalLoading />
-      {showDebugPanel && <FeaturePanel />}
+      {showFeaturePanel && <FeaturePanel />}
       <ScrollRestoration nonce={nonce} />
       <Scripts nonce={nonce} />
     </>
