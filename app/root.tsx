@@ -36,6 +36,34 @@ import type {Route} from './+types/root';
 export type RootLoader = typeof loader;
 
 /**
+ * Helper function to determine if customer accounts should be enabled
+ * Defaults to disabled for preview/dev environments, enabled for production
+ */
+export function shouldEnableCustomerAccounts(request: Request, env: Env): boolean {
+  // Check explicit environment variable first
+  if (env.ENABLE_CUSTOMER_ACCOUNTS !== undefined) {
+    return env.ENABLE_CUSTOMER_ACCOUNTS !== 'false';
+  }
+
+  // Auto-detect: disable for preview environments, enable for production
+  const url = new URL(request.url);
+  const hostname = url.hostname;
+  
+  // Oxygen preview deployments use patterns like:
+  // - <branch>-<storefront-id>.oxygen.store
+  // - <pr-number>-<storefront-id>.oxygen.store
+  // Production typically uses custom domains
+  const isOxygenPreview = hostname.includes('.oxygen.store') && 
+    (hostname.includes('-') || !hostname.startsWith('shop.'));
+  
+  // Also check for localhost/127.0.0.1 for local development
+  const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
+  
+  // Disable customer accounts in preview and local environments by default
+  return !isOxygenPreview && !isLocalhost;
+}
+
+/**
  * This is important to avoid re-fetching root queries on sub-navigations
  */
 export const shouldRevalidate: ShouldRevalidateFunction = ({
@@ -92,19 +120,23 @@ export async function loader(args: LoaderFunctionArgs) {
 
   const {country, currency, language} = getLocaleFromRequest(args.request);
 
-  args.context.customerAccount
-    .getBuyer()
-    .then(
-      (
-        buyer: Awaited<
-          ReturnType<typeof args.context.customerAccount.getBuyer>
-        >,
-      ) => {
-        args.context.cart.updateBuyerIdentity({
-          customerAccessToken: buyer.customerAccessToken,
-        });
-      },
-    );
+  // Only update buyer identity if customer accounts are enabled
+  const customerAccountsEnabled = shouldEnableCustomerAccounts(args.request, args.context.env);
+  if (customerAccountsEnabled) {
+    args.context.customerAccount
+      .getBuyer()
+      .then(
+        (
+          buyer: Awaited<
+            ReturnType<typeof args.context.customerAccount.getBuyer>
+          >,
+        ) => {
+          args.context.cart.updateBuyerIdentity({
+            customerAccessToken: buyer.customerAccessToken,
+          });
+        },
+      );
+  }
 
   const alreadyHasCookie = getCookieFromRequest(
     args.request,
@@ -148,9 +180,15 @@ export async function loader(args: LoaderFunctionArgs) {
  * needed to render the page. If it's unavailable, the whole page should 400 or 500 error.
  */
 async function loadCriticalData({context, request}: Route.LoaderArgs) {
-  const {storefront, customerAccount} = context;
+  const {storefront, customerAccount, env} = context;
 
-  const loggedIn = await customerAccount.isLoggedIn();
+  // Auto-detect preview environments and disable customer accounts there by default
+  const customerAccountsEnabled = shouldEnableCustomerAccounts(request, env);
+
+  // Only check login status if customer accounts are enabled
+  const loggedIn = customerAccountsEnabled
+    ? await customerAccount.isLoggedIn()
+    : false;
 
   const coveoNavigatorProvider = new ServerSideNavigatorContextProvider(
     request,
@@ -171,7 +209,7 @@ async function loadCriticalData({context, request}: Route.LoaderArgs) {
         headerMenuHandle: 'coveo-shopify-menu',
       },
     }),
-    loggedIn
+    loggedIn && customerAccountsEnabled
       ? context.customerAccount.query<{
           customer: {
             firstName: string;
@@ -197,6 +235,7 @@ async function loadCriticalData({context, request}: Route.LoaderArgs) {
     loggedIn,
     customerDisplayName: customer?.data.customer.firstName || '',
     customerImageUrl: customer?.data.customer.imageUrl || '',
+    customerAccountsEnabled,
     coveoVisitorIdHeader,
   };
 }

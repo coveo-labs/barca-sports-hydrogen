@@ -362,28 +362,32 @@ function MenuDesktop({header, setOpen, cart}: MenuDesktopProps) {
             </PopoverGroup>
 
             <div className="ml-auto flex items-center">
-              <div className="hidden lg:flex lg:flex-1 lg:items-center lg:justify-end lg:space-x-6">
-                <NavLinkWithLocale
-                  className="login-cta text-sm font-medium text-gray-700 hover:text-gray-800 flex items-center gap-x-4"
-                  to="/account"
-                >
-                  <div>
-                    {rootData?.loggedIn
-                      ? `Welcome back, ${rootData.customerDisplayName}`
-                      : 'Sign in'}
+              {rootData?.customerAccountsEnabled !== false && (
+                <>
+                  <div className="hidden lg:flex lg:flex-1 lg:items-center lg:justify-end lg:space-x-6">
+                    <NavLinkWithLocale
+                      className="login-cta text-sm font-medium text-gray-700 hover:text-gray-800 flex items-center gap-x-4"
+                      to="/account"
+                    >
+                      <div>
+                        {rootData?.loggedIn
+                          ? `Welcome back, ${rootData.customerDisplayName}`
+                          : 'Sign in'}
+                      </div>
+                      <div>
+                        {rootData?.loggedIn ? (
+                          <img
+                            alt=""
+                            src={rootData.customerImageUrl}
+                            className="size-8 rounded-full bg-gray-800"
+                          />
+                        ) : null}
+                      </div>
+                    </NavLinkWithLocale>
+                    <span aria-hidden="true" className="h-6 w-px bg-gray-200" />
                   </div>
-                  <div>
-                    {rootData?.loggedIn ? (
-                      <img
-                        alt=""
-                        src={rootData.customerImageUrl}
-                        className="size-8 rounded-full bg-gray-800"
-                      />
-                    ) : null}
-                  </div>
-                </NavLinkWithLocale>
-                <span aria-hidden="true" className="h-6 w-px bg-gray-200" />
-              </div>
+                </>
+              )}
 
               <div className="hidden lg:ml-8 lg:flex">
                 <CountrySelector />
