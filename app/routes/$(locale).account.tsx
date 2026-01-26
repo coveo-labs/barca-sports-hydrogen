@@ -9,7 +9,6 @@ import {
   Form,
 } from 'react-router';
 import {GET_CUSTOMER_QUERY} from '~/lib/shopify/fragments';
-import {shouldEnableCustomerAccounts} from '~/root';
 
 const SET_METAFIELDS_MUTATION = `
   mutation MetafieldsSet($metafields: [MetafieldsSetInput!]!) {
@@ -52,14 +51,7 @@ type CustomerQueryResponse = {
   };
 };
 
-export async function loader({context, request}: LoaderFunctionArgs) {
-  // Check if customer accounts are enabled (auto-detects preview environments)
-  const customerAccountsEnabled = shouldEnableCustomerAccounts(request, context.env);
-  
-  if (!customerAccountsEnabled) {
-    throw new Response('Customer accounts are disabled', {status: 404});
-  }
-
+export async function loader({context}: LoaderFunctionArgs) {
   const {data, errors} = (await context.customerAccount.query(
     GET_CUSTOMER_QUERY,
   )) as {data: CustomerQueryResponse; errors?: unknown[]};

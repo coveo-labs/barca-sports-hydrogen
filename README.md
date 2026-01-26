@@ -74,15 +74,6 @@ PUBLIC_CHECKOUT_DOMAIN="..."
 PUBLIC_CUSTOMER_ACCOUNT_API_CLIENT_ID="..."
 PUBLIC_CUSTOMER_ACCOUNT_API_URL="..."
 
-# Optional: Override customer account auto-detection
-# By default, customer accounts are:
-# - DISABLED in PR preview deployments (*.oxygen.store with branch/PR in URL)
-# - DISABLED in local development (localhost/127.0.0.1)
-# - ENABLED in production deployments (custom domains)
-# Set this to explicitly override the default behavior:
-# ENABLE_CUSTOMER_ACCOUNTS="true"   # Force enable
-# ENABLE_CUSTOMER_ACCOUNTS="false"  # Force disable
-
 # Shop & Session
 SHOP_ID="..."
 SESSION_SECRET="..."
@@ -100,23 +91,6 @@ COVEO_API_KEY=""
 ```
 
 Note: Coveo search tokens are fetched automatically via the [Coveo app for Shopify](https://docs.coveo.com/en/p2la0421) app proxy installed on Barca Shop.
-
-#### PR Preview & Local Development
-
-Customer accounts are **automatically disabled** in:
-- **PR preview deployments** (Oxygen URLs matching `*.oxygen.store` with branch/PR names)
-- **Local development** (`localhost` or `127.0.0.1`)
-
-This prevents authentication errors when sharing preview links publicly. The storefront remains fully functional without customer accounts - users just won't see login/account features.
-
-Customer accounts are **automatically enabled** in:
-- **Production deployments** (custom domains like `shop.barca.group`)
-
-To override this behavior, set `ENABLE_CUSTOMER_ACCOUNTS` environment variable:
-- `ENABLE_CUSTOMER_ACCOUNTS="true"` - Force enable (useful for testing auth in previews)
-- `ENABLE_CUSTOMER_ACCOUNTS="false"` - Force disable (useful for disabling in production if needed)
-
-**No manual configuration needed!** This PR automatically handles preview environments.
 
 ### Development
 

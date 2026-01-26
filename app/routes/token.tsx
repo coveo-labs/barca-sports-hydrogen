@@ -54,27 +54,14 @@ async function fetchTokenFromAppProxy(): Promise<string> {
   // target market. You can use it to facilitate setting the correct Headless engine `context.analytics.trackingId`
   // value. We do not do this in this sample project, since it was not configured with the Coveo app for Shopify.
   const marketId = '88728731922';
-  
-  try {
-    const response = await fetch(
-      `https://barca-sports.myshopify.com/apps/coveo?marketId=${marketId}`,
-    );
+  const response = await fetch(
+    `https://barca-sports.myshopify.com/apps/coveo?marketId=${marketId}`,
+  );
 
-    if (!response.ok) {
-      throw new Error(
-        `Failed to fetch token from app proxy: ${response.status} ${response.statusText}`,
-      );
-    }
-
-    const data = (await response.json()) as {accessToken: string};
-    return data.accessToken;
-  } catch (error) {
-    // In preview/dev environments where the app proxy may not be accessible,
-    // log the error but provide a descriptive message
-    console.error('Token fetch error:', error);
-    throw new Error(
-      'Unable to fetch Coveo token. This may happen in preview environments without proper app proxy access. ' +
-      'For production, ensure COVEO_API_KEY is set and the app proxy is accessible.',
-    );
+  if (!response.ok) {
+    throw new Error('Failed to fetch token from app proxy');
   }
+
+  const data = (await response.json()) as {accessToken: string};
+  return data.accessToken;
 }

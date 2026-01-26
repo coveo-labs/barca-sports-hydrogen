@@ -25,7 +25,6 @@ declare global {
 
   interface Env extends HydrogenEnv {
     // declare additional Env parameter use in the fetch handler and Remix loader context here
-    ENABLE_CUSTOMER_ACCOUNTS?: string;
   }
 
   interface ImportMetaEnv {
