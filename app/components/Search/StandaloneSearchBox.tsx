@@ -16,61 +16,62 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
   const input = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
-  const [isConversationalMode, setIsConversationalMode] = useState(false);
+  // const [isConversationalMode, setIsConversationalMode] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [inputValue, setInputValue] = useState('');
-  const manualModeSelectionRef = useRef(false);
+  // const manualModeSelectionRef = useRef(false);
 
-  const conversationalPrompts = useMemo(
-    () => [
-      'Suggest a paddleboarding accessory kit for beginners',
-      'What safety gear do I need for a twilight kayak tour?',
-      'Compare waterproof deck bags for a weekend surf trip',
-      'Build a surf travel checklist with board protection and repairs',
-    ],
-    [],
-  );
+  // const conversationalPrompts = useMemo(
+  //   () => [
+  //     'Suggest a paddleboarding accessory kit for beginners',
+  //     'What safety gear do I need for a twilight kayak tour?',
+  //     'Compare waterproof deck bags for a weekend surf trip',
+  //     'Build a surf travel checklist with board protection and repairs',
+  //   ],
+  //   [],
+  // );
 
-  const handleGenerativeSearch = useCallback(
-    (query?: string) => {
-      // For conversational mode, use local inputValue
-      const searchQuery = query?.trim() || inputValue.trim();
-      const url = searchQuery
-        ? `/generative?q=${encodeURIComponent(searchQuery)}`
-        : '/generative';
+  // const handleGenerativeSearch = useCallback(
+  //   (query?: string) => {
+  //     // For conversational mode, use local inputValue
+  //     const searchQuery = query?.trim() || inputValue.trim();
+  //     const url = searchQuery
+  //       ? `/generative?q=${encodeURIComponent(searchQuery)}`
+  //       : '/generative';
 
-      navigate(url);
-      close?.();
-      searchBox.methods?.updateText('');
-    },
-    [inputValue, navigate, close, searchBox.methods],
-  );
+  //     navigate(url);
+  //     close?.();
+  //     searchBox.methods?.updateText('');
+  //   },
+  //   [inputValue, navigate, close, searchBox.methods],
+  // );
 
-  const toggleConversationalMode = useCallback(
-    (enabled: boolean) => {
-      setIsConversationalMode(enabled);
-      setInputValue('');
-      searchBox.methods?.updateText('');
-      manualModeSelectionRef.current = true; // User manually toggled
+  // const toggleConversationalMode = useCallback(
+  //   (enabled: boolean) => {
+  //     setIsConversationalMode(enabled);
+  //     setInputValue('');
+  //     searchBox.methods?.updateText('');
+  //     manualModeSelectionRef.current = true; // User manually toggled
 
-      // Focus input and show appropriate dropdown
-      setTimeout(() => {
-        if (input.current) {
-          input.current.focus();
-          setShowDropdown(true);
-          if (!enabled) {
-            searchBox.methods?.showSuggestions();
-          }
-        }
-      }, 0);
-    },
-    [searchBox.methods],
-  );
+  //     // Focus input and show appropriate dropdown
+  //     setTimeout(() => {
+  //       if (input.current) {
+  //         input.current.focus();
+  //         setShowDropdown(true);
+  //         if (!enabled) {
+  //           searchBox.methods?.showSuggestions();
+  //         }
+  //       }
+  //     }, 0);
+  //   },
+  //   [searchBox.methods],
+  // );
 
   // Initialize on mount: sync inputValue with searchBox state and show dropdown
   useEffect(() => {
     // Clear any stale searchBox state from previous session
-    if (searchBox.state.value && !isConversationalMode) {
+    // if (searchBox.state.value && !isConversationalMode) {
+    if (searchBox.state.value) {
       searchBox.methods?.updateText('');
     }
 
@@ -78,9 +79,9 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
       if (input.current) {
         input.current.focus();
         setShowDropdown(true);
-        if (!isConversationalMode) {
+        // if (!isConversationalMode) {
           searchBox.methods?.showSuggestions();
-        }
+        // }
       }
     }, 50);
     return () => clearTimeout(timer);
@@ -109,25 +110,25 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
   const handleInputChange = (value: string) => {
     setInputValue(value);
 
-    // Only auto-switch modes if user hasn't manually selected a mode
-    if (!manualModeSelectionRef.current) {
-      // Count words and determine target mode
-      const query = value.trim();
-      const wordCount = query
-        ? query.split(/\s+/).filter((word) => word.length > 0).length
-        : 0;
+    // // Only auto-switch modes if user hasn't manually selected a mode
+    // if (!manualModeSelectionRef.current) {
+    //   // Count words and determine target mode
+    //   const query = value.trim();
+    //   const wordCount = query
+    //     ? query.split(/\s+/).filter((word) => word.length > 0).length
+    //     : 0;
 
-      const shouldBeConversational = wordCount > 3;
+    //   const shouldBeConversational = wordCount > 3;
 
-      if (shouldBeConversational !== isConversationalMode) {
-        setIsConversationalMode(shouldBeConversational);
-      }
-    }
+    //   if (shouldBeConversational !== isConversationalMode) {
+    //     setIsConversationalMode(shouldBeConversational);
+    //   }
+    // }
 
     // Only update Coveo searchBox when in normal mode
-    if (!isConversationalMode) {
+    // if (!isConversationalMode) {
       searchBox.methods?.updateText(value);
-    }
+    // }
   };
 
   const onSubmit = useCallback(
@@ -137,14 +138,14 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
       const query = inputValue.trim();
       if (!query) return;
 
-      // Reset manual mode selection on submit
-      manualModeSelectionRef.current = false;
+      // // Reset manual mode selection on submit
+      // manualModeSelectionRef.current = false;
 
-      // In conversational mode, use local inputValue
-      if (isConversationalMode) {
-        handleGenerativeSearch(query);
-        return;
-      }
+      // // In conversational mode, use local inputValue
+      // if (isConversationalMode) {
+      //   handleGenerativeSearch(query);
+      //   return;
+      // }
 
       // Normal search mode - use searchBox state (Coveo's source of truth)
       const searchQuery = searchBox.state.value?.trim();
@@ -162,8 +163,8 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
       inputValue,
       searchBox.state.value,
       searchBox.methods,
-      isConversationalMode,
-      handleGenerativeSearch,
+      // isConversationalMode,
+      // handleGenerativeSearch,
     ],
   );
 
@@ -179,9 +180,9 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
     });
   };
 
-  const handlePromptClick = (prompt: string) => {
-    handleGenerativeSearch(prompt);
-  };
+  // const handlePromptClick = (prompt: string) => {
+  //   handleGenerativeSearch(prompt);
+  // };
 
   return (
     <div className="relative">
@@ -193,16 +194,16 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
           onChange={(e) => handleInputChange(e.target.value)}
           onFocus={() => {
             setShowDropdown(true);
-            if (!isConversationalMode) {
+            // if (!isConversationalMode) {
               searchBox.methods?.showSuggestions();
-            }
+            // }
           }}
           className="search-box w-full h-12 border p-4 pr-32 focus:ring-0"
           aria-label="Search"
           aria-expanded={showDropdown}
           aria-controls="search-dropdown"
           aria-autocomplete="list"
-          placeholder={isConversationalMode ? 'Ask me anything...' : 'Search'}
+          placeholder={'Search'}
         />
         <div className="absolute inset-y-0 right-0 flex items-center gap-3 pr-3">
           <button
@@ -211,7 +212,7 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
           >
             <MagnifyingGlassIcon className="size-6" />
           </button>
-          <div className="flex items-center gap-2" title="Conversational mode">
+          {/* <div className="flex items-center gap-2" title="Conversational mode">
             <SparklesIcon
               className={cx(
                 'size-6 transition-colors',
@@ -234,7 +235,7 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
                 )}
               />
             </Switch>
-          </div>
+          </div> */}
         </div>
       </form>
 
@@ -245,7 +246,7 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
           role="listbox"
           className="absolute top-full left-0 right-0 z-20 bg-white border border-t-0 shadow-lg max-h-[600px] overflow-y-auto"
         >
-          {isConversationalMode ? (
+          {/* {isConversationalMode ? (
             // Conversational prompts
             <div className="p-4">
               <p className="mb-3 text-sm font-semibold text-slate-900">
@@ -266,8 +267,8 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
                 ))}
               </div>
             </div>
-          ) : (
-            // Search suggestions and products
+          ) : ( */}
+            {/* // Search suggestions and products */}
             <>
               {searchBox.state.suggestions.length > 0 && (
                 <div className="flex">
@@ -317,7 +318,7 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
                 </div>
               )}
             </>
-          )}
+          {/* )} */}
         </div>
       )}
     </div>

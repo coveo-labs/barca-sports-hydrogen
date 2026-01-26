@@ -16,7 +16,7 @@ interface FeatureSettings {
 
 function getFeatureSettings(): FeatureSettings {
   if (typeof window === 'undefined') {
-    return {showAISummary: false};
+    return {showAISummary: true};
   }
   try {
     const stored = localStorage.getItem(FEATURE_SETTINGS_KEY);
