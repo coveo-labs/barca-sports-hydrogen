@@ -1,6 +1,5 @@
 import {defineConfig, type Plugin} from 'vite';
 import {hydrogen} from '@shopify/hydrogen/vite';
-import {oxygen} from '@shopify/mini-oxygen/vite';
 import {reactRouter} from '@react-router/dev/vite';
 import tsconfigPaths from 'vite-tsconfig-paths';
 
@@ -71,7 +70,6 @@ export default defineConfig({
     pinoStubPlugin(),
     dayjsEsmPlugin(),
     hydrogen(),
-    oxygen(),
     reactRouter(),
     tsconfigPaths(),
   ],

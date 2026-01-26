@@ -1,30 +1,37 @@
 // Virtual entry point for the app
 import {storefrontRedirect} from '@shopify/hydrogen';
-import {createRequestHandler} from '@shopify/hydrogen/oxygen';
+import {createRequestHandler} from 'react-router';
 import {createHydrogenRouterContext} from '~/lib/shopify/context';
 
 /**
- * Export a fetch handler in module format.
+ * Export a fetch handler for Vercel Edge Functions.
  */
-export default {
-  async fetch(
-    request: Request,
-    env: Env,
-    executionContext: ExecutionContext,
-  ): Promise<Response> {
-    try {
-      const hydrogenContext = await createHydrogenRouterContext(
-        request,
-        env,
-        executionContext,
-      );
+export default async function handler(
+  request: Request,
+  context: {waitUntil: (promise: Promise<any>) => void},
+): Promise<Response> {
+  try {
+    // Map Vercel context to execution context
+    const executionContext = {
+      waitUntil: context.waitUntil,
+      passThroughOnException: () => {},
+    };
+
+    // Get environment variables from process.env for Vercel
+    const env = process.env as unknown as Env;
+
+    const hydrogenContext = await createHydrogenRouterContext(
+      request,
+      env,
+      executionContext as ExecutionContext,
+    );
 
       /**
-       * Create a Remix request handler and pass
+       * Create a React Router request handler and pass
        * Hydrogen's Storefront client to the loader context.
        */
       const handleRequest = createRequestHandler({
-         
+        // @ts-ignore - Virtual module
         build: await import('virtual:react-router/server-build'),
         mode: process.env.NODE_ENV,
         getLoadContext: () => hydrogenContext,
@@ -57,5 +64,4 @@ export default {
       console.error(error);
       return new Response('An unexpected error occurred', {status: 500});
     }
-  },
-};
+}

@@ -22,6 +22,7 @@ declare global {
 /**
  * Creates Hydrogen context for React Router 7.9.x
  * Returns HydrogenRouterContextProvider with hybrid access patterns
+ * Compatible with Vercel Edge Functions
  * */
 export async function createHydrogenRouterContext(
   request: Request,
@@ -29,13 +30,16 @@ export async function createHydrogenRouterContext(
   executionContext: ExecutionContext,
 ) {
   /**
-   * Open a cache instance in the worker and a custom session instance.
+   * Open a cache instance and a custom session instance.
    */
   if (!env?.SESSION_SECRET) {
     throw new Error('SESSION_SECRET environment variable is not set');
   }
 
-  const waitUntil = executionContext.waitUntil.bind(executionContext);
+  const waitUntil = executionContext.waitUntil
+    ? executionContext.waitUntil.bind(executionContext)
+    : (_promise: Promise<any>) => {}; // Fallback for non-worker environments
+
   const [cache, session] = await Promise.all([
     caches.open('hydrogen'),
     AppSession.init(request, [env.SESSION_SECRET]),
