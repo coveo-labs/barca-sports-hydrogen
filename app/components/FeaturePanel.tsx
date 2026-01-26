@@ -26,7 +26,7 @@ function getFeatureSettings(): FeatureSettings {
   } catch (e) {
     console.error('Failed to load feature settings:', e);
   }
-  return {showAISummary: false};
+  return {showAISummary: true};
 }
 
 function saveFeatureSettings(settings: FeatureSettings) {
