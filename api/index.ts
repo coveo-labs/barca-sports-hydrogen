@@ -1,9 +1,5 @@
 import type {VercelRequest, VercelResponse} from '@vercel/node';
-import {storefrontRedirect} from '@shopify/hydrogen';
-import {createRequestHandler} from 'react-router';
-import {createHydrogenRouterContext} from '../app/lib/shopify/context';
 
-// Use Node.js runtime for full compatibility
 export const config = {
   runtime: 'nodejs',
 };
@@ -13,27 +9,35 @@ export default async function handler(
   res: VercelResponse,
 ) {
   try {
+    // Dynamically import to avoid build-time issues
+    const {storefrontRedirect} = await import('@shopify/hydrogen');
+    const {createRequestHandler} = await import('react-router');
+    const {createHydrogenRouterContext} = await import(
+      '../app/lib/shopify/context'
+    );
+
     // Convert Vercel request to Web Request
-    const url = `https://${req.headers.host}${req.url}`;
+    const protocol = req.headers['x-forwarded-proto'] || 'https';
+    const host = req.headers['x-forwarded-host'] || req.headers.host;
+    const url = `${protocol}://${host}${req.url}`;
+    
     const request = new Request(url, {
-      method: req.method,
-      headers: new Headers(req.headers as Record<string, string>),
+      method: req.method || 'GET',
+      headers: req.headers as HeadersInit,
       body:
-        req.method !== 'GET' && req.method !== 'HEAD'
+        req.method !== 'GET' && req.method !== 'HEAD' && req.body
           ? JSON.stringify(req.body)
           : undefined,
     });
 
-    // Create execution context for Vercel
+    // Create execution context
     const executionContext = {
       waitUntil: (promise: Promise<any>) => {
-        // Vercel doesn't need waitUntil for serverless functions
-        promise.catch(console.error);
+        promise.catch((err) => console.error('waitUntil error:', err));
       },
       passThroughOnException: () => {},
     };
 
-    // Get environment variables
     const env = process.env as unknown as Env;
 
     const hydrogenContext = await createHydrogenRouterContext(
@@ -42,17 +46,16 @@ export default async function handler(
       executionContext as ExecutionContext,
     );
 
-    // Import the server build
-    // @ts-ignore - Build output
+    // Import server build
     const build = await import('../build/server/index.js');
 
     const handleRequest = createRequestHandler({
       build,
-      mode: process.env.NODE_ENV,
+      mode: process.env.NODE_ENV || 'production',
       getLoadContext: () => hydrogenContext,
     });
 
-    const response = await handleRequest(request);
+    let response = await handleRequest(request);
 
     if (hydrogenContext.session.isPending) {
       response.headers.set(
@@ -62,30 +65,43 @@ export default async function handler(
     }
 
     if (response.status === 404) {
-      const redirectResponse = await storefrontRedirect({
+      response = await storefrontRedirect({
         request,
         response,
         storefront: hydrogenContext.storefront,
       });
-      
-      // Convert Web Response to Vercel Response
-      res.status(redirectResponse.status);
-      redirectResponse.headers.forEach((value, key) => {
-        res.setHeader(key, value);
-      });
-      const text = await redirectResponse.text();
-      return res.send(text);
     }
 
     // Convert Web Response to Vercel Response
     res.status(response.status);
+    
+    // Copy headers
     response.headers.forEach((value, key) => {
       res.setHeader(key, value);
     });
-    const text = await response.text();
-    return res.send(text);
-  } catch (error) {
-    console.error(error);
-    return res.status(500).send('An unexpected error occurred');
+
+    // Handle response body
+    if (response.body) {
+      const reader = response.body.getReader();
+      const chunks: Uint8Array[] = [];
+      
+      while (true) {
+        const {done, value} = await reader.read();
+        if (done) break;
+        chunks.push(value);
+      }
+      
+      const buffer = Buffer.concat(chunks);
+      return res.send(buffer);
+    }
+
+    return res.send('');
+  } catch (error: any) {
+    console.error('Handler error:', error);
+    console.error('Stack:', error?.stack);
+    return res.status(500).json({
+      error: 'Internal server error',
+      message: error?.message || 'Unknown error',
+    });
   }
 }

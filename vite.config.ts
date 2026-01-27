@@ -86,6 +86,8 @@ export default defineConfig({
       '@coveo/headless',
       'dayjs',
       'exponential-backoff',
+      'react-dom',
+      'react-dom/server',
     ],
     optimizeDeps: {
       /**
