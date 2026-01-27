@@ -1,11 +1,10 @@
 {
   "buildCommand": "npm run build",
-  "outputDirectory": "build/client",
   "framework": null,
-  "rewrites": [
+  "routes": [
     {
-      "source": "/(.*)",
-      "destination": "/api"
+      "src": "/(.*)",
+      "dest": "/api/index.ts"
     }
   ]
 }
