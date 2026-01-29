@@ -2,16 +2,19 @@ import {useCallback, useEffect, useState, useMemo} from 'react';
 import type {FormEvent} from 'react';
 import {ChevronDownIcon, ChevronUpIcon} from '@heroicons/react/20/solid';
 import {SparklesIcon} from '@heroicons/react/24/outline';
-import {useNavigate, useRouteLoaderData} from 'react-router';
+import {useRouteLoaderData} from 'react-router';
 import type {RootLoader} from '~/root';
 import {createEmptyConversation, type ConversationRecord} from '~/lib/generative/chat';
 import {useAssistantStreaming} from '~/lib/generative/use-assistant-streaming';
 import {useMessageDerivation} from '~/lib/generative/use-message-derivation';
 import {useThinkingState} from '~/lib/generative/use-thinking-state';
+import {useConversationScroll} from '~/lib/generative/use-conversation-scroll';
 import {ProductChip} from '~/components/Products/ProductChip';
 import {CarouselSkeleton} from '~/components/Generative/Skeletons';
 import {MessageBubble} from '~/components/Generative/MessageBubble';
+import {ThinkingStatusPanel} from '~/components/Generative/ThinkingStatusPanel';
 import {registerProducts} from '~/lib/generative/product-index';
+import {PENDING_THINKING_KEY} from '~/lib/generative/thinking-constants';
 import type {Product} from '@coveo/headless-react/ssr-commerce';
 
 interface SearchSummaryProps {
@@ -21,7 +24,6 @@ interface SearchSummaryProps {
 export function SearchSummary({searchQuery}: SearchSummaryProps) {
   const rootData = useRouteLoaderData<RootLoader>('root');
   const locale = rootData?.locale;
-  const navigate = useNavigate();
 
   const [isExpanded, setIsExpanded] = useState(false);
   const [conversations, setConversations] = useState<ConversationRecord[]>([]);
@@ -32,9 +34,9 @@ export function SearchSummary({searchQuery}: SearchSummaryProps) {
   const [streamError, setStreamError] = useState<string | null>(null);
   const [currentQuery, setCurrentQuery] = useState(searchQuery);
   const [inputValue, setInputValue] = useState('');
+  const [isThinkingExpanded, setIsThinkingExpanded] = useState(false);
 
   const {
-    messages,
     visibleMessages,
     activeConversation,
     latestStreamingAssistantId,
@@ -46,14 +48,40 @@ export function SearchSummary({searchQuery}: SearchSummaryProps) {
 
   const {
     activeSnapshot: activeThinkingSnapshot,
+    pendingSnapshot: pendingThinkingSnapshot,
+    expandedByMessage: thinkingExpandedByMessage,
     setActiveSnapshot,
     clearActiveSnapshot,
+    toggleMessageExpansion,
+    togglePendingExpansion,
   } = useThinkingState({
     visibleMessages,
     isStreaming,
     latestStreamingAssistantId,
     activeConversationId,
   });
+
+  const {
+    containerRef: messageContainerRef,
+    resetScrollState,
+  } = useConversationScroll({
+    messages: isExpanded ? visibleMessages : [],
+    activeThinkingSnapshot: isExpanded ? activeThinkingSnapshot : null,
+  });
+
+  useEffect(() => {
+    if (!isExpanded) {
+      return;
+    }
+    resetScrollState();
+
+    const container = messageContainerRef.current;
+    if (container) {
+      requestAnimationFrame(() => {
+        container.scrollTop = container.scrollHeight;
+      });
+    }
+  }, [activeConversationId, isExpanded, resetScrollState, messageContainerRef]);
 
   const {streamAssistantResponse, abortStream} = useAssistantStreaming({
     locale,
@@ -79,6 +107,18 @@ export function SearchSummary({searchQuery}: SearchSummaryProps) {
     activeThinkingSnapshot !== null &&
     !activeThinkingSnapshot.isComplete &&
     products.length === 0;
+
+  const isActivelyStreaming =
+    activeThinkingSnapshot !== null && !activeThinkingSnapshot.isComplete;
+
+  const latestUserMessageId = useMemo(() => {
+    for (let i = visibleMessages.length - 1; i >= 0; i--) {
+      if (visibleMessages[i]?.role === 'user') {
+        return visibleMessages[i]?.id ?? null;
+      }
+    }
+    return null;
+  }, [visibleMessages]);
 
   // Create product lookup map
   const productLookup = useMemo(() => {
@@ -150,33 +190,55 @@ export function SearchSummary({searchQuery}: SearchSummaryProps) {
     setIsExpanded((prev) => !prev);
   }, []);
 
+  const sendFollowUpMessage = useCallback(
+    async (message: string) => {
+      if (!message || !activeConversation) return;
+
+      const timestamp = new Date().toISOString();
+      const userMessage = {
+        id: crypto.randomUUID(),
+        role: 'user' as const,
+        content: message,
+        timestamp,
+        createdAt: timestamp,
+        kind: undefined,
+      };
+
+      setConversations((prev) =>
+        prev.map((conv) =>
+          conv.localId === activeConversation.localId
+            ? {...conv, messages: [...conv.messages, userMessage]}
+            : conv,
+        ),
+      );
+
+      setInputValue('');
+
+      await streamAssistantResponse({
+        conversationLocalId: activeConversation.localId,
+        userMessage: message,
+        sessionId: activeConversation.sessionId,
+      });
+    },
+    [activeConversation, setConversations, streamAssistantResponse],
+  );
+
   const handleFollowUpSubmit = useCallback(
     async (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault();
       const value = inputValue.trim();
-      if (!value || !activeConversation) return;
+      if (!value) return;
 
-      // Navigate to generative route with conversation ID
-      const params = new URLSearchParams({
-        conversationId: activeConversation.localId,
-        q: value,
-      });
-      navigate(`/generative?${params.toString()}`);
+      await sendFollowUpMessage(value);
     },
-    [inputValue, activeConversation, navigate],
+    [inputValue, sendFollowUpMessage],
   );
 
   const handleFollowUpClick = useCallback(
     (message: string) => {
-      if (!activeConversation) return;
-
-      const params = new URLSearchParams({
-        conversationId: activeConversation.localId,
-        q: message,
-      });
-      navigate(`/generative?${params.toString()}`);
+      void sendFollowUpMessage(message);
     },
-    [activeConversation, navigate],
+    [sendFollowUpMessage],
   );
 
   // Show loading state immediately on mount
@@ -253,16 +315,82 @@ export function SearchSummary({searchQuery}: SearchSummaryProps) {
           {isExpanded && (
             <div className="bg-white">
               {/* Messages */}
-              <div className="px-6 py-4 space-y-4 max-h-[600px] overflow-y-auto">
-                {visibleMessages.map((message) => (
-                  <MessageBubble
-                    key={message.id}
-                    message={message}
-                    isStreaming={isStreaming}
-                    productLookup={productLookup}
-                    onFollowUpClick={handleFollowUpClick}
-                  />
-                ))}
+              <div
+                ref={messageContainerRef}
+                className="px-6 py-4 space-y-4 max-h-[600px] overflow-y-auto"
+              >
+                {visibleMessages.map((message, index) => {
+                  const isAssistant = message.role === 'assistant';
+                  const isStreamingMessage =
+                    isAssistant && message.id === latestStreamingAssistantId;
+
+                  const latestUserIndex = latestUserMessageId
+                    ? visibleMessages.findIndex(
+                        (msg) => msg.id === latestUserMessageId,
+                      )
+                    : -1;
+                  const isCurrentTurnAssistant =
+                    isAssistant && latestUserIndex !== -1 && index > latestUserIndex;
+
+                  const metadataUpdates = message.metadata?.thinkingUpdates ?? [];
+                  const hideForCurrentTurn =
+                    isActivelyStreaming && isCurrentTurnAssistant;
+                  const shouldShowThinking =
+                    isAssistant && metadataUpdates.length > 0 && !hideForCurrentTurn;
+
+                  const storedExpansion = thinkingExpandedByMessage[message.id];
+                  const isExpanded = storedExpansion ?? false;
+
+                  const shouldShowPendingPanel =
+                    message.role === 'user' &&
+                    message.id === latestUserMessageId &&
+                    isActivelyStreaming &&
+                    pendingThinkingSnapshot?.updates?.length;
+
+                  return (
+                    <div key={message.id} className="flex w-full flex-col gap-3">
+                      {shouldShowThinking ? (
+                        <div className="flex w-full">
+                          <ThinkingStatusPanel
+                            updates={metadataUpdates}
+                            isStreaming={false}
+                            isExpanded={isExpanded}
+                            onToggle={() =>
+                              toggleMessageExpansion(message.id, !isExpanded)
+                            }
+                          />
+                        </div>
+                      ) : null}
+                      <MessageBubble
+                        message={message}
+                        isStreaming={isStreamingMessage}
+                        productLookup={productLookup}
+                        onFollowUpClick={handleFollowUpClick}
+                      />
+                      {shouldShowPendingPanel ? (
+                        <div className="flex w-full">
+                          <ThinkingStatusPanel
+                            updates={pendingThinkingSnapshot!.updates}
+                            isStreaming={true}
+                            isExpanded={
+                              thinkingExpandedByMessage[PENDING_THINKING_KEY] ??
+                              false
+                            }
+                            onToggle={() =>
+                              togglePendingExpansion(
+                                !(
+                                  thinkingExpandedByMessage[
+                                    PENDING_THINKING_KEY
+                                  ] ?? false
+                                ),
+                              )
+                            }
+                          />
+                        </div>
+                      ) : null}
+                    </div>
+                  );
+                })}
               </div>
 
               {/* Chat input footer */}
@@ -272,6 +400,16 @@ export function SearchSummary({searchQuery}: SearchSummaryProps) {
                     {streamError}
                   </div>
                 )}
+                {isStreaming && activeThinkingSnapshot?.updates?.length ? (
+                  <div className="mb-3">
+                    <ThinkingStatusPanel
+                      updates={activeThinkingSnapshot.updates}
+                      isStreaming={isStreaming}
+                      isExpanded={isThinkingExpanded}
+                      onToggle={() => setIsThinkingExpanded((prev) => !prev)}
+                    />
+                  </div>
+                ) : null}
                 <form onSubmit={handleFollowUpSubmit} className="flex flex-col gap-3">
                   <div className="relative rounded-2xl border border-slate-300 bg-white shadow-sm focus-within:border-indigo-500 focus-within:shadow-md">
                     <textarea
@@ -290,18 +428,28 @@ export function SearchSummary({searchQuery}: SearchSummaryProps) {
                         }
                       }}
                     />
-                    <div className="absolute bottom-2 right-2">
-                      <button
-                        type="submit"
-                        disabled={isStreaming || !inputValue.trim()}
-                        className="inline-flex items-center rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        Send
-                      </button>
+                    <div className="absolute bottom-2 right-2 flex items-center gap-2">
+                      {isStreaming ? (
+                        <button
+                          type="button"
+                          onClick={abortStream}
+                          className="inline-flex items-center rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-400"
+                        >
+                          Stop
+                        </button>
+                      ) : (
+                        <button
+                          type="submit"
+                          disabled={!inputValue.trim()}
+                          className="inline-flex items-center rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Send
+                        </button>
+                      )}
                     </div>
                   </div>
                   <p className="text-xs text-gray-500 text-center">
-                    Press Enter to continue the conversation in full mode
+                    Press Enter to send your follow-up
                   </p>
                 </form>
               </div>
