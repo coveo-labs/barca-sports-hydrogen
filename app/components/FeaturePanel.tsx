@@ -9,16 +9,57 @@ import {
 import {XMarkIcon, Cog6ToothIcon} from '@heroicons/react/24/outline';
 
 const FEATURE_SETTINGS_KEY = 'barca_feature_settings';
+const FEATURE_SETTINGS_SESSION_KEY = 'barca_feature_settings_session';
 
 interface FeatureSettings {
   showAISummary: boolean;
 }
 
-function getFeatureSettings(): FeatureSettings {
-  if (typeof window === 'undefined') {
-    return {showAISummary: false};
-  }
+/**
+ * Parse URL query parameters for feature flags
+ * Supports: ?features=ai-summary or ?features=ai-summary,other-feature
+ */
+function getFeatureSettingsFromURL(): Partial<FeatureSettings> | null {
+  if (typeof window === 'undefined') return null;
+
   try {
+    const params = new URLSearchParams(window.location.search);
+    const featuresParam = params.get('features') ?? params.get('feature');
+
+    if (!featuresParam) return null;
+
+    const features = featuresParam.split(',').map((feature) => feature.trim());
+    const settings: Partial<FeatureSettings> = {};
+
+    if (features.includes('ai-summary')) {
+      settings.showAISummary = true;
+    }
+
+    return Object.keys(settings).length > 0 ? settings : null;
+  } catch (e) {
+    console.error('Failed to parse URL feature flags:', e);
+    return null;
+  }
+}
+
+/**
+ * Load feature settings with priority: sessionStorage → localStorage
+ */
+function getFeatureSettings(): FeatureSettings {
+  const defaults: FeatureSettings = {showAISummary: false};
+  
+  if (typeof window === 'undefined') {
+    return defaults;
+  }
+  
+  try {
+    // Check sessionStorage first (takes precedence for URL-based overrides)
+    const sessionStored = sessionStorage.getItem(FEATURE_SETTINGS_SESSION_KEY);
+    if (sessionStored) {
+      return JSON.parse(sessionStored) as FeatureSettings;
+    }
+    
+    // Fall back to localStorage for persistent user preferences
     const stored = localStorage.getItem(FEATURE_SETTINGS_KEY);
     if (stored) {
       return JSON.parse(stored) as FeatureSettings;
@@ -26,15 +67,49 @@ function getFeatureSettings(): FeatureSettings {
   } catch (e) {
     console.error('Failed to load feature settings:', e);
   }
-  return {showAISummary: false};
+  
+  return defaults;
 }
 
+/**
+ * Save feature settings to both sessionStorage and localStorage
+ * This ensures manual toggles always win over URL params
+ */
 function saveFeatureSettings(settings: FeatureSettings) {
   if (typeof window === 'undefined') return;
+  
   try {
+    // Save to both storages so manual preference persists
+    sessionStorage.setItem(FEATURE_SETTINGS_SESSION_KEY, JSON.stringify(settings));
     localStorage.setItem(FEATURE_SETTINGS_KEY, JSON.stringify(settings));
   } catch (e) {
     console.error('Failed to save feature settings:', e);
+  }
+}
+
+/**
+ * Initialize feature settings from URL params if present
+ * Only writes to sessionStorage (not localStorage)
+ */
+function initializeFeatureSettingsFromURL() {
+  if (typeof window === 'undefined') return;
+
+  const urlSettings = getFeatureSettingsFromURL();
+  if (!urlSettings) return;
+
+  try {
+    const currentSettings = getFeatureSettings();
+    const mergedSettings = {...currentSettings, ...urlSettings};
+    sessionStorage.setItem(
+      FEATURE_SETTINGS_SESSION_KEY,
+      JSON.stringify(mergedSettings),
+    );
+
+    window.dispatchEvent(
+      new CustomEvent('featureSettingsChanged', {detail: mergedSettings}),
+    );
+  } catch (e) {
+    console.error('Failed to initialize feature settings from URL:', e);
   }
 }
 
@@ -45,6 +120,7 @@ export function FeaturePanel() {
   });
 
   useEffect(() => {
+    initializeFeatureSettingsFromURL();
     setSettings(getFeatureSettings());
   }, []);
 
@@ -177,6 +253,10 @@ export function useFeatureSettings() {
     // Guard against SSR
     if (typeof window === 'undefined') return;
 
+    // Initialize from URL params if present
+    initializeFeatureSettingsFromURL();
+    
+    // Load current settings (includes URL-based overrides from sessionStorage)
     setSettings(getFeatureSettings());
 
     const handleSettingsChange = (event: CustomEvent<FeatureSettings>) => {
