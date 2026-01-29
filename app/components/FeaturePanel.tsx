@@ -10,6 +10,7 @@ import {XMarkIcon, Cog6ToothIcon} from '@heroicons/react/24/outline';
 
 const FEATURE_SETTINGS_KEY = 'barca_feature_settings';
 const FEATURE_SETTINGS_SESSION_KEY = 'barca_feature_settings_session';
+let initializingFromURL = false;
 
 interface FeatureSettings {
   showAISummary: boolean;
@@ -18,6 +19,7 @@ interface FeatureSettings {
 /**
  * Parse URL query parameters for feature flags
  * Supports: ?features=ai-summary or ?features=ai-summary,other-feature
+ * Note: URL flags only enable features (no URL-based disable).
  */
 function getFeatureSettingsFromURL(): Partial<FeatureSettings> | null {
   if (typeof window === 'undefined') return null;
@@ -73,7 +75,8 @@ function getFeatureSettings(): FeatureSettings {
 
 /**
  * Save feature settings to both sessionStorage and localStorage
- * This ensures manual toggles always win over URL params
+ * Manual toggles win for the current session; URL params can still
+ * override localStorage when a new session starts.
  */
 function saveFeatureSettings(settings: FeatureSettings) {
   if (typeof window === 'undefined') return;
@@ -89,27 +92,44 @@ function saveFeatureSettings(settings: FeatureSettings) {
 
 /**
  * Initialize feature settings from URL params if present
- * Only writes to sessionStorage (not localStorage)
+ * Only writes to sessionStorage (not localStorage) and dispatches an event
+ * to sync other components.
  */
 function initializeFeatureSettingsFromURL() {
   if (typeof window === 'undefined') return;
+  if (initializingFromURL) return;
+
+  initializingFromURL = true;
 
   const urlSettings = getFeatureSettingsFromURL();
-  if (!urlSettings) return;
+  if (!urlSettings) {
+    initializingFromURL = false;
+    return;
+  }
 
   try {
     const currentSettings = getFeatureSettings();
     const mergedSettings = {...currentSettings, ...urlSettings};
-    sessionStorage.setItem(
-      FEATURE_SETTINGS_SESSION_KEY,
-      JSON.stringify(mergedSettings),
-    );
+    const existing = sessionStorage.getItem(FEATURE_SETTINGS_SESSION_KEY);
+    const existingParsed = existing ? (JSON.parse(existing) as FeatureSettings) : null;
+    const hasChanged =
+      !existingParsed ||
+      existingParsed.showAISummary !== mergedSettings.showAISummary;
 
-    window.dispatchEvent(
-      new CustomEvent('featureSettingsChanged', {detail: mergedSettings}),
-    );
+    if (hasChanged) {
+      sessionStorage.setItem(
+        FEATURE_SETTINGS_SESSION_KEY,
+        JSON.stringify(mergedSettings),
+      );
+
+      window.dispatchEvent(
+        new CustomEvent('featureSettingsChanged', {detail: mergedSettings}),
+      );
+    }
   } catch (e) {
     console.error('Failed to initialize feature settings from URL:', e);
+  } finally {
+    initializingFromURL = false;
   }
 }
 

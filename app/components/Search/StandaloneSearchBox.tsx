@@ -71,12 +71,15 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
     [searchBox.methods, showAISummary],
   );
 
-  // Initialize on mount: sync inputValue with searchBox state and show dropdown
   useEffect(() => {
     if (showAISummary) {
       setIsConversationalMode(false);
       manualModeSelectionRef.current = false;
     }
+  }, [showAISummary]);
+
+  // Initialize on mount: sync inputValue with searchBox state and show dropdown
+  useEffect(() => {
     // Clear any stale searchBox state from previous session
     if (searchBox.state.value && !isConversationalMode) {
       searchBox.methods?.updateText('');
@@ -93,7 +96,7 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
     }, 50);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showAISummary]);
+  }, []);
 
   // Handle clicks outside to close dropdown
   useEffect(() => {
