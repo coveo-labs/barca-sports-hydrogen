@@ -158,14 +158,12 @@ export function SearchSummary({searchQuery}: SearchSummaryProps) {
 
     // Send the search query as a message
     const sendQuery = async () => {
-      const timestamp = new Date().toISOString();
       const userMessage = {
         id: crypto.randomUUID(),
         role: 'user' as const,
         content: searchQuery,
-        timestamp,
-        createdAt: timestamp,
-        kind: undefined,
+        createdAt: new Date().toISOString(),
+        kind: 'text' as const,
       };
 
       setConversations((prev) =>
@@ -199,14 +197,12 @@ export function SearchSummary({searchQuery}: SearchSummaryProps) {
     async (message: string) => {
       if (!message || !activeConversation) return;
 
-      const timestamp = new Date().toISOString();
       const userMessage = {
         id: crypto.randomUUID(),
         role: 'user' as const,
         content: message,
-        timestamp,
-        createdAt: timestamp,
-        kind: undefined,
+        createdAt: new Date().toISOString(),
+        kind: 'text' as const,
       };
 
       setConversations((prev) =>
