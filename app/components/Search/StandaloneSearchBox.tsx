@@ -6,11 +6,13 @@ import {ProductCard} from '../Products/ProductCard';
 import '~/types/gtm';
 import {useNavigate} from 'react-router';
 import cx from '~/lib/cx';
+import {useFeatureSettings} from '~/components/FeaturePanel';
 
 interface StandaloneSearchBoxProps {
   close?: () => void;
 }
 export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
+  const {showAISummary} = useFeatureSettings();
   const searchBox = useStandaloneSearchBox();
   const instantProducts = useInstantProducts();
   const input = useRef<HTMLInputElement>(null);
@@ -33,6 +35,7 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
 
   const handleGenerativeSearch = useCallback(
     (query?: string) => {
+      if (showAISummary) return;
       // For conversational mode, use local inputValue
       const searchQuery = query?.trim() || inputValue.trim();
       const url = searchQuery
@@ -43,11 +46,12 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
       close?.();
       searchBox.methods?.updateText('');
     },
-    [inputValue, navigate, close, searchBox.methods],
+    [inputValue, navigate, close, searchBox.methods, showAISummary],
   );
 
   const toggleConversationalMode = useCallback(
     (enabled: boolean) => {
+      if (showAISummary) return;
       setIsConversationalMode(enabled);
       setInputValue('');
       searchBox.methods?.updateText('');
@@ -64,8 +68,15 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
         }
       }, 0);
     },
-    [searchBox.methods],
+    [searchBox.methods, showAISummary],
   );
+
+  useEffect(() => {
+    if (showAISummary) {
+      setIsConversationalMode(false);
+      manualModeSelectionRef.current = false;
+    }
+  }, [showAISummary]);
 
   // Initialize on mount: sync inputValue with searchBox state and show dropdown
   useEffect(() => {
@@ -110,7 +121,7 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
     setInputValue(value);
 
     // Only auto-switch modes if user hasn't manually selected a mode
-    if (!manualModeSelectionRef.current) {
+    if (!showAISummary && !manualModeSelectionRef.current) {
       // Count words and determine target mode
       const query = value.trim();
       const wordCount = query
@@ -211,30 +222,32 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
           >
             <MagnifyingGlassIcon className="size-6" />
           </button>
-          <div className="flex items-center gap-2" title="Conversational mode">
-            <SparklesIcon
-              className={cx(
-                'size-6 transition-colors',
-                isConversationalMode ? 'text-indigo-600' : 'text-slate-400',
-              )}
-            />
-            <Switch
-              checked={isConversationalMode}
-              onChange={toggleConversationalMode}
-              className={cx(
-                'relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2',
-                isConversationalMode ? 'bg-indigo-600' : 'bg-slate-200',
-              )}
-            >
-              <span className="sr-only">Enable conversational mode</span>
-              <span
+          {!showAISummary && (
+            <div className="flex items-center gap-2" title="Conversational mode">
+              <SparklesIcon
                 className={cx(
-                  'inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform',
-                  isConversationalMode ? 'translate-x-5' : 'translate-x-0.5',
+                  'size-6 transition-colors',
+                  isConversationalMode ? 'text-indigo-600' : 'text-slate-400',
                 )}
               />
-            </Switch>
-          </div>
+              <Switch
+                checked={isConversationalMode}
+                onChange={toggleConversationalMode}
+                className={cx(
+                  'relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2',
+                  isConversationalMode ? 'bg-indigo-600' : 'bg-slate-200',
+                )}
+              >
+                <span className="sr-only">Enable conversational mode</span>
+                <span
+                  className={cx(
+                    'inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform',
+                    isConversationalMode ? 'translate-x-5' : 'translate-x-0.5',
+                  )}
+                />
+              </Switch>
+            </div>
+          )}
         </div>
       </form>
 
@@ -245,7 +258,7 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
           role="listbox"
           className="absolute top-full left-0 right-0 z-20 bg-white border border-t-0 shadow-lg max-h-[600px] overflow-y-auto"
         >
-          {isConversationalMode ? (
+          {!showAISummary && isConversationalMode ? (
             // Conversational prompts
             <div className="p-4">
               <p className="mb-3 text-sm font-semibold text-slate-900">
