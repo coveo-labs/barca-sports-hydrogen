@@ -34,7 +34,6 @@ export function SearchSummary({searchQuery}: SearchSummaryProps) {
   const [streamError, setStreamError] = useState<string | null>(null);
   const [currentQuery, setCurrentQuery] = useState(searchQuery);
   const [inputValue, setInputValue] = useState('');
-  const [isThinkingExpanded, setIsThinkingExpanded] = useState(false);
 
   const {
     visibleMessages,
@@ -119,6 +118,12 @@ export function SearchSummary({searchQuery}: SearchSummaryProps) {
     }
     return null;
   }, [visibleMessages]);
+
+  const latestUserIndex = useMemo(() => {
+    return latestUserMessageId
+      ? visibleMessages.findIndex((msg) => msg.id === latestUserMessageId)
+      : -1;
+  }, [latestUserMessageId, visibleMessages]);
 
   // Create product lookup map
   const productLookup = useMemo(() => {
@@ -323,12 +328,6 @@ export function SearchSummary({searchQuery}: SearchSummaryProps) {
                   const isAssistant = message.role === 'assistant';
                   const isStreamingMessage =
                     isAssistant && message.id === latestStreamingAssistantId;
-
-                  const latestUserIndex = latestUserMessageId
-                    ? visibleMessages.findIndex(
-                        (msg) => msg.id === latestUserMessageId,
-                      )
-                    : -1;
                   const isCurrentTurnAssistant =
                     isAssistant && latestUserIndex !== -1 && index > latestUserIndex;
 
@@ -400,16 +399,6 @@ export function SearchSummary({searchQuery}: SearchSummaryProps) {
                     {streamError}
                   </div>
                 )}
-                {isStreaming && activeThinkingSnapshot?.updates?.length ? (
-                  <div className="mb-3">
-                    <ThinkingStatusPanel
-                      updates={activeThinkingSnapshot.updates}
-                      isStreaming={isStreaming}
-                      isExpanded={isThinkingExpanded}
-                      onToggle={() => setIsThinkingExpanded((prev) => !prev)}
-                    />
-                  </div>
-                ) : null}
                 <form onSubmit={handleFollowUpSubmit} className="flex flex-col gap-3">
                   <div className="relative rounded-2xl border border-slate-300 bg-white shadow-sm focus-within:border-indigo-500 focus-within:shadow-md">
                     <textarea
