@@ -18,8 +18,9 @@ interface FeatureSettings {
 
 /**
  * Parse URL query parameters for feature flags
- * Supports: ?features=ai-summary or ?features=ai-summary,other-feature
- * Note: URL flags only enable features (no URL-based disable).
+ * Supports: ?features=ai-summary or ?features=conversational
+ * - ai-summary: enables AI Summary box
+ * - conversational: disables AI Summary, shows conversational mode
  */
 function getFeatureSettingsFromURL(): Partial<FeatureSettings> | null {
   if (typeof window === 'undefined') return null;
@@ -30,11 +31,17 @@ function getFeatureSettingsFromURL(): Partial<FeatureSettings> | null {
 
     if (!featuresParam) return null;
 
-    const features = featuresParam.split(',').map((feature) => feature.trim());
+    const features = featuresParam
+      .split(',')
+      .map((feature) => feature.trim().toLowerCase());
     const settings: Partial<FeatureSettings> = {};
 
     if (features.includes('ai-summary')) {
       settings.showAISummary = true;
+    }
+
+    if (features.includes('conversational')) {
+      settings.showAISummary = false;
     }
 
     return Object.keys(settings).length > 0 ? settings : null;
