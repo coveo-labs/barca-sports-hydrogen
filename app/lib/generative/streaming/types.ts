@@ -1,5 +1,6 @@
 import type {Product} from '@coveo/headless-react/ssr-commerce';
 import type {ConversationThinkingUpdate} from '~/types/conversation';
+import type {SearchContext} from '~/lib/generative/search-context';
 
 export type SessionIdentifier = {
   sessionId: string | null;
@@ -45,4 +46,5 @@ export type StreamArgs = {
   userMessage: string;
   showInitialStatus?: boolean;
   onThinkingUpdate?: (snapshot: ThinkingUpdateSnapshot) => void;
+  searchContext?: SearchContext;
 };

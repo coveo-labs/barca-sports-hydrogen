@@ -15,15 +15,39 @@ import {MessageBubble} from '~/components/Generative/MessageBubble';
 import {ThinkingStatusPanel} from '~/components/Generative/ThinkingStatusPanel';
 import {registerProducts} from '~/lib/generative/product-index';
 import {PENDING_THINKING_KEY} from '~/lib/generative/thinking-constants';
+import {buildSearchContext} from '~/lib/generative/search-context';
 import type {Product} from '@coveo/headless-react/ssr-commerce';
 
+/**
+ * Props for SearchSummary component.
+ * Accepts the productList.state from Coveo for passing context to the agent.
+ */
 interface SearchSummaryProps {
   searchQuery: string;
+  /** The productList.state from Coveo containing products, facets, and queryExecuted */
+  productListState?: {
+    products?: Product[];
+    facets?: unknown;
+    queryExecuted?: string;
+  };
+  /** Total number of results from the search */
+  totalResults?: number;
 }
 
-export function SearchSummary({searchQuery}: SearchSummaryProps) {
+export function SearchSummary({
+  searchQuery,
+  productListState,
+  totalResults = 0,
+}: SearchSummaryProps) {
   const rootData = useRouteLoaderData<RootLoader>('root');
   const locale = rootData?.locale;
+
+  // Build search context from Coveo productList.state for the agent
+  // This includes products, facets (selected only), and the executed query
+  const searchContext = useMemo(() => {
+    if (!productListState?.products?.length) return undefined;
+    return buildSearchContext(productListState, totalResults);
+  }, [productListState, totalResults]);
 
   const [isExpanded, setIsExpanded] = useState(false);
   const [conversations, setConversations] = useState<ConversationRecord[]>([]);
@@ -178,6 +202,7 @@ export function SearchSummary({searchQuery}: SearchSummaryProps) {
         conversationLocalId: conversation.localId,
         userMessage: searchQuery,
         sessionId: conversation.sessionId,
+        searchContext,
       });
     };
 

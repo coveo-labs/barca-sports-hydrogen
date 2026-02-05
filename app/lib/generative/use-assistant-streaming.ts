@@ -65,6 +65,7 @@ export function useAssistantStreaming({
       userMessage,
       showInitialStatus,
       onThinkingUpdate: streamCallback,
+      searchContext,
     }: StreamArgs) => {
       const controller = new AbortController();
       abortControllerRef.current = controller;
@@ -312,6 +313,7 @@ export function useAssistantStreaming({
             sessionId: sessionId ?? undefined,
             locale,
             view,
+            searchContext: searchContext ?? undefined,
           }),
         });
         if (!response.ok || !response.body) {

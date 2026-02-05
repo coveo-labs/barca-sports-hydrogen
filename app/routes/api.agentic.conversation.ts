@@ -66,6 +66,9 @@ async function handleStreamConversation(
   );
   const locale = body.locale ?? {};
 
+  // Pass search context as JSON - agent handles formatting
+  const searchContext = body.searchContext ?? undefined;
+
   const payload = {
     trackingId: body.trackingId || DEFAULT_TRACKING_ID,
     language: (locale.language || 'en').toLowerCase(),
@@ -82,6 +85,7 @@ async function handleStreamConversation(
         referrer: body.view?.referrer || navigatorContext.referrer || undefined,
       },
       cart: Array.isArray(body.cart) ? body.cart : [],
+      searchContext,
     },
     conversationSessionId: body.sessionId || undefined,
     targetEngine: 'AGENT_CORE',
@@ -360,6 +364,35 @@ type ConversationStreamPayload = {
     referrer?: string;
   };
   cart?: unknown[];
+  /** Search context from client - passed as JSON, agent handles formatting */
+  searchContext?: {
+    query: string;
+    totalResults: number;
+    products: Array<{
+      ec_product_id?: string;
+      ec_name?: string;
+      ec_brand?: string;
+      ec_price?: number;
+      ec_promo_price?: number;
+      ec_rating?: number;
+      ec_category?: string[];
+      ec_description?: string;
+      ec_in_stock?: boolean;
+    }>;
+    facets: Array<{
+      facetId: string;
+      field: string;
+      displayName?: string;
+      type: string;
+      values: Array<{
+        value: string;
+        state: 'selected' | 'idle';
+        numberOfResults?: number;
+        start?: number;
+        end?: number;
+      }>;
+    }>;
+  };
 };
 
 type PersistConversationPayload = {
@@ -447,3 +480,4 @@ function resolveAgenticAccessToken() {
 
   return undefined;
 }
+

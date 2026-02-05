@@ -54,6 +54,7 @@ export function FullSearch({
   const productList = useProductList();
   const featureSettings = useFeatureSettings();
 
+
   const hasResults = productList.state.products.length > 0;
 
   return (
@@ -103,7 +104,13 @@ export function FullSearch({
         <Breadcrumbs />
       </section>
 
-      {searchQuery && featureSettings.showAISummary && <SearchSummary searchQuery={searchQuery} />}
+      {searchQuery && featureSettings.showAISummary && (
+        <SearchSummary
+          searchQuery={searchQuery}
+          productListState={productList.state}
+          totalResults={productList.state.products.length}
+        />
+      )}
 
       <section
         aria-labelledby="products-heading"
