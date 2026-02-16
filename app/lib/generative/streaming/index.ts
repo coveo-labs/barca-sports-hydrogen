@@ -1,9 +1,6 @@
 export type {
   AssistantStreamEvent,
-  ErrorPayload,
-  MessagePayload,
   SessionIdentifier,
-  StatusPayload,
   StreamArgs,
   ThinkingUpdateSnapshot,
   ToolResultPayload,

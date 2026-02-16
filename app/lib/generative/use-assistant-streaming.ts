@@ -8,6 +8,7 @@ import type {
 import {
   type ConversationRecord,
   generateId,
+  parseToolResultPayload,
   sortConversations,
 } from '~/lib/generative/chat';
 import {logDebug, logError, logInfo, logWarn} from '~/lib/logger';
@@ -16,12 +17,13 @@ import {
   createBufferProcessor,
   parseAssistantStreamEvent,
   processSSEStream,
-  type SessionIdentifier,
+  type AssistantStreamEvent,
   type StreamArgs,
   type ThinkingUpdateSnapshot,
   CONNECTING_STATUS_MESSAGE,
   CONNECTION_ERROR_MESSAGE,
   DEFAULT_STATUS_MESSAGE,
+  DEFAULT_TOOL_PROGRESS_MESSAGE,
   GENERIC_ERROR_MESSAGE,
   INTERRUPTED_ERROR_MESSAGE,
   TOOL_RESULT_FALLBACK_MESSAGE,
@@ -271,8 +273,7 @@ export function useAssistantStreaming({
         pushAssistantMessage(text, 'error');
       };
 
-      const updateResolvedSession = (payload: SessionIdentifier) => {
-        const sessionValue = payload.sessionId ?? null;
+      const updateResolvedSession = (sessionValue: string | null) => {
         if (!sessionValue || sessionValue === resolvedSessionId) {
           return;
         }
@@ -281,6 +282,38 @@ export function useAssistantStreaming({
           ...conversation,
           sessionId: sessionValue,
         }));
+      };
+
+      const readSessionId = (value: unknown): string | null => {
+        if (!value || typeof value !== 'object') {
+          return null;
+        }
+        const record = value as Record<string, unknown>;
+        const candidates = [
+          record.threadId,
+          record.sessionId,
+          record.conversationSessionId,
+        ];
+        for (const candidate of candidates) {
+          if (typeof candidate === 'string' && candidate.trim()) {
+            return candidate.trim();
+          }
+        }
+        return null;
+      };
+
+      const resolveSessionIdFromEvent = (event: AssistantStreamEvent): string | null => {
+        if ('threadId' in event && typeof event.threadId === 'string') {
+          return event.threadId;
+        }
+        if (event.type === 'CUSTOM') {
+          return readSessionId(event.value);
+        }
+        return null;
+      };
+
+      const updateSessionFromEvent = (event: AssistantStreamEvent) => {
+        updateResolvedSession(resolveSessionIdFromEvent(event));
       };
 
       try {
@@ -333,18 +366,111 @@ export function useAssistantStreaming({
 
         const reader = response.body.getReader();
 
+        const resolveDisplayText = (value: unknown, fallback: string): string => {
+          if (typeof value === 'string') {
+            const trimmed = value.trim();
+            return trimmed || fallback;
+          }
+
+          if (value && typeof value === 'object') {
+            const record = value as Record<string, unknown>;
+            const keys = ['message', 'content', 'status', 'detail', 'text'];
+
+            for (const key of keys) {
+              const candidate = record[key];
+              if (typeof candidate === 'string') {
+                const trimmed = candidate.trim();
+                if (trimmed) {
+                  return trimmed;
+                }
+              }
+            }
+          }
+
+          return fallback;
+        };
+
+        const formatToolStartMessage = (name: string | undefined) => {
+          const trimmed = name?.trim();
+          if (!trimmed) {
+            return DEFAULT_TOOL_PROGRESS_MESSAGE;
+          }
+          return `Starting ${trimmed}...`;
+        };
+
+        const applyTextDelta = (messageId: string | undefined, delta: string) => {
+          if (!delta) {
+            return;
+          }
+
+          const resolvedMessageId = messageId ?? assistantMessageId ?? generateId();
+          if (assistantMessageId !== resolvedMessageId) {
+            assistantMessageId = resolvedMessageId;
+            accumulatedContent = '';
+          }
+
+          accumulatedContent += delta;
+          const contentSnapshot = accumulatedContent;
+          let createdAssistantMessage = false;
+
+          applyUpdate((conversation) => {
+            const messages = [...conversation.messages];
+            if (!assistantMessageId) {
+              assistantMessageId = generateId();
+              createdAssistantMessage = true;
+              messages.push({
+                id: assistantMessageId,
+                role: 'assistant',
+                content: contentSnapshot,
+                createdAt: new Date().toISOString(),
+                kind: 'text',
+                metadata: getAssistantMetadataSnapshot(),
+              });
+            } else {
+              const index = messages.findIndex(
+                (message) => message.id === assistantMessageId,
+              );
+              if (index >= 0) {
+                messages[index] = {
+                  ...messages[index],
+                  content: contentSnapshot,
+                  kind: 'text',
+                };
+              } else {
+                createdAssistantMessage = true;
+                messages.push({
+                  id: assistantMessageId,
+                  role: 'assistant',
+                  content: contentSnapshot,
+                  createdAt: new Date().toISOString(),
+                  kind: 'text',
+                  metadata: getAssistantMetadataSnapshot(),
+                });
+              }
+            }
+
+            return {
+              ...conversation,
+              updatedAt: new Date().toISOString(),
+              sessionId: resolvedSessionId ?? conversation.sessionId,
+              messages,
+            };
+          });
+
+          if (createdAssistantMessage) {
+            syncThinkingMetadata();
+            syncProductMetadata();
+          }
+        };
+
         const processEvent = (event: {event: string; data: string}) => {
           if (!event.data) return;
 
           const parsedEvent = parseAssistantStreamEvent(event);
 
-          const updateSessionFromPayload = (payload: SessionIdentifier) => {
-            updateResolvedSession(payload);
-          };
-
           switch (parsedEvent.type) {
-            case 'turn_started': {
-              updateSessionFromPayload(parsedEvent.payload);
+            case 'RUN_STARTED': {
+              updateSessionFromEvent(parsedEvent);
 
               if (thinkingUpdates.length === 0) {
                 recordThinkingUpdate(DEFAULT_STATUS_MESSAGE, 'status');
@@ -354,75 +480,10 @@ export function useAssistantStreaming({
 
               return;
             }
-            case 'status':
-            case 'status_update': {
-              updateSessionFromPayload(parsedEvent.payload);
+            case 'RUN_ERROR': {
+              updateSessionFromEvent(parsedEvent);
 
-              const statusText = parsedEvent.payload.message;
-              if (!statusText) {
-                return;
-              }
-
-              if (seenStatusMessages.has(statusText)) {
-                return;
-              }
-              seenStatusMessages.add(statusText);
-
-              recordThinkingUpdate(statusText, 'status');
-
-              if (assistantMessageId) {
-                return;
-              }
-
-              pushAssistantMessage(statusText, 'status', {ephemeral: true});
-              return;
-            }
-            case 'tool_invocation': {
-              updateSessionFromPayload(parsedEvent.payload);
-
-              const toolText = parsedEvent.payload.message;
-              if (!toolText) {
-                return;
-              }
-              if (seenStatusMessages.has(toolText)) {
-                return;
-              }
-              seenStatusMessages.add(toolText);
-
-              recordThinkingUpdate(toolText, 'tool');
-
-              if (assistantMessageId) {
-                return;
-              }
-
-              pushAssistantMessage(toolText, 'tool', {ephemeral: true});
-              return;
-            }
-            case 'tool_result': {
-              updateSessionFromPayload(parsedEvent.payload);
-              const successNote =
-                parsedEvent.payload.message ?? TOOL_RESULT_FALLBACK_MESSAGE;
-
-              recordThinkingUpdate(successNote, 'tool');
-
-              if (!assistantMessageId) {
-                pushAssistantMessage(successNote, 'tool', {ephemeral: true});
-              }
-
-              const productList = parsedEvent.payload.products ?? [];
-              if (productList.length > 0) {
-                upsertCollectedProducts(productList);
-                if (assistantMessageId) {
-                  syncProductMetadata();
-                }
-              }
-
-              return;
-            }
-            case 'error': {
-              updateSessionFromPayload(parsedEvent.payload);
-
-              const errorText = parsedEvent.payload.message;
+              const errorText = parsedEvent.message || GENERIC_ERROR_MESSAGE;
               capturedErrorMessage = errorText;
               recordThinkingUpdate(errorText, 'status');
               turnCompleted = true;
@@ -432,76 +493,130 @@ export function useAssistantStreaming({
               controller.abort();
               return;
             }
-            case 'turn_complete': {
-              updateSessionFromPayload(parsedEvent.payload);
+            case 'RUN_FINISHED': {
+              updateSessionFromEvent(parsedEvent);
               turnCompleted = true;
               syncThinkingMetadata();
               setIsStreaming(false);
               return;
             }
-            case 'message': {
-              updateSessionFromPayload(parsedEvent.payload);
-              const chunk = parsedEvent.payload.message;
-              if (!chunk) {
-                return;
+            case 'TEXT_MESSAGE_START': {
+              updateSessionFromEvent(parsedEvent);
+              if (assistantMessageId && assistantMessageId !== parsedEvent.messageId) {
+                accumulatedContent = '';
               }
-
-              accumulatedContent += chunk;
-              const contentSnapshot = accumulatedContent;
-              let createdAssistantMessage = false;
-
-              applyUpdate((conversation) => {
-                const messages = [...conversation.messages];
-                if (!assistantMessageId) {
-                  assistantMessageId = generateId();
-                  createdAssistantMessage = true;
-                  messages.push({
-                    id: assistantMessageId,
-                    role: 'assistant',
-                    content: contentSnapshot,
-                    createdAt: new Date().toISOString(),
-                    kind: 'text',
-                    metadata: getAssistantMetadataSnapshot(),
-                  });
-                } else {
-                  const index = messages.findIndex(
-                    (message) => message.id === assistantMessageId,
-                  );
-                  if (index >= 0) {
-                    messages[index] = {
-                      ...messages[index],
-                      content: contentSnapshot,
-                      kind: 'text',
-                    };
-                  } else {
-                    messages.push({
-                      id: assistantMessageId,
-                      role: 'assistant',
-                      content: contentSnapshot,
-                      createdAt: new Date().toISOString(),
-                      kind: 'text',
-                      metadata: getAssistantMetadataSnapshot(),
-                    });
-                  }
-                }
-
-                return {
-                  ...conversation,
-                  updatedAt: new Date().toISOString(),
-                  sessionId: resolvedSessionId ?? conversation.sessionId,
-                  messages,
-                };
-              });
-              if (createdAssistantMessage) {
-                syncThinkingMetadata();
-                syncProductMetadata();
+              assistantMessageId = parsedEvent.messageId;
+              return;
+            }
+            case 'TEXT_MESSAGE_CONTENT': {
+              updateSessionFromEvent(parsedEvent);
+              applyTextDelta(parsedEvent.messageId, parsedEvent.delta);
+              return;
+            }
+            case 'TEXT_MESSAGE_END': {
+              updateSessionFromEvent(parsedEvent);
+              return;
+            }
+            case 'TEXT_MESSAGE_CHUNK': {
+              updateSessionFromEvent(parsedEvent);
+              if (parsedEvent.delta) {
+                applyTextDelta(parsedEvent.messageId, parsedEvent.delta);
               }
               return;
             }
-            case 'unknown': {
+            case 'TOOL_CALL_START': {
+              updateSessionFromEvent(parsedEvent);
+              const toolText = formatToolStartMessage(parsedEvent.toolCallName);
+              if (seenStatusMessages.has(toolText)) {
+                return;
+              }
+              seenStatusMessages.add(toolText);
+              recordThinkingUpdate(toolText, 'tool');
+              if (!assistantMessageId) {
+                pushAssistantMessage(toolText, 'tool', {ephemeral: true});
+              }
+              return;
+            }
+            case 'TOOL_CALL_ARGS': {
+              updateSessionFromEvent(parsedEvent);
+              const toolText = resolveDisplayText(
+                parsedEvent.delta,
+                DEFAULT_TOOL_PROGRESS_MESSAGE,
+              );
+              if (seenStatusMessages.has(toolText)) {
+                return;
+              }
+              seenStatusMessages.add(toolText);
+              recordThinkingUpdate(toolText, 'tool');
+              if (!assistantMessageId) {
+                pushAssistantMessage(toolText, 'tool', {ephemeral: true});
+              }
+              return;
+            }
+            case 'TOOL_CALL_END': {
+              updateSessionFromEvent(parsedEvent);
+              return;
+            }
+            case 'TOOL_CALL_RESULT': {
+              updateSessionFromEvent(parsedEvent);
+              const successNote =
+                parsedEvent.content ?? TOOL_RESULT_FALLBACK_MESSAGE;
+              recordThinkingUpdate(successNote, 'tool');
+              if (!assistantMessageId) {
+                pushAssistantMessage(successNote, 'tool', {ephemeral: true});
+              }
+              return;
+            }
+            case 'CUSTOM': {
+              updateSessionFromEvent(parsedEvent);
+              const customName = parsedEvent.name;
+              const customValue = parsedEvent.value;
+
+              if (customName === 'status' || customName === 'status_update') {
+                const statusText = resolveDisplayText(
+                  customValue,
+                  DEFAULT_STATUS_MESSAGE,
+                );
+                if (!statusText) {
+                  return;
+                }
+                if (seenStatusMessages.has(statusText)) {
+                  return;
+                }
+                seenStatusMessages.add(statusText);
+                recordThinkingUpdate(statusText, 'status');
+                if (!assistantMessageId) {
+                  pushAssistantMessage(statusText, 'status', {ephemeral: true});
+                }
+                return;
+              }
+
+              if (customName === 'tool_result') {
+                const result = parseToolResultPayload(customValue);
+                const successNote =
+                  result.message ??
+                  resolveDisplayText(customValue, TOOL_RESULT_FALLBACK_MESSAGE);
+                recordThinkingUpdate(successNote, 'tool');
+                if (!assistantMessageId) {
+                  pushAssistantMessage(successNote, 'tool', {ephemeral: true});
+                }
+
+                const productList = result.products ?? [];
+                if (productList.length > 0) {
+                  upsertCollectedProducts(productList);
+                  if (assistantMessageId) {
+                    syncProductMetadata();
+                  }
+                }
+                return;
+              }
+
+              return;
+            }
+            case 'UNKNOWN': {
               logWarn('unknown SSE event', {
                 event: parsedEvent.event,
-                payload: parsedEvent.payload.message,
+                payload: parsedEvent.payload,
               });
               return;
             }
