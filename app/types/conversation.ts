@@ -1,4 +1,5 @@
 import type {Product} from '@coveo/headless-react/ssr-commerce';
+import type {SerializableSurfaceState} from '~/lib/a2ui/surface-manager';
 
 export type ConversationRole = 'user' | 'assistant' | 'system' | 'tool';
 
@@ -21,6 +22,7 @@ export interface ConversationThinkingUpdate {
 export interface ConversationMessageMetadata {
   products?: Product[];
   thinkingUpdates?: ConversationThinkingUpdate[];
+  a2uiSurfaces?: Record<string, SerializableSurfaceState>;
 }
 
 export interface ConversationMessage {

@@ -28,6 +28,9 @@ import {
   INTERRUPTED_ERROR_MESSAGE,
   TOOL_RESULT_FALLBACK_MESSAGE,
 } from '~/lib/generative/streaming';
+import {A2UIMessageProcessor} from '~/lib/a2ui';
+import type {SerializableSurfaceState} from '~/lib/a2ui/surface-manager';
+import {serializeSurface} from '~/lib/a2ui/surface-manager';
 
 export type {
   ThinkingUpdateSnapshot,
@@ -90,6 +93,19 @@ export function useAssistantStreaming({
       let turnCompleted = false;
       const seenStatusMessages = new Set<string>();
       let thinkingUpdates: ConversationThinkingUpdate[] = [];
+
+      // A2UI processor for rendering structured UI components
+      const a2uiProcessor = new A2UIMessageProcessor({
+        onSurfaceUpdate: (surfaceId: string) => {
+          syncA2UISurfaces();
+        },
+        onSurfaceDelete: (surfaceId: string) => {
+          syncA2UISurfaces();
+        },
+        onError: (error: string) => {
+          logError('A2UI processing error', {error, conversationLocalId});
+        },
+      });
 
       const applyUpdate = (
         mutator: (conversation: ConversationRecord) => ConversationRecord,
@@ -204,17 +220,99 @@ export function useAssistantStreaming({
         });
       };
 
+      const syncA2UISurfaces = () => {
+        console.log(
+          '[syncA2UISurfaces] Called, assistantMessageId:',
+          assistantMessageId,
+        );
+        if (!assistantMessageId) {
+          console.warn('[syncA2UISurfaces] No assistantMessageId, skipping');
+          return;
+        }
+        const surfaceManager = a2uiProcessor.getSurfaceManager();
+        const surfaceIds = surfaceManager.getAllSurfaceIds();
+        console.log('[syncA2UISurfaces] Surface IDs:', surfaceIds);
+        if (surfaceIds.length === 0) {
+          console.warn('[syncA2UISurfaces] No surfaces to sync');
+          return;
+        }
+
+        const surfaces: Record<string, SerializableSurfaceState> = {};
+        for (const surfaceId of surfaceIds) {
+          const surface = surfaceManager.getSurface(surfaceId);
+          if (surface) {
+            console.log('[syncA2UISurfaces] Serializing surface:', {
+              surfaceId,
+              isRendered: surface.isRendered,
+              root: surface.root,
+              componentCount: surface.components.size,
+              dataModelKeys: Object.keys(surface.dataModel.getAll()),
+            });
+            // Serialize surface for React state storage
+            surfaces[surfaceId] = serializeSurface(surface);
+          }
+        }
+
+        console.log('[syncA2UISurfaces] Syncing surfaces to message:', {
+          messageId: assistantMessageId,
+          surfaceCount: Object.keys(surfaces).length,
+        });
+
+        applyUpdate((conversation) => {
+          const messages = [...conversation.messages];
+          const index = messages.findIndex(
+            (message) => message.id === assistantMessageId,
+          );
+          if (index === -1) {
+            console.error(
+              '[syncA2UISurfaces] Message not found:',
+              assistantMessageId,
+            );
+            return conversation;
+          }
+          const existingMetadata = messages[index].metadata ?? {};
+          messages[index] = {
+            ...messages[index],
+            metadata: {
+              ...existingMetadata,
+              a2uiSurfaces: surfaces,
+            },
+          };
+          console.log('[syncA2UISurfaces] Updated message metadata:', {
+            messageId: assistantMessageId,
+            surfaceCount: Object.keys(surfaces).length,
+          });
+          return {...conversation, messages};
+        });
+      };
+
       const getAssistantMetadataSnapshot = ():
         | ConversationMessage['metadata']
         | undefined => {
         const hasThinking = thinkingUpdates.length > 0;
         const hasProducts = collectedProducts.length > 0;
-        if (!hasThinking && !hasProducts) {
+        const surfaceManager = a2uiProcessor.getSurfaceManager();
+        const surfaceIds = surfaceManager.getAllSurfaceIds();
+        const hasA2UISurfaces = surfaceIds.length > 0;
+
+        if (!hasThinking && !hasProducts && !hasA2UISurfaces) {
           return undefined;
         }
+
+        const surfaces: Record<string, SerializableSurfaceState> = {};
+        if (hasA2UISurfaces) {
+          for (const surfaceId of surfaceIds) {
+            const surface = surfaceManager.getSurface(surfaceId);
+            if (surface) {
+              surfaces[surfaceId] = serializeSurface(surface);
+            }
+          }
+        }
+
         return {
           ...(hasThinking ? {thinkingUpdates: [...thinkingUpdates]} : {}),
           ...(hasProducts ? {products: [...collectedProducts]} : {}),
+          ...(hasA2UISurfaces ? {a2uiSurfaces: surfaces} : {}),
         } satisfies ConversationMessage['metadata'];
       };
 
@@ -302,7 +400,9 @@ export function useAssistantStreaming({
         return null;
       };
 
-      const resolveSessionIdFromEvent = (event: AssistantStreamEvent): string | null => {
+      const resolveSessionIdFromEvent = (
+        event: AssistantStreamEvent,
+      ): string | null => {
         if ('threadId' in event && typeof event.threadId === 'string') {
           return event.threadId;
         }
@@ -366,7 +466,10 @@ export function useAssistantStreaming({
 
         const reader = response.body.getReader();
 
-        const resolveDisplayText = (value: unknown, fallback: string): string => {
+        const resolveDisplayText = (
+          value: unknown,
+          fallback: string,
+        ): string => {
           if (typeof value === 'string') {
             const trimmed = value.trim();
             return trimmed || fallback;
@@ -398,12 +501,16 @@ export function useAssistantStreaming({
           return `Starting ${trimmed}...`;
         };
 
-        const applyTextDelta = (messageId: string | undefined, delta: string) => {
+        const applyTextDelta = (
+          messageId: string | undefined,
+          delta: string,
+        ) => {
           if (!delta) {
             return;
           }
 
-          const resolvedMessageId = messageId ?? assistantMessageId ?? generateId();
+          const resolvedMessageId =
+            messageId ?? assistantMessageId ?? generateId();
           if (assistantMessageId !== resolvedMessageId) {
             assistantMessageId = resolvedMessageId;
             accumulatedContent = '';
@@ -502,7 +609,10 @@ export function useAssistantStreaming({
             }
             case 'TEXT_MESSAGE_START': {
               updateSessionFromEvent(parsedEvent);
-              if (assistantMessageId && assistantMessageId !== parsedEvent.messageId) {
+              if (
+                assistantMessageId &&
+                assistantMessageId !== parsedEvent.messageId
+              ) {
                 accumulatedContent = '';
               }
               assistantMessageId = parsedEvent.messageId;
@@ -565,6 +675,17 @@ export function useAssistantStreaming({
               if (!assistantMessageId) {
                 pushAssistantMessage(successNote, 'tool', {ephemeral: true});
               }
+              return;
+            }
+            case 'ACTIVITY_SNAPSHOT': {
+              updateSessionFromEvent(parsedEvent);
+              a2uiProcessor.processActivitySnapshot(parsedEvent);
+              syncA2UISurfaces();
+              return;
+            }
+            case 'STATE_SNAPSHOT': {
+              updateSessionFromEvent(parsedEvent);
+              a2uiProcessor.processStateSnapshot(parsedEvent);
               return;
             }
             case 'CUSTOM': {

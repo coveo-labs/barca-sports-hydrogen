@@ -1,5 +1,6 @@
-import {memo, useRef} from 'react';
+import {type ReactNode, memo, useRef} from 'react';
 import type {Product} from '@coveo/headless-react/ssr-commerce';
+import {useNavigate} from 'react-router';
 import cx from '~/lib/cx';
 import type {ConversationMessage} from '~/types/conversation';
 import {ProductResultsMessage} from '~/components/Generative/ProductResultsMessage';
@@ -26,12 +27,16 @@ import {
   RefinementChipsBar,
 } from '~/components/Generative/MessageActions';
 import {Answer} from '~/components/Generative/Answer';
+import {SurfaceRenderer} from '~/components/A2UI';
+import type {SerializableSurfaceState} from '~/lib/a2ui/surface-manager';
+import {deserializeSurface} from '~/lib/a2ui/surface-manager';
 
 type MessageBubbleProps = {
   message: ConversationMessage;
   isStreaming: boolean;
   productLookup?: ReadonlyMap<string, Product>;
   onFollowUpClick?: (message: string) => void;
+  onProductSelect?: (productId: string) => void;
 };
 
 function MessageBubbleComponent({
@@ -39,10 +44,12 @@ function MessageBubbleComponent({
   isStreaming,
   productLookup,
   onFollowUpClick,
+  onProductSelect,
 }: Readonly<MessageBubbleProps>) {
   const isUser = message.role === 'user';
   const kind = message.kind;
   const isAssistant = !isUser;
+  const navigate = useNavigate();
 
   if (isAssistant && kind === 'products') {
     return (
@@ -84,6 +91,10 @@ function MessageBubbleComponent({
       isStreaming={isStreaming}
       productLookup={productLookup}
       onFollowUpClick={onFollowUpClick}
+      onProductSelect={onProductSelect}
+      onSearchAction={(query) => {
+        navigate(`/search?q=${encodeURIComponent(query)}`);
+      }}
     />
   ) : (
     message.content
@@ -140,6 +151,9 @@ function arePropsEqual(
   if (prev.onFollowUpClick !== next.onFollowUpClick) {
     return false;
   }
+  if (prev.onProductSelect !== next.onProductSelect) {
+    return false;
+  }
   const prevMessage = prev.message;
   const nextMessage = next.message;
   return (
@@ -160,6 +174,8 @@ type AssistantMessageContentProps = Readonly<{
   isStreaming: boolean;
   productLookup?: ReadonlyMap<string, Product>;
   onFollowUpClick?: (message: string) => void;
+  onProductSelect?: (productId: string) => void;
+  onSearchAction?: (query: string) => void;
 }>;
 
 function AssistantMessageContent({
@@ -167,13 +183,50 @@ function AssistantMessageContent({
   isStreaming,
   productLookup,
   onFollowUpClick,
+  onProductSelect,
+  onSearchAction,
 }: AssistantMessageContentProps) {
   const hasShownChipsRef = useRef(false);
   const hasShownActionsRef = useRef(false);
 
+  // Check for A2UI surfaces
+  const a2uiSurfaces = message.metadata?.a2uiSurfaces as
+    | Record<string, SerializableSurfaceState>
+    | undefined;
+  const surfaceEntries = a2uiSurfaces ? Object.values(a2uiSurfaces) : [];
+
+  let surfaceNodes: ReactNode = null;
+  if (surfaceEntries.length > 0) {
+    try {
+      const surfaceArray = surfaceEntries.map((serialized) =>
+        deserializeSurface(serialized),
+      );
+      surfaceNodes = (
+        <>
+          {surfaceArray.map((surface) => (
+            <SurfaceRenderer
+              key={surface.surfaceId}
+              surface={surface}
+              onProductSelect={onProductSelect}
+              onSearchAction={onSearchAction}
+              onFollowupAction={onFollowUpClick}
+            />
+          ))}
+        </>
+      );
+    } catch (error) {
+      console.error('[MessageBubble] Error deserializing surfaces:', error);
+    }
+  }
+
   const {content = ''} = message;
   if (message.kind !== 'text') {
-    return <>{content}</>;
+    return (
+      <>
+        {content}
+        {surfaceNodes}
+      </>
+    );
   }
 
   const hasPotentialMarkup =
@@ -182,7 +235,12 @@ function AssistantMessageContent({
 
   if (!hasPotentialMarkup) {
     // No special markup - render with markdown support
-    return <Answer text={content} />;
+    return (
+      <>
+        <Answer text={content} />
+        {surfaceNodes}
+      </>
+    );
   }
 
   const pendingContent = isStreaming ? detectPendingRichContent(content) : null;
@@ -209,7 +267,12 @@ function AssistantMessageContent({
     !pendingContent
   ) {
     // No special content - render with markdown support
-    return <Answer text={content} />;
+    return (
+      <>
+        <Answer text={content} />
+        {surfaceNodes}
+      </>
+    );
   }
 
   const productIndex = ensureProductLookup(message, productLookup);
@@ -282,6 +345,7 @@ function AssistantMessageContent({
           onFollowUpClick={onFollowUpClick}
         />
       )}
+      {surfaceNodes}
     </>
   );
 }

@@ -1,0 +1,211 @@
+import type {ReactNode} from 'react';
+import type {SurfaceState} from '~/lib/a2ui/surface-manager';
+import {ComponentRenderer} from './ComponentRenderer';
+
+interface SurfaceRendererProps {
+  surface: SurfaceState;
+  onProductSelect?: (productId: string) => void;
+  onSearchAction?: (query: string) => void;
+  onFollowupAction?: (message: string) => void;
+}
+
+/**
+ * Renders a complete A2UI surface with all its components
+ * Recursively renders component tree starting from root
+ */
+export function SurfaceRenderer({
+  surface,
+  onProductSelect,
+  onSearchAction,
+  onFollowupAction,
+}: SurfaceRendererProps): ReactNode {
+  console.log('[SurfaceRenderer] Rendering surface:', {
+    surfaceId: surface.surfaceId,
+    isRendered: surface.isRendered,
+    root: surface.root,
+    componentCount: surface.components.size,
+    dataModelKeys: Object.keys(surface.dataModel.getAll()),
+    dataModel: surface.dataModel.getAll(),
+  });
+
+  if (!surface.isRendered || !surface.root) {
+    // Surface not ready to render yet (waiting for beginRendering)
+    console.warn('[SurfaceRenderer] Surface not ready:', {
+      isRendered: surface.isRendered,
+      root: surface.root,
+    });
+    return null;
+  }
+
+  const renderComponent = (componentId: string): ReactNode => {
+    const component = surface.components.get(componentId);
+    console.log('[SurfaceRenderer] Rendering component:', {
+      componentId,
+      found: !!component,
+    });
+    if (!component) {
+      console.warn(`Component not found: ${componentId}`);
+      return null;
+    }
+
+    const {catalogComponentId} = component;
+    const componentProps =
+      (component.component as any)[catalogComponentId] || {};
+    console.log('[SurfaceRenderer] Component details:', {
+      componentId,
+      catalogComponentId,
+      componentProps,
+    });
+
+    // Handle layout components that have children
+    if (catalogComponentId === 'Column') {
+      const childIds = (componentProps.children as any)?.explicitList || [];
+      const renderedChildren = childIds
+        .map((childId: unknown) => renderComponent(String(childId)))
+        .filter(Boolean);
+
+      return (
+        <div key={componentId} className="flex flex-col gap-4">
+          {renderedChildren}
+        </div>
+      );
+    }
+
+    if (catalogComponentId === 'Row') {
+      const childIds = (componentProps.children as any)?.explicitList || [];
+      const renderedChildren = childIds
+        .map((childId: unknown) => renderComponent(String(childId)))
+        .filter(Boolean);
+
+      return (
+        <div key={componentId} className="flex flex-row gap-2 flex-wrap">
+          {renderedChildren}
+        </div>
+      );
+    }
+
+    if (catalogComponentId === 'List') {
+      const direction = (componentProps.direction as string) || 'vertical';
+      const template = (componentProps.children as any)?.template;
+
+      if (!template) {
+        return null;
+      }
+
+      // Get data for template
+      const dataPath = template.dataBinding;
+      const templateComponentId = template.componentId;
+      const items = surface.dataModel.get(dataPath);
+
+      if (!Array.isArray(items)) {
+        return null;
+      }
+
+      const containerClass =
+        direction === 'horizontal'
+          ? 'flex flex-row gap-4 overflow-x-auto pb-4 scroll-smooth snap-x snap-mandatory'
+          : 'flex flex-col gap-4';
+
+      return (
+        <div key={componentId} className={containerClass}>
+          {items.map((item, index) => {
+            // Render template component with item context
+            const itemComponent = surface.components.get(templateComponentId);
+            if (!itemComponent) {
+              return null;
+            }
+
+            // Create a scoped data path for this item
+            const itemKey = `${templateComponentId}-${index}`;
+
+            return (
+              <div
+                key={itemKey}
+                className={
+                  direction === 'horizontal' ? 'flex-none snap-start' : ''
+                }
+              >
+                {renderComponent(templateComponentId)}
+              </div>
+            );
+          })}
+        </div>
+      );
+    }
+
+    if (catalogComponentId === 'Card') {
+      const childId = componentProps.child as string;
+      const renderedChild = childId ? renderComponent(childId) : null;
+
+      return (
+        <div
+          key={componentId}
+          className="bg-white rounded-lg shadow-sm border border-gray-200 p-4"
+        >
+          {renderedChild}
+        </div>
+      );
+    }
+
+    // Handle ConversationAnswer (custom catalog)
+    if (catalogComponentId === 'ConversationAnswer') {
+      const childIds = (componentProps.children as any)?.explicitList || [];
+      const renderedChildren = childIds
+        .map((childId: unknown) => renderComponent(String(childId)))
+        .filter(Boolean);
+
+      return (
+        <div key={componentId} className="flex flex-col gap-6 w-full">
+          {renderedChildren}
+        </div>
+      );
+    }
+
+    // Render leaf components (Text, Image, Button, ProductCard, etc.)
+    return (
+      <ComponentRenderer
+        key={componentId}
+        componentId={componentId}
+        component={component}
+        dataModel={surface.dataModel}
+        onProductSelect={onProductSelect}
+        onSearchAction={onSearchAction}
+        onFollowupAction={onFollowupAction}
+      />
+    );
+  };
+
+  // Start rendering from root component
+  console.log('[SurfaceRenderer] Rendering root component:', surface.root);
+  const rootResult = renderComponent(surface.root);
+
+  // Also render any NextActionsBar components that are not reachable from root
+  // (the backend places them as siblings of the carousel/comparison root)
+  const actionsNodes: ReactNode[] = [];
+  surface.components.forEach((component, componentId) => {
+    if (component.catalogComponentId === 'NextActionsBar') {
+      actionsNodes.push(
+        <ComponentRenderer
+          key={componentId}
+          componentId={componentId}
+          component={component}
+          dataModel={surface.dataModel}
+          onProductSelect={onProductSelect}
+          onSearchAction={onSearchAction}
+          onFollowupAction={onFollowupAction}
+        />,
+      );
+    }
+  });
+
+  if (actionsNodes.length === 0) {
+    return rootResult;
+  }
+
+  return (
+    <div key={surface.surfaceId} className="flex flex-col gap-4 w-full">
+      {rootResult}
+      {actionsNodes}
+    </div>
+  );
+}

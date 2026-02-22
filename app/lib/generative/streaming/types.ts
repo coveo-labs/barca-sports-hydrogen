@@ -93,6 +93,50 @@ export type ToolResultPayload = {
   products?: Product[];
 };
 
+// A2UI Event Types
+export type StateSnapshotEvent = {
+  type: 'STATE_SNAPSHOT';
+  snapshot: Record<string, unknown>;
+};
+
+export type A2UIOperation =
+  | {beginRendering: {surfaceId: string; root: string; catalogId?: string}}
+  | {
+      surfaceUpdate: {
+        surfaceId: string;
+        components: Array<{
+          id: string;
+          component: Record<string, unknown>;
+        }>;
+      };
+    }
+  | {
+      dataModelUpdate: {
+        surfaceId: string;
+        data: Array<{
+          key: string;
+          value?: unknown;
+          valueString?: string;
+          valueNumber?: number;
+          valueBoolean?: boolean;
+          valueMap?: Array<unknown>;
+          valueList?: Array<unknown>;
+        }>;
+      };
+    }
+  | {deleteSurface: {surfaceId: string}};
+
+export type ActivitySnapshotEvent = {
+  type: 'ACTIVITY_SNAPSHOT';
+  timestamp?: number;
+  messageId: string;
+  activityType: 'a2ui-surface';
+  content: {
+    operations: A2UIOperation[];
+  };
+  replace?: boolean;
+};
+
 export type AssistantStreamEvent =
   | RunStartedEvent
   | RunFinishedEvent
@@ -105,6 +149,8 @@ export type AssistantStreamEvent =
   | ToolCallArgsEvent
   | ToolCallEndEvent
   | ToolCallResultEvent
+  | StateSnapshotEvent
+  | ActivitySnapshotEvent
   | CustomEvent
   | UnknownEvent;
 

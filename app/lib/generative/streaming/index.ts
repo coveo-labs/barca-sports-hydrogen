@@ -4,6 +4,9 @@ export type {
   StreamArgs,
   ThinkingUpdateSnapshot,
   ToolResultPayload,
+  StateSnapshotEvent,
+  ActivitySnapshotEvent,
+  A2UIOperation,
 } from './types';
 
 export type {RawSSEEvent, EventProcessor} from './buffer';
