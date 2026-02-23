@@ -4,6 +4,8 @@ import {ComponentRenderer} from './ComponentRenderer';
 
 interface SurfaceRendererProps {
   surface: SurfaceState;
+  /** Full surface map for cross-surface lookups (e.g. BundleDisplay slot surfaces) */
+  surfaceMap?: Map<string, SurfaceState>;
   onProductSelect?: (productId: string) => void;
   onSearchAction?: (query: string) => void;
   onFollowupAction?: (message: string) => void;
@@ -15,6 +17,7 @@ interface SurfaceRendererProps {
  */
 export function SurfaceRenderer({
   surface,
+  surfaceMap,
   onProductSelect,
   onSearchAction,
   onFollowupAction,
@@ -34,6 +37,13 @@ export function SurfaceRenderer({
       isRendered: surface.isRendered,
       root: surface.root,
     });
+    return null;
+  }
+
+  // Bundle slot surfaces (bundle-surface-*) are invisible — they exist only
+  // in surfaceMap so BundleDisplay can pull product data out of them.
+  // They must NOT be rendered as standalone surfaces in the chat.
+  if (surface.surfaceId.startsWith('bundle-surface-')) {
     return null;
   }
 
@@ -168,6 +178,7 @@ export function SurfaceRenderer({
         componentId={componentId}
         component={component}
         dataModel={surface.dataModel}
+        surfaceMap={surfaceMap}
         onProductSelect={onProductSelect}
         onSearchAction={onSearchAction}
         onFollowupAction={onFollowupAction}
@@ -190,6 +201,7 @@ export function SurfaceRenderer({
           componentId={componentId}
           component={component}
           dataModel={surface.dataModel}
+          surfaceMap={surfaceMap}
           onProductSelect={onProductSelect}
           onSearchAction={onSearchAction}
           onFollowupAction={onFollowupAction}

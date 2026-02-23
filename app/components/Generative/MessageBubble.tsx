@@ -28,7 +28,10 @@ import {
 } from '~/components/Generative/MessageActions';
 import {Answer} from '~/components/Generative/Answer';
 import {SurfaceRenderer} from '~/components/A2UI';
-import type {SerializableSurfaceState} from '~/lib/a2ui/surface-manager';
+import type {
+  SerializableSurfaceState,
+  SurfaceState,
+} from '~/lib/a2ui/surface-manager';
 import {deserializeSurface} from '~/lib/a2ui/surface-manager';
 
 type MessageBubbleProps = {
@@ -201,12 +204,17 @@ function AssistantMessageContent({
       const surfaceArray = surfaceEntries.map((serialized) =>
         deserializeSurface(serialized),
       );
+      // Build a map keyed by surfaceId so BundleDisplay can look up slot surfaces
+      const surfaceMap = new Map<string, SurfaceState>(
+        surfaceArray.map((s) => [s.surfaceId, s]),
+      );
       surfaceNodes = (
         <>
           {surfaceArray.map((surface) => (
             <SurfaceRenderer
               key={surface.surfaceId}
               surface={surface}
+              surfaceMap={surfaceMap}
               onProductSelect={onProductSelect}
               onSearchAction={onSearchAction}
               onFollowupAction={onFollowUpClick}

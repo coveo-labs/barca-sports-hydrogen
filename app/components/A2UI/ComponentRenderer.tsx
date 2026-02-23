@@ -2,9 +2,13 @@ import type {ReactNode} from 'react';
 import {A2UIProductCard} from './A2UIProductCard';
 import {ProductCarousel} from './ProductCarousel';
 import {ComparisonTable} from './ComparisonTable';
+import {BundleDisplay} from './BundleDisplay';
 import {ConversationAnswer} from './ConversationAnswer';
 import {NextActionsBar} from './NextActionsBar';
-import type {ComponentDefinition} from '~/lib/a2ui/surface-manager';
+import type {
+  ComponentDefinition,
+  SurfaceState,
+} from '~/lib/a2ui/surface-manager';
 import {
   resolveComponentBindings,
   resolveTemplateData,
@@ -15,6 +19,8 @@ interface ComponentRendererProps {
   componentId: string;
   component: ComponentDefinition;
   dataModel: DataModelStore;
+  /** Full surface map for cross-surface lookups (required for BundleDisplay) */
+  surfaceMap?: Map<string, SurfaceState>;
   onProductSelect?: (productId: string) => void;
   onSearchAction?: (query: string) => void;
   onFollowupAction?: (message: string) => void;
@@ -28,6 +34,7 @@ export function ComponentRenderer({
   componentId,
   component,
   dataModel,
+  surfaceMap,
   onProductSelect,
   onSearchAction,
   onFollowupAction,
@@ -126,6 +133,35 @@ export function ComponentRenderer({
           headline={resolved.headline as string | undefined}
           products={productsData as any}
           attributes={(resolved.attributes as string[]) || []}
+          onProductSelect={onProductSelect}
+        />
+      );
+    }
+
+    case 'BundleDisplay': {
+      // bundles is an inline literal array in the component props —
+      // no data binding needed; slot product data lives in separate surfaces.
+      const bundles = componentProps?.bundles;
+      const titleProp = componentProps?.title;
+      // title may be a literalString binding or a plain string
+      const title: string | undefined =
+        typeof titleProp === 'string'
+          ? titleProp
+          : ((titleProp as any)?.literalString ?? undefined);
+
+      console.log('[ComponentRenderer] BundleDisplay bundles:', bundles);
+
+      if (!Array.isArray(bundles) || bundles.length === 0) {
+        console.warn('[ComponentRenderer] BundleDisplay: no bundles found');
+        return null;
+      }
+
+      return (
+        <BundleDisplay
+          key={componentId}
+          title={title}
+          bundles={bundles as any}
+          surfaceMap={surfaceMap ?? new Map()}
           onProductSelect={onProductSelect}
         />
       );
