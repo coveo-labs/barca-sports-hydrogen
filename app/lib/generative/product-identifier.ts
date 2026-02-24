@@ -44,19 +44,6 @@ export function resolveProductId(source: unknown): string | null {
   return null;
 }
 
-export function resolveProductIdFromAttributes(
-  attributes: Record<string, string>,
-): string | null {
-  for (const key of PRODUCT_ID_KEYS) {
-    const candidate = attributes[key];
-    const normalized = normalizeProductId(candidate);
-    if (normalized) {
-      return normalized;
-    }
-  }
-  return null;
-}
-
 export function extractAllProductIds(product: Product): string[] {
   const record = product as unknown as Record<string, unknown>;
   const identifiers: string[] = [];

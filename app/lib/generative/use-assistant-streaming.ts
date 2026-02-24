@@ -1,5 +1,4 @@
 import {useCallback, useRef} from 'react';
-import type {Product} from '@coveo/headless-react/ssr-commerce';
 import type {Dispatch, SetStateAction} from 'react';
 import type {
   ConversationMessage,
@@ -12,7 +11,6 @@ import {
   sortConversations,
 } from '~/lib/generative/chat';
 import {logDebug, logError, logInfo, logWarn} from '~/lib/logger';
-import {resolveProductId} from '~/lib/generative/product-identifier';
 import {
   createBufferProcessor,
   parseAssistantStreamEvent,
@@ -88,7 +86,6 @@ export function useAssistantStreaming({
       let assistantMessageId: string | null = null;
       let accumulatedContent = '';
       let latestSnapshot: ConversationRecord | null = null;
-      let collectedProducts: Product[] = [];
       let capturedErrorMessage: string | null = null;
       let turnCompleted = false;
       const seenStatusMessages = new Set<string>();
@@ -167,59 +164,6 @@ export function useAssistantStreaming({
         emitThinkingSnapshot();
       };
 
-      const upsertCollectedProducts = (incoming: Product[]) => {
-        if (!incoming.length) {
-          return;
-        }
-        const nextProducts = [...collectedProducts];
-        const indexByKey = new Map<string, number>();
-        for (const [index, product] of nextProducts.entries()) {
-          const key = resolveProductId(product);
-          if (key) {
-            indexByKey.set(key, index);
-          }
-        }
-        for (const product of incoming) {
-          const key = resolveProductId(product);
-          if (!key) {
-            nextProducts.push(product);
-            continue;
-          }
-          const existingIndex = indexByKey.get(key);
-          if (existingIndex === undefined) {
-            indexByKey.set(key, nextProducts.length);
-            nextProducts.push(product);
-            continue;
-          }
-          nextProducts[existingIndex] = product;
-        }
-        collectedProducts = nextProducts;
-      };
-
-      const syncProductMetadata = () => {
-        if (!assistantMessageId || collectedProducts.length === 0) {
-          return;
-        }
-        applyUpdate((conversation) => {
-          const messages = [...conversation.messages];
-          const index = messages.findIndex(
-            (message) => message.id === assistantMessageId,
-          );
-          if (index === -1) {
-            return conversation;
-          }
-          const existingMetadata = messages[index].metadata ?? {};
-          messages[index] = {
-            ...messages[index],
-            metadata: {
-              ...existingMetadata,
-              products: [...collectedProducts],
-            },
-          };
-          return {...conversation, messages};
-        });
-      };
-
       const syncA2UISurfaces = () => {
         console.log(
           '[syncA2UISurfaces] Called, assistantMessageId:',
@@ -290,12 +234,11 @@ export function useAssistantStreaming({
         | ConversationMessage['metadata']
         | undefined => {
         const hasThinking = thinkingUpdates.length > 0;
-        const hasProducts = collectedProducts.length > 0;
         const surfaceManager = a2uiProcessor.getSurfaceManager();
         const surfaceIds = surfaceManager.getAllSurfaceIds();
         const hasA2UISurfaces = surfaceIds.length > 0;
 
-        if (!hasThinking && !hasProducts && !hasA2UISurfaces) {
+        if (!hasThinking && !hasA2UISurfaces) {
           return undefined;
         }
 
@@ -311,7 +254,6 @@ export function useAssistantStreaming({
 
         return {
           ...(hasThinking ? {thinkingUpdates: [...thinkingUpdates]} : {}),
-          ...(hasProducts ? {products: [...collectedProducts]} : {}),
           ...(hasA2UISurfaces ? {a2uiSurfaces: surfaces} : {}),
         } satisfies ConversationMessage['metadata'];
       };
@@ -566,7 +508,6 @@ export function useAssistantStreaming({
 
           if (createdAssistantMessage) {
             syncThinkingMetadata();
-            syncProductMetadata();
           }
         };
 
@@ -720,14 +661,6 @@ export function useAssistantStreaming({
                 recordThinkingUpdate(successNote, 'tool');
                 if (!assistantMessageId) {
                   pushAssistantMessage(successNote, 'tool', {ephemeral: true});
-                }
-
-                const productList = result.products ?? [];
-                if (productList.length > 0) {
-                  upsertCollectedProducts(productList);
-                  if (assistantMessageId) {
-                    syncProductMetadata();
-                  }
                 }
                 return;
               }

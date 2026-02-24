@@ -4,7 +4,10 @@ import {ChevronDownIcon, ChevronUpIcon} from '@heroicons/react/20/solid';
 import {SparklesIcon} from '@heroicons/react/24/outline';
 import {useRouteLoaderData} from 'react-router';
 import type {RootLoader} from '~/root';
-import {createEmptyConversation, type ConversationRecord} from '~/lib/generative/chat';
+import {
+  createEmptyConversation,
+  type ConversationRecord,
+} from '~/lib/generative/chat';
 import {useAssistantStreaming} from '~/lib/generative/use-assistant-streaming';
 import {useMessageDerivation} from '~/lib/generative/use-message-derivation';
 import {useThinkingState} from '~/lib/generative/use-thinking-state';
@@ -35,15 +38,12 @@ export function SearchSummary({searchQuery}: SearchSummaryProps) {
   const [currentQuery, setCurrentQuery] = useState(searchQuery);
   const [inputValue, setInputValue] = useState('');
 
-  const {
-    visibleMessages,
-    activeConversation,
-    latestStreamingAssistantId,
-  } = useMessageDerivation({
-    conversations,
-    activeConversationId,
-    isStreaming,
-  });
+  const {visibleMessages, activeConversation, latestStreamingAssistantId} =
+    useMessageDerivation({
+      conversations,
+      activeConversationId,
+      isStreaming,
+    });
 
   const {
     activeSnapshot: activeThinkingSnapshot,
@@ -60,13 +60,11 @@ export function SearchSummary({searchQuery}: SearchSummaryProps) {
     activeConversationId,
   });
 
-  const {
-    containerRef: messageContainerRef,
-    resetScrollState,
-  } = useConversationScroll({
-    messages: isExpanded ? visibleMessages : [],
-    activeThinkingSnapshot: isExpanded ? activeThinkingSnapshot : null,
-  });
+  const {containerRef: messageContainerRef, resetScrollState} =
+    useConversationScroll({
+      messages: isExpanded ? visibleMessages : [],
+      activeThinkingSnapshot: isExpanded ? activeThinkingSnapshot : null,
+    });
 
   useEffect(() => {
     if (!isExpanded) {
@@ -292,7 +290,10 @@ export function SearchSummary({searchQuery}: SearchSummaryProps) {
                 {!isExpanded && products.length > 0 && (
                   <div className="flex gap-2 flex-wrap min-w-0 ml-4">
                     {products.slice(0, 4).map((product: Product) => (
-                      <ProductChip key={product.ec_product_id} product={product} />
+                      <ProductChip
+                        key={product.ec_product_id}
+                        product={product}
+                      />
                     ))}
                   </div>
                 )}
@@ -325,13 +326,18 @@ export function SearchSummary({searchQuery}: SearchSummaryProps) {
                   const isStreamingMessage =
                     isAssistant && message.id === latestStreamingAssistantId;
                   const isCurrentTurnAssistant =
-                    isAssistant && latestUserIndex !== -1 && index > latestUserIndex;
+                    isAssistant &&
+                    latestUserIndex !== -1 &&
+                    index > latestUserIndex;
 
-                  const metadataUpdates = message.metadata?.thinkingUpdates ?? [];
+                  const metadataUpdates =
+                    message.metadata?.thinkingUpdates ?? [];
                   const hideForCurrentTurn =
                     isActivelyStreaming && isCurrentTurnAssistant;
                   const shouldShowThinking =
-                    isAssistant && metadataUpdates.length > 0 && !hideForCurrentTurn;
+                    isAssistant &&
+                    metadataUpdates.length > 0 &&
+                    !hideForCurrentTurn;
 
                   const storedExpansion = thinkingExpandedByMessage[message.id];
                   const isExpanded = storedExpansion ?? false;
@@ -343,7 +349,10 @@ export function SearchSummary({searchQuery}: SearchSummaryProps) {
                     pendingThinkingSnapshot?.updates?.length;
 
                   return (
-                    <div key={message.id} className="flex w-full flex-col gap-3">
+                    <div
+                      key={message.id}
+                      className="flex w-full flex-col gap-3"
+                    >
                       {shouldShowThinking ? (
                         <div className="flex w-full">
                           <ThinkingStatusPanel
@@ -359,7 +368,6 @@ export function SearchSummary({searchQuery}: SearchSummaryProps) {
                       <MessageBubble
                         message={message}
                         isStreaming={isStreamingMessage}
-                        productLookup={productLookup}
                         onFollowUpClick={handleFollowUpClick}
                       />
                       {shouldShowPendingPanel ? (
@@ -395,7 +403,10 @@ export function SearchSummary({searchQuery}: SearchSummaryProps) {
                     {streamError}
                   </div>
                 )}
-                <form onSubmit={handleFollowUpSubmit} className="flex flex-col gap-3">
+                <form
+                  onSubmit={handleFollowUpSubmit}
+                  className="flex flex-col gap-3"
+                >
                   <div className="relative rounded-2xl border border-slate-300 bg-white shadow-sm focus-within:border-indigo-500 focus-within:shadow-md">
                     <textarea
                       value={inputValue}

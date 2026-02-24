@@ -1,11 +1,9 @@
 import {useMemo} from 'react';
-import type {Product} from '@coveo/headless-react/ssr-commerce';
 import {MessageBubble} from '~/components/Generative/MessageBubble';
 import {ThinkingStatusPanel} from '~/components/Generative/ThinkingStatusPanel';
 import type {ThinkingUpdateSnapshot} from '~/lib/generative/use-assistant-streaming';
 import type {ConversationMessage} from '~/types/conversation';
 import {PENDING_THINKING_KEY} from '~/lib/generative/thinking-constants';
-import {registerProducts} from '~/lib/generative/product-index';
 import {
   useMessagesContext,
   useStreamingActions,
@@ -76,8 +74,6 @@ function buildConversationItems({
   onFollowUpClick,
 }: BuildConversationItemsArgs) {
   const items: JSX.Element[] = [];
-  const queuedProductItems: JSX.Element[] = [];
-  const knownProducts = new Map<string, Product>();
 
   const isActivelyStreaming =
     activeThinkingSnapshot !== null && !activeThinkingSnapshot.isComplete;
@@ -102,8 +98,6 @@ function buildConversationItems({
       onToggleThinking,
       onFollowUpClick,
       items,
-      queuedProductItems,
-      knownProducts,
     });
 
     const shouldShowPendingPanel =
@@ -124,8 +118,6 @@ function buildConversationItems({
       );
     }
   }
-
-  flushQueuedProductItems(items, queuedProductItems);
 
   if (isActivelyStreaming && visibleMessages.length === 0) {
     const pendingExpanded =
@@ -179,8 +171,6 @@ type ProcessMessageArgs = {
   onToggleThinking: (messageId: string, next: boolean) => void;
   onFollowUpClick?: (message: string) => void;
   items: JSX.Element[];
-  queuedProductItems: JSX.Element[];
-  knownProducts: Map<string, Product>;
 };
 
 function processMessage({
@@ -192,15 +182,10 @@ function processMessage({
   onToggleThinking,
   onFollowUpClick,
   items,
-  queuedProductItems,
-  knownProducts,
 }: ProcessMessageArgs): void {
   const isAssistant = message.role === 'assistant';
-  const isProductList = message.kind === 'products';
   const isStreamingMessage =
     isAssistant && message.id === latestStreamingAssistantId;
-
-  registerProducts(knownProducts, message.metadata?.products);
 
   const metadataUpdates = message.metadata?.thinkingUpdates ?? [];
   const hideForCurrentTurn = isActivelyStreaming && isCurrentTurnAssistant;
@@ -229,27 +214,10 @@ function processMessage({
       <MessageBubble
         message={message}
         isStreaming={isStreamingMessage}
-        productLookup={knownProducts}
         onFollowUpClick={onFollowUpClick}
       />
     </div>
   );
 
-  if (isAssistant && isProductList) {
-    queuedProductItems.push(messageBlock);
-    return;
-  }
-
   items.push(messageBlock);
-
-  if (isAssistant) {
-    flushQueuedProductItems(items, queuedProductItems);
-  }
-}
-
-function flushQueuedProductItems(target: JSX.Element[], queue: JSX.Element[]) {
-  if (!queue.length) {
-    return;
-  }
-  target.push(...queue.splice(0, queue.length));
 }
