@@ -190,33 +190,58 @@ export function SurfaceRenderer({
   console.log('[SurfaceRenderer] Rendering root component:', surface.root);
   const rootResult = renderComponent(surface.root);
 
-  // Also render any NextActionsBar components that are not reachable from root
-  // (the backend places them as siblings of the carousel/comparison root)
-  const actionsNodes: ReactNode[] = [];
-  surface.components.forEach((component, componentId) => {
-    if (component.catalogComponentId === 'NextActionsBar') {
-      actionsNodes.push(
-        <ComponentRenderer
-          key={componentId}
-          componentId={componentId}
-          component={component}
-          dataModel={surface.dataModel}
-          surfaceMap={surfaceMap}
-          onProductSelect={onProductSelect}
-          onSearchAction={onSearchAction}
-          onFollowupAction={onFollowupAction}
-        />,
-      );
+  // Collect the set of component IDs that are referenced as template sub-components
+  // (i.e. used as `componentId` in a dataBinding on another component's props).
+  // These should never be rendered as standalone surface-level components.
+  const templateComponentIds = new Set<string>();
+  surface.components.forEach((comp) => {
+    const props = (comp.component as any)[comp.catalogComponentId] || {};
+    // Walk top-level prop values and collect any `componentId` references
+    for (const val of Object.values(props)) {
+      if (val && typeof val === 'object' && 'componentId' in (val as object)) {
+        templateComponentIds.add((val as any).componentId as string);
+      }
     }
   });
 
-  if (actionsNodes.length === 0) {
+  // Render surface-level sibling components that are not the root and not
+  // template sub-components, in the order they appear in the surface.
+  // NextActionsBar is rendered last regardless of declaration order.
+  const siblingNodes: ReactNode[] = [];
+  const actionsNodes: ReactNode[] = [];
+
+  surface.components.forEach((component, componentId) => {
+    if (componentId === surface.root) return;
+    if (templateComponentIds.has(componentId)) return;
+
+    const node = (
+      <ComponentRenderer
+        key={componentId}
+        componentId={componentId}
+        component={component}
+        dataModel={surface.dataModel}
+        surfaceMap={surfaceMap}
+        onProductSelect={onProductSelect}
+        onSearchAction={onSearchAction}
+        onFollowupAction={onFollowupAction}
+      />
+    );
+
+    if (component.catalogComponentId === 'NextActionsBar') {
+      actionsNodes.push(node);
+    } else {
+      siblingNodes.push(node);
+    }
+  });
+
+  if (siblingNodes.length === 0 && actionsNodes.length === 0) {
     return rootResult;
   }
 
   return (
     <div key={surface.surfaceId} className="flex flex-col gap-4 w-full">
       {rootResult}
+      {siblingNodes}
       {actionsNodes}
     </div>
   );

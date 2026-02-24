@@ -2,6 +2,7 @@ import type {ReactNode} from 'react';
 import {A2UIProductCard} from './A2UIProductCard';
 import {ProductCarousel} from './ProductCarousel';
 import {ComparisonTable} from './ComparisonTable';
+import {ComparisonSummary} from './ComparisonSummary';
 import {BundleDisplay} from './BundleDisplay';
 import {ConversationAnswer} from './ConversationAnswer';
 import {NextActionsBar} from './NextActionsBar';
@@ -119,23 +120,69 @@ export function ComponentRenderer({
     }
 
     case 'ComparisonTable': {
-      // Resolve template data for products array
+      // resolved is keyed as { component: resolvedProps } due to how
+      // resolveComponentBindings is called with {catalogComponentId, component: componentProps}
+      const resolvedProps = (resolved as any).component || resolved;
+
+      // The LLM writes products as { componentId: "...", dataBinding: "/items" }
+      // or { dataBinding: "/items" } — extract the dataBinding path either way.
       const productsProperty = componentProps?.products;
-      const productsData = productsProperty?.dataBinding
-        ? resolveTemplateData(productsProperty.dataBinding, dataModel)
-        : productsProperty?.template
-          ? resolveTemplateData(productsProperty as any, dataModel)
-          : [];
+      const dataBindingPath: string | undefined = productsProperty?.dataBinding;
+      const rawProducts: Record<string, unknown>[] = dataBindingPath
+        ? (resolveTemplateData(dataBindingPath, dataModel) as Record<
+            string,
+            unknown
+          >[])
+        : [];
+
+      // Map Coveo ec_* fields to the shape ComparisonTable expects.
+      // Custom comparison attributes (standout, trade_off, best_for, etc.)
+      // are passed through via the spread so they resolve via product[attr].
+      const mappedProducts = rawProducts.map((p) => {
+        const regularPrice = Number(p.ec_price) || 0;
+        const promoPrice =
+          p.ec_promo_price != null ? Number(p.ec_promo_price) : null;
+        // Show promo price as the main price with original struck-through,
+        // only when promo is genuinely lower than regular price.
+        const isOnSale = promoPrice !== null && promoPrice < regularPrice;
+        return {
+          productId: (p.ec_product_id as string) || '',
+          name: (p.ec_name as string) || '',
+          imageUrl: (p.ec_image as string) || '',
+          price: isOnSale ? promoPrice! : regularPrice,
+          originalPrice: isOnSale ? regularPrice : undefined,
+          currency: (p.ec_currency as string) || 'USD',
+          rating: p.ec_rating != null ? Number(p.ec_rating) : undefined,
+          url: (p.ec_url as string) || '#',
+          // Spread all remaining keys so custom attributes (standout, trade_off,
+          // best_for, etc.) are accessible as product[attr] in the table rows.
+          ...p,
+        };
+      });
+
+      // Accept both "heading" (what the LLM writes) and "headline" (legacy)
+      const headline =
+        (resolvedProps.heading as string | undefined) ??
+        (resolvedProps.headline as string | undefined);
 
       return (
         <ComparisonTable
           key={componentId}
-          headline={resolved.headline as string | undefined}
-          products={productsData as any}
-          attributes={(resolved.attributes as string[]) || []}
+          headline={headline}
+          products={mappedProducts as any}
+          attributes={(resolvedProps.attributes as string[]) || []}
           onProductSelect={onProductSelect}
         />
       );
+    }
+
+    case 'ComparisonSummary': {
+      const resolvedProps = (resolved as any).component || resolved;
+      const text =
+        typeof resolvedProps.text === 'string'
+          ? resolvedProps.text
+          : ((resolvedProps.text as any)?.literalString ?? '');
+      return <ComparisonSummary key={componentId} text={text} />;
     }
 
     case 'BundleDisplay': {

@@ -78,22 +78,8 @@ export function ComparisonTable({
                 className="px-6 py-4 whitespace-nowrap text-sm"
               >
                 <div className="flex flex-col">
-                  <div
-                    className={
-                      product.originalPrice
-                        ? 'text-gray-400 line-through'
-                        : 'text-gray-900 font-semibold'
-                    }
-                  >
-                    <Money
-                      data={{
-                        amount: product.price.toString(),
-                        currencyCode: (product.currency || 'USD') as any,
-                      }}
-                    />
-                  </div>
                   {product.originalPrice && (
-                    <div className="text-gray-900 font-semibold">
+                    <div className="text-gray-400 line-through text-xs">
                       <Money
                         data={{
                           amount: product.originalPrice.toString(),
@@ -102,6 +88,14 @@ export function ComparisonTable({
                       />
                     </div>
                   )}
+                  <div className="text-gray-900 font-semibold">
+                    <Money
+                      data={{
+                        amount: product.price.toString(),
+                        currencyCode: (product.currency || 'USD') as any,
+                      }}
+                    />
+                  </div>
                 </div>
               </td>
             ))}
