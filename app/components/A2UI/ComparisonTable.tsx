@@ -19,7 +19,50 @@ interface ComparisonTableProps {
   headline?: string;
   products: ComparisonProduct[];
   attributes: string[];
+  isLoading?: boolean;
   onProductSelect?: (productId: string) => void;
+}
+
+const SKELETON_COLUMNS = 3;
+const SKELETON_ROWS = 3;
+
+function ComparisonTableSkeleton() {
+  return (
+    <div className="w-full overflow-x-auto animate-pulse">
+      {/* Headline shimmer */}
+      <div className="h-6 rounded bg-gray-200 w-48 mb-4" />
+      <table className="min-w-full divide-y divide-gray-200 border border-gray-200 rounded-lg">
+        <thead className="bg-gray-50">
+          <tr>
+            {/* Label column header */}
+            <th className="px-6 py-3">
+              <div className="h-4 rounded bg-gray-200 w-16" />
+            </th>
+            {Array.from({length: SKELETON_COLUMNS}).map((_, i) => (
+              <th key={i} className="px-6 py-3">
+                <div className="w-24 h-24 rounded-md bg-gray-200 mb-2" />
+                <div className="h-4 rounded bg-gray-200 w-20" />
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody className="bg-white divide-y divide-gray-200">
+          {Array.from({length: SKELETON_ROWS}).map((_, row) => (
+            <tr key={row}>
+              <td className="px-6 py-4">
+                <div className="h-4 rounded bg-gray-200 w-16" />
+              </td>
+              {Array.from({length: SKELETON_COLUMNS}).map((_, col) => (
+                <td key={col} className="px-6 py-4">
+                  <div className="h-4 rounded bg-gray-200 w-24" />
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
 }
 
 /**
@@ -30,8 +73,13 @@ export function ComparisonTable({
   headline,
   products,
   attributes,
+  isLoading = false,
   onProductSelect,
 }: ComparisonTableProps) {
+  if (isLoading && products.length === 0) {
+    return <ComparisonTableSkeleton />;
+  }
+
   return (
     <div className="w-full overflow-x-auto">
       {headline && (

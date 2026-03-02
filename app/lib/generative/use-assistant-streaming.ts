@@ -88,6 +88,10 @@ export function useAssistantStreaming({
       let latestSnapshot: ConversationRecord | null = null;
       let capturedErrorMessage: string | null = null;
       let turnCompleted = false;
+      // True when at least one ACTIVITY_SNAPSHOT was successfully synced to an
+      // assistant message. Used to suppress the INTERRUPTED_ERROR_MESSAGE for
+      // pure A2UI turns where the backend never sends RUN_FINISHED.
+      let a2uiSurfacesSynced = false;
       const seenStatusMessages = new Set<string>();
       let thinkingUpdates: ConversationThinkingUpdate[] = [];
 
@@ -550,13 +554,65 @@ export function useAssistantStreaming({
             }
             case 'TEXT_MESSAGE_START': {
               updateSessionFromEvent(parsedEvent);
-              if (
+              const previousSyntheticId =
                 assistantMessageId &&
                 assistantMessageId !== parsedEvent.messageId
-              ) {
+                  ? assistantMessageId
+                  : null;
+              if (previousSyntheticId) {
                 accumulatedContent = '';
               }
               assistantMessageId = parsedEvent.messageId;
+              // Pre-insert the assistant message with the known ID so that
+              // syncA2UISurfaces can attach skeleton surface metadata to it
+              // immediately. applyTextDelta will find this message by ID and
+              // update its content in-place rather than creating a new one.
+              // Without this, syncA2UISurfaces would error ("Message not found")
+              // because the message doesn't exist until the first text delta.
+              //
+              // If ACTIVITY_SNAPSHOT already created a synthetic placeholder with
+              // a locally-generated ID, rename that message to the backend ID
+              // instead of inserting a second assistant message — that would cause
+              // the double-render bug where both the skeleton surface and the real
+              // response appear as separate bubbles.
+              applyUpdate((conversation) => {
+                if (previousSyntheticId) {
+                  const idx = conversation.messages.findIndex(
+                    (m) => m.id === previousSyntheticId,
+                  );
+                  if (idx !== -1) {
+                    const messages = [...conversation.messages];
+                    messages[idx] = {
+                      ...messages[idx],
+                      id: parsedEvent.messageId,
+                    };
+                    return {...conversation, messages};
+                  }
+                }
+                const alreadyExists = conversation.messages.some(
+                  (m) => m.id === assistantMessageId,
+                );
+                if (alreadyExists) return conversation;
+                return {
+                  ...conversation,
+                  messages: [
+                    ...conversation.messages,
+                    {
+                      id: assistantMessageId!,
+                      role: 'assistant' as const,
+                      content: '',
+                      createdAt: new Date().toISOString(),
+                      kind: 'text' as const,
+                      ephemeral: false,
+                      metadata: getAssistantMetadataSnapshot(),
+                    },
+                  ],
+                };
+              });
+              // Now flush any skeleton/surface snapshots that arrived before
+              // TEXT_MESSAGE_START — the message exists so syncA2UISurfaces
+              // will successfully write them into metadata.
+              syncA2UISurfaces();
               return;
             }
             case 'TEXT_MESSAGE_CONTENT': {
@@ -589,19 +645,10 @@ export function useAssistantStreaming({
               return;
             }
             case 'TOOL_CALL_ARGS': {
+              // Raw tool call arguments (JSON) are internal — do not surface to
+              // the thinking panel or status bubbles. They would appear as noise
+              // like `{"query":"sunglasses","perPage":3}` to the user.
               updateSessionFromEvent(parsedEvent);
-              const toolText = resolveDisplayText(
-                parsedEvent.delta,
-                DEFAULT_TOOL_PROGRESS_MESSAGE,
-              );
-              if (seenStatusMessages.has(toolText)) {
-                return;
-              }
-              seenStatusMessages.add(toolText);
-              recordThinkingUpdate(toolText, 'tool');
-              if (!assistantMessageId) {
-                pushAssistantMessage(toolText, 'tool', {ephemeral: true});
-              }
               return;
             }
             case 'TOOL_CALL_END': {
@@ -609,19 +656,50 @@ export function useAssistantStreaming({
               return;
             }
             case 'TOOL_CALL_RESULT': {
+              // Raw tool result strings are internal (e.g. "NextActionsBar queued
+              // on surface 'next-actions-surface' with 3 action(s)."). These
+              // are implementation details — do not surface to the thinking panel
+              // or status bubbles.
               updateSessionFromEvent(parsedEvent);
-              const successNote =
-                parsedEvent.content ?? TOOL_RESULT_FALLBACK_MESSAGE;
-              recordThinkingUpdate(successNote, 'tool');
-              if (!assistantMessageId) {
-                pushAssistantMessage(successNote, 'tool', {ephemeral: true});
-              }
               return;
             }
             case 'ACTIVITY_SNAPSHOT': {
               updateSessionFromEvent(parsedEvent);
               a2uiProcessor.processActivitySnapshot(parsedEvent);
+              // If no TEXT_MESSAGE_START has arrived yet (pure A2UI turn where
+              // the backend emits only ACTIVITY_SNAPSHOT events with no text),
+              // we still need a real assistant message in the conversation so
+              // that syncA2UISurfaces can attach surface metadata to it.
+              // Mirror what TEXT_MESSAGE_START does: synthesise an empty
+              // assistant message and store its ID so subsequent snapshots and
+              // any late-arriving TEXT_MESSAGE_START/CONTENT events all target
+              // the same message.
+              if (!assistantMessageId) {
+                assistantMessageId = generateId();
+                applyUpdate((conversation) => {
+                  const alreadyExists = conversation.messages.some(
+                    (m) => m.id === assistantMessageId,
+                  );
+                  if (alreadyExists) return conversation;
+                  return {
+                    ...conversation,
+                    messages: [
+                      ...conversation.messages,
+                      {
+                        id: assistantMessageId!,
+                        role: 'assistant' as const,
+                        content: '',
+                        createdAt: new Date().toISOString(),
+                        kind: 'text' as const,
+                        ephemeral: false,
+                        metadata: getAssistantMetadataSnapshot(),
+                      },
+                    ],
+                  };
+                });
+              }
               syncA2UISurfaces();
+              a2uiSurfacesSynced = true;
               return;
             }
             case 'STATE_SNAPSHOT': {
@@ -708,13 +786,22 @@ export function useAssistantStreaming({
         }
 
         if (!turnCompleted && !capturedErrorMessage) {
-          const interruptionMessage = INTERRUPTED_ERROR_MESSAGE;
-          capturedErrorMessage = interruptionMessage;
-          recordThinkingUpdate(interruptionMessage, 'status');
-          turnCompleted = true;
-          syncThinkingMetadata();
-          pushErrorBubble(interruptionMessage);
-          setStreamError(interruptionMessage);
+          // For pure A2UI turns the backend may not send RUN_FINISHED — if we
+          // successfully synced surfaces to an assistant message the turn is
+          // effectively complete and we should not surface a spurious error.
+          if (a2uiSurfacesSynced) {
+            turnCompleted = true;
+            syncThinkingMetadata();
+            setIsStreaming(false);
+          } else {
+            const interruptionMessage = INTERRUPTED_ERROR_MESSAGE;
+            capturedErrorMessage = interruptionMessage;
+            recordThinkingUpdate(interruptionMessage, 'status');
+            turnCompleted = true;
+            syncThinkingMetadata();
+            pushErrorBubble(interruptionMessage);
+            setStreamError(interruptionMessage);
+          }
         }
       } catch (error) {
         if ((error as DOMException)?.name === 'AbortError') {

@@ -103,8 +103,18 @@ export function ComponentRenderer({
           ? resolveTemplateData(productsProperty as any, dataModel)
           : [];
 
+      // heading lives at resolved.component.heading because resolveComponentBindings
+      // is called with {catalogComponentId, component: componentProps}, so the
+      // resolved props are nested under "component".
+      const resolvedProps = (resolved as any).component || resolved;
+      const heading =
+        (resolvedProps.heading as string | undefined) ??
+        (resolvedProps.headline as string | undefined);
+      const isLoading = Boolean(componentProps?.isLoading);
+
       console.log('[ComponentRenderer] ProductCarousel resolved:', {
-        headline: resolved.headline,
+        heading,
+        isLoading,
         productsCount: productsData.length,
         products: productsData,
       });
@@ -112,8 +122,9 @@ export function ComponentRenderer({
       return (
         <ProductCarousel
           key={componentId}
-          headline={resolved.headline as string | undefined}
+          headline={heading}
           products={productsData as any}
+          isLoading={isLoading}
           onProductSelect={onProductSelect}
         />
       );
@@ -165,12 +176,15 @@ export function ComponentRenderer({
         (resolvedProps.heading as string | undefined) ??
         (resolvedProps.headline as string | undefined);
 
+      const isLoading = Boolean(componentProps?.isLoading);
+
       return (
         <ComparisonTable
           key={componentId}
           headline={headline}
           products={mappedProducts as any}
           attributes={(resolvedProps.attributes as string[]) || []}
+          isLoading={isLoading}
           onProductSelect={onProductSelect}
         />
       );
@@ -199,6 +213,19 @@ export function ComponentRenderer({
       console.log('[ComponentRenderer] BundleDisplay bundles:', bundles);
 
       if (!Array.isArray(bundles) || bundles.length === 0) {
+        const isLoading = Boolean(componentProps?.isLoading);
+        if (isLoading) {
+          return (
+            <BundleDisplay
+              key={componentId}
+              title={title}
+              bundles={[]}
+              surfaceMap={surfaceMap ?? new Map()}
+              isLoading={true}
+              onProductSelect={onProductSelect}
+            />
+          );
+        }
         console.warn('[ComponentRenderer] BundleDisplay: no bundles found');
         return null;
       }
@@ -209,6 +236,7 @@ export function ComponentRenderer({
           title={title}
           bundles={bundles as any}
           surfaceMap={surfaceMap ?? new Map()}
+          isLoading={Boolean(componentProps?.isLoading)}
           onProductSelect={onProductSelect}
         />
       );

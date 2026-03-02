@@ -23,6 +23,7 @@ interface BundleDisplayProps {
   bundles: Bundle[];
   /** Full surface map so we can pull product data out of slot surfaces */
   surfaceMap: Map<string, SurfaceState>;
+  isLoading?: boolean;
   onProductSelect?: (productId: string) => void;
 }
 
@@ -83,6 +84,54 @@ interface ProductSlotData {
   currency: string;
   rating?: number;
   url: string;
+}
+
+// ─── Skeleton ────────────────────────────────────────────────────────────────
+
+const SKELETON_SLOTS = 3;
+const SKELETON_TABS = 2;
+
+function BundleDisplaySkeleton() {
+  return (
+    <div className="w-full flex flex-col gap-0 rounded-2xl border border-gray-200 bg-white overflow-hidden shadow-sm animate-pulse">
+      {/* Header shimmer */}
+      <div className="px-5 pt-5 pb-3">
+        <div className="h-5 rounded bg-gray-200 w-48" />
+      </div>
+
+      {/* Tab bar shimmer */}
+      <div className="flex border-b border-gray-200 px-5 gap-2 pb-3 pt-1">
+        {Array.from({length: SKELETON_TABS}).map((_, i) => (
+          <div key={i} className="h-4 rounded bg-gray-200 w-20" />
+        ))}
+      </div>
+
+      {/* Slot cards shimmer */}
+      <div className="px-5 py-4 flex gap-4 overflow-x-auto pb-5">
+        {Array.from({length: SKELETON_SLOTS}).map((_, i) => (
+          <div key={i} className="flex flex-col gap-2 w-44 flex-none">
+            {/* Category label shimmer */}
+            <div className="h-3 rounded bg-gray-200 w-16" />
+            {/* Image shimmer */}
+            <div className="aspect-square w-full rounded-lg bg-gray-200" />
+            {/* Name shimmer */}
+            <div className="h-3 rounded bg-gray-200 w-3/4" />
+            {/* Price shimmer */}
+            <div className="h-3 rounded bg-gray-200 w-1/2" />
+          </div>
+        ))}
+      </div>
+
+      {/* Footer shimmer */}
+      <div className="flex items-center justify-between px-5 py-4 border-t border-gray-100 bg-gray-50">
+        <div className="flex flex-col gap-1">
+          <div className="h-4 rounded bg-gray-200 w-24" />
+          <div className="h-3 rounded bg-gray-200 w-12" />
+        </div>
+        <div className="h-6 rounded bg-gray-200 w-16" />
+      </div>
+    </div>
+  );
 }
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
@@ -181,9 +230,14 @@ export function BundleDisplay({
   title = 'Recommended Bundles',
   bundles,
   surfaceMap,
+  isLoading = false,
   onProductSelect,
 }: BundleDisplayProps) {
   const [activeIndex, setActiveIndex] = useState(0);
+
+  if (isLoading && (!bundles || bundles.length === 0)) {
+    return <BundleDisplaySkeleton />;
+  }
 
   if (!bundles || bundles.length === 0) return null;
 

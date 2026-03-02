@@ -33,25 +33,14 @@ export function A2UIProductCard({
   selectedColor,
   onSelect,
 }: A2UIProductCardProps) {
-  console.log('[A2UIProductCard] Rendering with props:', {
-    productId,
-    name,
-    price,
-    priceType: typeof price,
-    originalPrice,
-    currency,
-    imageUrl,
-  });
-
-  // Defensive check
   if (price === undefined || price === null) {
-    console.error(
-      '[A2UIProductCard] Price is undefined/null! Full props:',
-      arguments[0],
+    return (
+      <div className="text-red-500 text-xs">Error: Invalid product data</div>
     );
-    return <div className="text-red-500">Error: Invalid product data</div>;
   }
 
+  // originalPrice is the pre-discount (higher) price; price is the sale price.
+  // hasPromo is true when there is a lower sale price than the original.
   const hasPromo = originalPrice !== undefined && originalPrice > price;
   const displayRating = rating || 0;
 
@@ -71,24 +60,21 @@ export function A2UIProductCard({
           src={imageUrl}
           className="aspect-square w-full rounded-lg bg-gray-200 object-cover group-hover:opacity-75"
         />
-        <h3 className="result-title mt-4 text-sm text-gray-700">{name}</h3>
+        <h3 className="result-title mt-4 text-sm text-gray-700 line-clamp-2">
+          {name}
+        </h3>
         <div className="flex mt-1">
-          {Array.from(Array(5).keys()).map((i) => {
-            return (
-              <StarIcon
-                height={20}
-                fill={i < Math.floor(displayRating) ? '#fde047' : '#94a3b8'}
-                key={i}
-              />
-            );
-          })}
+          {Array.from(Array(5).keys()).map((i) => (
+            <StarIcon
+              key={i}
+              height={20}
+              fill={i < Math.floor(displayRating) ? '#fde047' : '#94a3b8'}
+            />
+          ))}
         </div>
-        <div className="flex justify-between mt-1 text-lg font-medium">
-          <div
-            className={
-              hasPromo ? 'text-gray-400 line-through' : 'text-gray-900'
-            }
-          >
+        <div className="flex justify-between mt-1 text-sm font-medium">
+          {/* Current (sale) price */}
+          <div className="text-gray-900">
             <Money
               data={{
                 amount: price.toString(),
@@ -96,8 +82,9 @@ export function A2UIProductCard({
               }}
             />
           </div>
+          {/* Original (pre-discount) price shown struck-through when on promo */}
           {hasPromo && (
-            <div className="text-gray-900">
+            <div className="text-gray-400 line-through">
               <Money
                 data={{
                   amount: originalPrice!.toString(),
