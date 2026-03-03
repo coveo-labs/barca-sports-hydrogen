@@ -111,14 +111,14 @@ function BundleDisplaySkeleton() {
         <div className="h-3.5 rounded bg-gray-200 w-3/4" />
       </div>
 
-      {/* Slot cards shimmer — 3-column grid */}
+      {/* Slot cards shimmer — always 3-column grid */}
       <div className="px-6 py-4 grid grid-cols-3 gap-4">
         {Array.from({length: SKELETON_SLOTS}).map((_, i) => (
           <div key={i} className="flex flex-col gap-2">
             {/* Category label */}
             <div className="h-3 rounded bg-gray-200 w-20" />
             {/* Image */}
-            <div className="aspect-square w-full rounded-lg bg-gray-200" />
+            <div className="h-40 w-full rounded-lg bg-gray-200" />
             {/* Name */}
             <div className="h-3.5 rounded bg-gray-200 w-3/4" />
             {/* Price */}
@@ -159,7 +159,7 @@ function SlotCard({
         <span className="text-xs font-medium text-gray-500 uppercase tracking-wide truncate">
           {categoryLabel}
         </span>
-        <div className="aspect-square w-full rounded-lg bg-gray-100 animate-pulse" />
+        <div className="h-40 w-full rounded-lg bg-gray-100 animate-pulse" />
         <div className="h-3.5 bg-gray-100 rounded animate-pulse w-3/4" />
         <div className="h-3.5 bg-gray-100 rounded animate-pulse w-1/3" />
         <div className="h-9 bg-gray-100 rounded-lg animate-pulse w-full mt-1" />
@@ -189,7 +189,7 @@ function SlotCard({
           src={product.imageUrl}
           alt={product.name}
           loading="lazy"
-          className="aspect-square w-full rounded-lg bg-gray-100 object-cover group-hover:opacity-90 transition-opacity"
+          className="h-full w-full rounded-lg bg-gray-100 object-cover group-hover:opacity-90 transition-opacity"
         />
         <span className="absolute top-2 right-2 bg-green-500 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full">
           In Stock
@@ -335,24 +335,26 @@ export function BundleDisplay({
           <p className="text-sm text-gray-600">{activeBundle.description}</p>
         )}
 
-        {/* Slot cards — responsive grid */}
-        <div
-          className={`grid gap-4 ${
-            slotProducts.length === 2
-              ? 'grid-cols-2'
-              : slotProducts.length >= 3
-                ? 'grid-cols-3'
-                : 'grid-cols-1'
-          }`}
-        >
-          {slotProducts.map(({categoryLabel, product}, idx) => (
-            <SlotCard
-              key={`${activeBundle.bundleId}-slot-${idx}`}
-              categoryLabel={categoryLabel}
-              product={product}
-              onProductSelect={onProductSelect}
-            />
-          ))}
+        {/* Slot cards — always 3-col grid, horizontal scroll for >3 slots */}
+        <div className="overflow-x-auto -mx-6 px-6">
+          <div
+            className="grid grid-cols-3 gap-4"
+            style={{
+              minWidth:
+                slotProducts.length > 3
+                  ? `${slotProducts.length * 160}px`
+                  : undefined,
+            }}
+          >
+            {slotProducts.map(({categoryLabel, product}, idx) => (
+              <SlotCard
+                key={`${activeBundle.bundleId}-slot-${idx}`}
+                categoryLabel={categoryLabel}
+                product={product}
+                onProductSelect={onProductSelect}
+              />
+            ))}
+          </div>
         </div>
       </div>
 

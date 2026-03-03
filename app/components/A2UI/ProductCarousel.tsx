@@ -21,17 +21,18 @@ const SKELETON_CARD_COUNT = 4;
 function SkeletonCard() {
   return (
     <div className="flex-none w-64 snap-start animate-pulse">
-      {/* Image placeholder */}
-      <div className="aspect-square w-full rounded-lg bg-gray-200" />
-      <div className="mt-3 space-y-2 px-1">
-        {/* Product name line */}
+      {/* Image placeholder — explicit h-64 matches aspect-square on w-64 card */}
+      <div className="h-64 w-full rounded-lg bg-gray-200" />
+      {/* mt-4 matches real card h3 margin; no px padding to match real card */}
+      <div className="mt-4 space-y-2">
+        {/* Product name — two lines to match line-clamp-2 */}
         <div className="h-4 rounded bg-gray-200 w-4/5" />
-        {/* Rating row — five small circles */}
-        <div className="flex gap-1 items-center">
+        <div className="h-4 rounded bg-gray-200 w-3/5" />
+        {/* Rating row — five 20×20px blocks matching StarIcon height=20 */}
+        <div className="flex gap-0.5 mt-1">
           {Array.from({length: 5}).map((_, i) => (
-            <div key={i} className="h-3 w-3 rounded-full bg-gray-200" />
+            <div key={i} className="h-5 w-5 rounded bg-gray-200" />
           ))}
-          <div className="h-3 rounded bg-gray-200 w-8 ml-1" />
         </div>
         {/* Price row */}
         <div className="h-4 rounded bg-gray-200 w-1/3" />

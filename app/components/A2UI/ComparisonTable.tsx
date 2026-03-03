@@ -26,51 +26,75 @@ interface ComparisonTableProps {
 const SKELETON_COLUMNS = 3;
 const SKELETON_ROWS = 4;
 
-// Every th/td gets this — border-collapse merges them into a full visible grid
-const CELL = 'border border-gray-200';
+// border-r + border-b only: the wrapper div provides the top and left outer edges.
+// border-separate (not border-collapse) prevents any interaction with the wrapper border.
+// overflow-hidden on the wrapper clips cells to the rounded corners cleanly.
+// Last-column cells omit border-r (wrapper provides the right edge).
+// Last-row cells omit border-b (wrapper provides the bottom edge).
+const CELL = 'border-r border-b border-gray-200'; // normal cell
+const CELL_LAST_COL = 'border-b border-gray-200'; // last column (no border-r)
+const CELL_LAST_ROW = 'border-r border-gray-200'; // last row   (no border-b)
+const CELL_LAST_BOTH = 'border-gray-200'; // last col + last row
 
 function ComparisonTableSkeleton() {
   return (
-    <div className="w-full overflow-x-auto rounded-lg border border-gray-200">
-      <table className="min-w-full border-collapse animate-pulse">
-        <thead>
-          <tr>
-            <th className={`${CELL} px-4 py-3 w-28 bg-white`} />
-            {Array.from({length: SKELETON_COLUMNS}).map((_, i) => (
-              <th key={i} className={`${CELL} px-4 py-5 bg-white`}>
-                <div className="w-full h-48 rounded-lg bg-gray-200 mb-3" />
-                <div className="h-4 rounded bg-gray-200 w-3/4 mx-auto mb-1" />
-                <div className="h-4 rounded bg-gray-200 w-1/3 mx-auto" />
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {Array.from({length: SKELETON_ROWS}).map((_, row) => (
-            <tr key={row}>
-              <td className={`${CELL} px-4 py-4 bg-white`}>
-                <div className="h-3.5 rounded bg-gray-200 w-16" />
-              </td>
-              {Array.from({length: SKELETON_COLUMNS}).map((_, col) => (
-                <td
-                  key={col}
-                  className={`${CELL} px-4 py-4 bg-white text-center`}
-                >
-                  <div className="h-3.5 rounded bg-gray-200 w-24 mx-auto" />
-                </td>
-              ))}
+    <div className="w-full overflow-x-auto">
+      <div className="border border-gray-200 rounded-lg overflow-hidden">
+        <table className="min-w-full border-separate border-spacing-0 animate-pulse">
+          <thead>
+            <tr>
+              <th className={`${CELL} px-4 py-3 w-28 bg-white`} />
+              {Array.from({length: SKELETON_COLUMNS}).map((_, i) => {
+                const isLastCol = i === SKELETON_COLUMNS - 1;
+                return (
+                  <th
+                    key={i}
+                    className={`${isLastCol ? CELL_LAST_COL : CELL} px-4 py-5 bg-white`}
+                  >
+                    <div className="w-full h-48 rounded-lg bg-gray-200 mb-3" />
+                    <div className="h-4 rounded bg-gray-200 w-3/4 mx-auto mb-1" />
+                    <div className="h-4 rounded bg-gray-200 w-1/3 mx-auto" />
+                  </th>
+                );
+              })}
             </tr>
-          ))}
-          <tr>
-            <td className={`${CELL} px-4 py-4 bg-white`} />
-            {Array.from({length: SKELETON_COLUMNS}).map((_, i) => (
-              <td key={i} className={`${CELL} px-4 py-4 bg-white`}>
-                <div className="h-9 rounded-full bg-gray-200 w-full" />
-              </td>
+          </thead>
+          <tbody>
+            {Array.from({length: SKELETON_ROWS}).map((_, row) => (
+              <tr key={row}>
+                <td className={`${CELL} px-4 py-4 bg-white`}>
+                  <div className="h-3.5 rounded bg-gray-200 w-16" />
+                </td>
+                {Array.from({length: SKELETON_COLUMNS}).map((_, col) => {
+                  const isLastCol = col === SKELETON_COLUMNS - 1;
+                  return (
+                    <td
+                      key={col}
+                      className={`${isLastCol ? CELL_LAST_COL : CELL} px-4 py-4 bg-white text-center`}
+                    >
+                      <div className="h-3.5 rounded bg-gray-200 w-24 mx-auto" />
+                    </td>
+                  );
+                })}
+              </tr>
             ))}
-          </tr>
-        </tbody>
-      </table>
+            <tr>
+              <td className={`${CELL_LAST_ROW} px-4 py-4 bg-white`} />
+              {Array.from({length: SKELETON_COLUMNS}).map((_, i) => {
+                const isLastCol = i === SKELETON_COLUMNS - 1;
+                return (
+                  <td
+                    key={i}
+                    className={`${isLastCol ? CELL_LAST_BOTH : CELL_LAST_ROW} px-4 py-4 bg-white`}
+                  >
+                    <div className="h-9 rounded-full bg-gray-200 w-full" />
+                  </td>
+                );
+              })}
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
@@ -98,29 +122,27 @@ export function ComparisonTable({
       {headline && (
         <h2 className="text-lg font-semibold text-gray-900 mb-4">{headline}</h2>
       )}
-      {/* Rounded outer border — overflow-hidden clips the table corners */}
-      <div className="rounded-lg border border-gray-200 overflow-hidden">
-        <table className="min-w-full border-collapse">
+      {/* border + rounded-lg on wrapper; overflow-hidden clips cells to rounded corners cleanly */}
+      <div className="border border-gray-200 rounded-lg overflow-hidden">
+        <table className="min-w-full border-separate border-spacing-0">
           {/* ── Column headers ── */}
           <thead>
             <tr>
               {/* "Product" label — top-left, vertically top-aligned */}
               <th
-                className={`${CELL} px-4 py-4 w-28 text-left text-sm font-medium text-gray-500 align-top bg-white`}
+                className={`${CELL} px-4 py-4 w-28 text-left text-sm font-medium text-gray-500 align-top whitespace-nowrap bg-white`}
               >
                 Product
               </th>
 
-              {products.map((product) => {
+              {products.map((product, idx) => {
                 const isRecommended = product.productId === recommendedId;
-                const hasPromo =
-                  product.originalPrice !== undefined &&
-                  product.originalPrice > product.price;
+                const isLastCol = idx === products.length - 1;
 
                 return (
                   <th
                     key={product.productId}
-                    className={`${CELL} px-4 py-4 text-center align-top ${
+                    className={`${isLastCol ? CELL_LAST_COL : CELL} px-4 py-4 text-center align-top ${
                       isRecommended ? 'bg-indigo-50' : 'bg-white'
                     }`}
                   >
@@ -146,7 +168,7 @@ export function ComparisonTable({
                       <img
                         src={product.imageUrl}
                         alt={product.name}
-                        className="w-full h-48 rounded-lg border border-gray-200 object-cover bg-gray-50 group-hover:opacity-90 transition-opacity"
+                        className="h-[200px] w-[200px] mx-auto object-cover bg-gray-50 group-hover:opacity-90 transition-opacity"
                       />
                       <p className="mt-3 text-sm font-semibold text-gray-900 leading-snug">
                         {product.name}
@@ -163,19 +185,20 @@ export function ComparisonTable({
             {/* Price row */}
             <tr>
               <td
-                className={`${CELL} px-4 py-3.5 text-sm font-medium text-gray-500 bg-white`}
+                className={`${CELL} px-4 py-3.5 text-sm font-medium text-gray-500 bg-white align-middle`}
               >
                 Price
               </td>
-              {products.map((product) => {
+              {products.map((product, idx) => {
                 const isRecommended = product.productId === recommendedId;
                 const hasPromo =
                   product.originalPrice !== undefined &&
                   product.originalPrice > product.price;
+                const isLastCol = idx === products.length - 1;
                 return (
                   <td
                     key={product.productId}
-                    className={`${CELL} px-4 py-3.5 text-sm text-center ${
+                    className={`${isLastCol ? CELL_LAST_COL : CELL} px-4 py-3.5 text-sm text-center ${
                       isRecommended ? 'bg-indigo-50' : 'bg-white'
                     }`}
                   >
@@ -208,16 +231,17 @@ export function ComparisonTable({
             {attributes.map((attr) => (
               <tr key={attr}>
                 <td
-                  className={`${CELL} px-4 py-3.5 text-sm font-medium text-gray-500 capitalize whitespace-nowrap bg-white`}
+                  className={`${CELL} px-4 py-3.5 text-sm font-medium text-gray-500 capitalize whitespace-nowrap bg-white align-middle`}
                 >
                   {attr.replace(/_/g, ' ')}
                 </td>
-                {products.map((product) => {
+                {products.map((product, idx) => {
                   const isRecommended = product.productId === recommendedId;
+                  const isLastCol = idx === products.length - 1;
                   return (
                     <td
                       key={product.productId}
-                      className={`${CELL} px-4 py-3.5 text-sm text-gray-700 text-center ${
+                      className={`${isLastCol ? CELL_LAST_COL : CELL} px-4 py-3.5 text-sm text-gray-700 text-center ${
                         isRecommended ? 'bg-indigo-50' : 'bg-white'
                       }`}
                     >
@@ -230,13 +254,14 @@ export function ComparisonTable({
 
             {/* Add to Cart row */}
             <tr>
-              <td className={`${CELL} px-4 py-4 bg-white`} />
-              {products.map((product) => {
+              <td className={`${CELL_LAST_ROW} px-4 py-4 bg-white`} />
+              {products.map((product, idx) => {
                 const isRecommended = product.productId === recommendedId;
+                const isLastCol = idx === products.length - 1;
                 return (
                   <td
                     key={product.productId}
-                    className={`${CELL} px-4 py-4 ${
+                    className={`${isLastCol ? CELL_LAST_BOTH : CELL_LAST_ROW} px-4 py-4 ${
                       isRecommended ? 'bg-indigo-50' : 'bg-white'
                     }`}
                   >
@@ -245,7 +270,7 @@ export function ComparisonTable({
                       className={`w-full py-2 px-4 rounded-full text-sm font-semibold transition-colors ${
                         isRecommended
                           ? 'bg-indigo-600 text-white hover:bg-indigo-700'
-                          : 'border border-gray-900 text-gray-900 bg-white hover:bg-gray-50'
+                          : 'bg-gray-900 text-white hover:bg-gray-700'
                       }`}
                     >
                       Add to Cart
