@@ -1,5 +1,4 @@
 import {Money} from '@shopify/hydrogen';
-import {StarIcon} from '@heroicons/react/20/solid';
 import {NavLink} from 'react-router';
 
 interface ComparisonProduct {
@@ -11,6 +10,7 @@ interface ComparisonProduct {
   currency?: string;
   rating?: number;
   url: string;
+  recommended?: boolean;
   // Additional attributes for comparison
   [key: string]: any;
 }
@@ -24,41 +24,51 @@ interface ComparisonTableProps {
 }
 
 const SKELETON_COLUMNS = 3;
-const SKELETON_ROWS = 3;
+const SKELETON_ROWS = 4;
+
+// Every th/td gets this — border-collapse merges them into a full visible grid
+const CELL = 'border border-gray-200';
 
 function ComparisonTableSkeleton() {
   return (
-    <div className="w-full overflow-x-auto animate-pulse">
-      {/* Headline shimmer */}
-      <div className="h-6 rounded bg-gray-200 w-48 mb-4" />
-      <table className="min-w-full divide-y divide-gray-200 border border-gray-200 rounded-lg">
-        <thead className="bg-gray-50">
+    <div className="w-full overflow-x-auto rounded-lg border border-gray-200">
+      <table className="min-w-full border-collapse animate-pulse">
+        <thead>
           <tr>
-            {/* Label column header */}
-            <th className="px-6 py-3">
-              <div className="h-4 rounded bg-gray-200 w-16" />
-            </th>
+            <th className={`${CELL} px-4 py-3 w-28 bg-white`} />
             {Array.from({length: SKELETON_COLUMNS}).map((_, i) => (
-              <th key={i} className="px-6 py-3">
-                <div className="w-24 h-24 rounded-md bg-gray-200 mb-2" />
-                <div className="h-4 rounded bg-gray-200 w-20" />
+              <th key={i} className={`${CELL} px-4 py-5 bg-white`}>
+                <div className="w-full h-48 rounded-lg bg-gray-200 mb-3" />
+                <div className="h-4 rounded bg-gray-200 w-3/4 mx-auto mb-1" />
+                <div className="h-4 rounded bg-gray-200 w-1/3 mx-auto" />
               </th>
             ))}
           </tr>
         </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
+        <tbody>
           {Array.from({length: SKELETON_ROWS}).map((_, row) => (
             <tr key={row}>
-              <td className="px-6 py-4">
-                <div className="h-4 rounded bg-gray-200 w-16" />
+              <td className={`${CELL} px-4 py-4 bg-white`}>
+                <div className="h-3.5 rounded bg-gray-200 w-16" />
               </td>
               {Array.from({length: SKELETON_COLUMNS}).map((_, col) => (
-                <td key={col} className="px-6 py-4">
-                  <div className="h-4 rounded bg-gray-200 w-24" />
+                <td
+                  key={col}
+                  className={`${CELL} px-4 py-4 bg-white text-center`}
+                >
+                  <div className="h-3.5 rounded bg-gray-200 w-24 mx-auto" />
                 </td>
               ))}
             </tr>
           ))}
+          <tr>
+            <td className={`${CELL} px-4 py-4 bg-white`} />
+            {Array.from({length: SKELETON_COLUMNS}).map((_, i) => (
+              <td key={i} className={`${CELL} px-4 py-4 bg-white`}>
+                <div className="h-9 rounded-full bg-gray-200 w-full" />
+              </td>
+            ))}
+          </tr>
         </tbody>
       </table>
     </div>
@@ -66,8 +76,9 @@ function ComparisonTableSkeleton() {
 }
 
 /**
- * Side-by-side product comparison table for A2UI
- * Displays multiple products with their key attributes in a table format
+ * Side-by-side product comparison table for A2UI.
+ * Full cell borders (border-collapse) give visible row + column dividers.
+ * Outer rounded border via wrapper div with overflow-hidden.
  */
 export function ComparisonTable({
   headline,
@@ -80,120 +91,172 @@ export function ComparisonTable({
     return <ComparisonTableSkeleton />;
   }
 
+  const recommendedId = products.find((p) => p.recommended)?.productId ?? null;
+
   return (
     <div className="w-full overflow-x-auto">
       {headline && (
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">{headline}</h2>
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">{headline}</h2>
       )}
-      <table className="min-w-full divide-y divide-gray-200 border border-gray-200 rounded-lg">
-        <thead className="bg-gray-50">
-          <tr>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Product
-            </th>
-            {products.map((product) => (
+      {/* Rounded outer border — overflow-hidden clips the table corners */}
+      <div className="rounded-lg border border-gray-200 overflow-hidden">
+        <table className="min-w-full border-collapse">
+          {/* ── Column headers ── */}
+          <thead>
+            <tr>
+              {/* "Product" label — top-left, vertically top-aligned */}
               <th
-                key={product.productId}
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                className={`${CELL} px-4 py-4 w-28 text-left text-sm font-medium text-gray-500 align-top bg-white`}
               >
-                <NavLink
-                  to={product.url}
-                  onClick={() => onProductSelect?.(product.productId)}
-                  className="hover:text-gray-900"
-                >
-                  <img
-                    src={product.imageUrl}
-                    alt={product.name}
-                    className="w-24 h-24 object-cover rounded-md mb-2"
-                  />
-                  <div className="font-semibold text-gray-900 normal-case">
-                    {product.name}
-                  </div>
-                </NavLink>
+                Product
               </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
-          {/* Price Row */}
-          <tr>
-            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-              Price
-            </td>
-            {products.map((product) => (
-              <td
-                key={product.productId}
-                className="px-6 py-4 whitespace-nowrap text-sm"
-              >
-                <div className="flex flex-col">
-                  {product.originalPrice && (
-                    <div className="text-gray-400 line-through text-xs">
-                      <Money
-                        data={{
-                          amount: product.originalPrice.toString(),
-                          currencyCode: (product.currency || 'USD') as any,
-                        }}
+
+              {products.map((product) => {
+                const isRecommended = product.productId === recommendedId;
+                const hasPromo =
+                  product.originalPrice !== undefined &&
+                  product.originalPrice > product.price;
+
+                return (
+                  <th
+                    key={product.productId}
+                    className={`${CELL} px-4 py-4 text-center align-top ${
+                      isRecommended ? 'bg-indigo-50' : 'bg-white'
+                    }`}
+                  >
+                    {/* Recommended badge — centered above image */}
+                    {isRecommended ? (
+                      <div className="mb-3 flex justify-center">
+                        <span className="inline-block bg-indigo-600 text-white text-[10px] font-semibold uppercase tracking-wider px-2.5 py-1 rounded-full">
+                          Recommended
+                        </span>
+                      </div>
+                    ) : (
+                      /* Spacer so non-recommended columns align with the badge row */
+                      recommendedId !== null && (
+                        <div className="mb-3 h-[26px]" />
+                      )
+                    )}
+
+                    <NavLink
+                      to={product.url}
+                      onClick={() => onProductSelect?.(product.productId)}
+                      className="group block"
+                    >
+                      <img
+                        src={product.imageUrl}
+                        alt={product.name}
+                        className="w-full h-48 rounded-lg border border-gray-200 object-cover bg-gray-50 group-hover:opacity-90 transition-opacity"
                       />
-                    </div>
-                  )}
-                  <div className="text-gray-900 font-semibold">
-                    <Money
-                      data={{
-                        amount: product.price.toString(),
-                        currencyCode: (product.currency || 'USD') as any,
-                      }}
-                    />
-                  </div>
-                </div>
-              </td>
-            ))}
-          </tr>
-
-          {/* Rating Row */}
-          <tr>
-            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-              Rating
-            </td>
-            {products.map((product) => (
-              <td
-                key={product.productId}
-                className="px-6 py-4 whitespace-nowrap text-sm"
-              >
-                <div className="flex">
-                  {Array.from(Array(5).keys()).map((i) => (
-                    <StarIcon
-                      key={i}
-                      height={16}
-                      fill={
-                        i < Math.floor(product.rating || 0)
-                          ? '#fde047'
-                          : '#94a3b8'
-                      }
-                    />
-                  ))}
-                </div>
-              </td>
-            ))}
-          </tr>
-
-          {/* Custom Attributes */}
-          {attributes.map((attr) => (
-            <tr key={attr}>
-              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 capitalize">
-                {attr.replace(/_/g, ' ')}
-              </td>
-              {products.map((product) => (
-                <td
-                  key={product.productId}
-                  className="px-6 py-4 text-sm text-gray-700"
-                >
-                  {formatAttributeValue(product[attr])}
-                </td>
-              ))}
+                      <p className="mt-3 text-sm font-semibold text-gray-900 leading-snug">
+                        {product.name}
+                      </p>
+                    </NavLink>
+                  </th>
+                );
+              })}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+
+          {/* ── Attribute rows ── */}
+          <tbody>
+            {/* Price row */}
+            <tr>
+              <td
+                className={`${CELL} px-4 py-3.5 text-sm font-medium text-gray-500 bg-white`}
+              >
+                Price
+              </td>
+              {products.map((product) => {
+                const isRecommended = product.productId === recommendedId;
+                const hasPromo =
+                  product.originalPrice !== undefined &&
+                  product.originalPrice > product.price;
+                return (
+                  <td
+                    key={product.productId}
+                    className={`${CELL} px-4 py-3.5 text-sm text-center ${
+                      isRecommended ? 'bg-indigo-50' : 'bg-white'
+                    }`}
+                  >
+                    <div className="flex items-baseline justify-center gap-1.5">
+                      <span className="font-semibold text-gray-900">
+                        <Money
+                          data={{
+                            amount: product.price.toString(),
+                            currencyCode: (product.currency || 'USD') as any,
+                          }}
+                        />
+                      </span>
+                      {hasPromo && (
+                        <span className="text-xs text-gray-400 line-through">
+                          <Money
+                            data={{
+                              amount: product.originalPrice!.toString(),
+                              currencyCode: (product.currency || 'USD') as any,
+                            }}
+                          />
+                        </span>
+                      )}
+                    </div>
+                  </td>
+                );
+              })}
+            </tr>
+
+            {/* Custom attribute rows */}
+            {attributes.map((attr) => (
+              <tr key={attr}>
+                <td
+                  className={`${CELL} px-4 py-3.5 text-sm font-medium text-gray-500 capitalize whitespace-nowrap bg-white`}
+                >
+                  {attr.replace(/_/g, ' ')}
+                </td>
+                {products.map((product) => {
+                  const isRecommended = product.productId === recommendedId;
+                  return (
+                    <td
+                      key={product.productId}
+                      className={`${CELL} px-4 py-3.5 text-sm text-gray-700 text-center ${
+                        isRecommended ? 'bg-indigo-50' : 'bg-white'
+                      }`}
+                    >
+                      {formatAttributeValue(product[attr])}
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+
+            {/* Add to Cart row */}
+            <tr>
+              <td className={`${CELL} px-4 py-4 bg-white`} />
+              {products.map((product) => {
+                const isRecommended = product.productId === recommendedId;
+                return (
+                  <td
+                    key={product.productId}
+                    className={`${CELL} px-4 py-4 ${
+                      isRecommended ? 'bg-indigo-50' : 'bg-white'
+                    }`}
+                  >
+                    <button
+                      type="button"
+                      className={`w-full py-2 px-4 rounded-full text-sm font-semibold transition-colors ${
+                        isRecommended
+                          ? 'bg-indigo-600 text-white hover:bg-indigo-700'
+                          : 'border border-gray-900 text-gray-900 bg-white hover:bg-gray-50'
+                      }`}
+                    >
+                      Add to Cart
+                    </button>
+                  </td>
+                );
+              })}
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
