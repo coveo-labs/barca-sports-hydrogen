@@ -56,25 +56,24 @@ async function handleStreamConversation(
     );
   }
 
+  console.info('[api.agentic.conversation] streaming conversation', {
+    hasSessionId: Boolean(body.sessionId),
+  });
+
   const navigatorContext = new ServerSideNavigatorContextProvider(request);
   const visitorHasCookie = Boolean(
     getCookieFromRequest(request, 'coveo_visitorId'),
   );
   const locale = body.locale ?? {};
-  const accessToken = extractAgenticAccessToken(context);
-  console.info('[api.agentic.conversation] streaming conversation', {
-    hasSessionId: Boolean(body.sessionId),
-  });
 
   const payload = {
-    message: body.message,
-    ...(body.sessionId && {sessionId: body.sessionId}),
     trackingId: body.trackingId || DEFAULT_TRACKING_ID,
+    language: (locale.language || 'en').toLowerCase(),
+    country: (locale.country || 'US').toUpperCase(),
+    currency: locale.currency || 'USD',
+    clientId: navigatorContext.clientId,
+    message: body.message,
     context: {
-      ...(body.context ?? {}),
-      language: locale.language || 'en',
-      country: locale.country || 'US',
-      currency: locale.currency || 'USD',
       user: {
         userAgent: navigatorContext.userAgent || '',
       },
@@ -84,14 +83,16 @@ async function handleStreamConversation(
       },
       cart: Array.isArray(body.cart) ? body.cart : [],
     },
-  };
+    conversationSessionId: body.sessionId || undefined,
+    targetEngine: 'AGENT_CORE',
+  } satisfies Record<string, unknown>;
 
   const abortController = new AbortController();
   request.signal.addEventListener('abort', () => abortController.abort());
 
   const agenticResponse = await streamAgenticConversation(payload, {
-    accessToken,
     signal: abortController.signal,
+    accessToken: extractAgenticAccessToken(context),
   });
 
   console.info('[api.agentic.conversation] upstream response', {
@@ -358,7 +359,6 @@ type ConversationStreamPayload = {
     referrer?: string;
   };
   cart?: unknown[];
-  context?: Record<string, unknown>;
 };
 
 type PersistConversationPayload = {
@@ -401,10 +401,9 @@ function createConversationId() {
 }
 
 type StreamAgenticConversationOptions = {
-  accessToken?: string;
   signal?: AbortSignal;
+  accessToken?: string | null;
 };
-
 
 async function streamAgenticConversation(
   payload: unknown,
@@ -423,7 +422,6 @@ async function streamAgenticConversation(
     signal: options.signal,
   });
 }
-
 
 function pickAccessToken(candidate?: string | null) {
   const trimmedCandidate = candidate?.trim();
