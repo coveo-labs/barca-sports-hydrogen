@@ -9,28 +9,10 @@ import {CONVERSATIONS_SESSION_KEY} from '~/types/conversation';
 
 const AGENTIC_BASE_URL =
   'https://platformdev.cloud.coveo.com/rest/organizations/barcasportsmcy01fvu/commerce/unstable/agentic';
-// [LOCAL TESTING] - only needed for local agent payload
-// const DEFAULT_PLATFORM_URL = new URL(AGENTIC_BASE_URL).origin;
-// const DEFAULT_ORGANIZATION_ID = extractOrganizationId(AGENTIC_BASE_URL);
-// const DEFAULT_PLATFORM_URL = 'https://platformdev.cloud.coveo.com';
-// const DEFAULT_ORGANIZATION_ID = 'barcasportsmcy01fvu';
 
 const MAX_CONVERSATIONS = 50;
 const MAX_CONTENT_LENGTH = 4000;
 const DEFAULT_TRACKING_ID = 'market_88728731922';
-// [LOCAL TESTING]
-// const LOCAL_AGENT_URL = 'http://localhost:8080/invocations';
-// const LOCAL_COVEO_CONFIG = {
-//   accessToken: 'xxdf4c168b-bfc4-46bf-ba3d-5449a8c62469',
-//   organizationId: 'barcasportsmcy01fvu',
-//   platformUrl: 'https://platformdev.cloud.coveo.com',
-//   clientId: '02e1fe20-d824-4b75-b1d6-a9a37fcbbb40',
-//   trackingId: 'market_88728731922',
-//   language: 'en',
-//   locale: 'en-US',
-//   country: 'US',
-//   currency: 'USD',
-// };
 
 export async function action({request, context}: ActionFunctionArgs) {
   if (request.method === 'POST') {
@@ -79,11 +61,9 @@ async function handleStreamConversation(
     getCookieFromRequest(request, 'coveo_visitorId'),
   );
   const locale = body.locale ?? {};
-  // [LOCAL TESTING] // const localAgentUrl = LOCAL_AGENT_URL;
   const accessToken = extractAgenticAccessToken(context);
   console.info('[api.agentic.conversation] streaming conversation', {
     hasSessionId: Boolean(body.sessionId),
-    // localAgentUrl, // [LOCAL TESTING]
   });
 
   const payload = {
@@ -105,15 +85,6 @@ async function handleStreamConversation(
       cart: Array.isArray(body.cart) ? body.cart : [],
     },
   };
-  // [LOCAL TESTING] - buildLocalAgentPayload
-  // let payload: Record<string, unknown>;
-  // try {
-  //   payload = await buildLocalAgentPayload(body, navigatorContext);
-  // } catch (error) {
-  //   const message =
-  //     error instanceof Error ? error.message : 'Invalid local payload.';
-  //   return Response.json({error: message}, {status: 400});
-  // }
 
   const abortController = new AbortController();
   request.signal.addEventListener('abort', () => abortController.abort());
@@ -122,14 +93,6 @@ async function handleStreamConversation(
     accessToken,
     signal: abortController.signal,
   });
-  // [LOCAL TESTING] - streamLocalAgentConversation
-  // const agenticResponse = await streamLocalAgentConversation(
-  //   localAgentUrl,
-  //   payload,
-  //   {
-  //     signal: abortController.signal,
-  //   },
-  // );
 
   console.info('[api.agentic.conversation] upstream response', {
     status: agenticResponse.status,
@@ -442,10 +405,6 @@ type StreamAgenticConversationOptions = {
   signal?: AbortSignal;
 };
 
-// [LOCAL TESTING]
-// type StreamLocalConversationOptions = {
-//   signal?: AbortSignal;
-// };
 
 async function streamAgenticConversation(
   payload: unknown,
@@ -465,22 +424,6 @@ async function streamAgenticConversation(
   });
 }
 
-// [LOCAL TESTING]
-// async function streamLocalAgentConversation(
-//   localUrl: string,
-//   payload: unknown,
-//   options: StreamLocalConversationOptions = {},
-// ): Promise<Response> {
-//   return fetch(localUrl, {
-//     method: 'POST',
-//     headers: {
-//       'Content-Type': 'application/json',
-//       Accept: 'text/event-stream',
-//     },
-//     body: JSON.stringify(payload),
-//     signal: options.signal,
-//   });
-// }
 
 function pickAccessToken(candidate?: string | null) {
   const trimmedCandidate = candidate?.trim();
@@ -505,70 +448,3 @@ function resolveAgenticAccessToken() {
 
   return undefined;
 }
-
-// [LOCAL TESTING]
-// function resolveLocalAgentUrl(
-//   context: ActionFunctionArgs['context'],
-// ): string | null {
-//   const fromContext = (context as {env?: {LOCAL_AGENT_URL?: string}})?.env
-//     ?.LOCAL_AGENT_URL;
-//   if (fromContext && fromContext.trim()) {
-//     return fromContext.trim();
-//   }
-//
-//   if (typeof process !== 'undefined' && process?.env?.LOCAL_AGENT_URL) {
-//     return process.env.LOCAL_AGENT_URL;
-//   }
-//
-//   return null;
-// }
-
-// [LOCAL TESTING]
-// function extractOrganizationId(url: string): string {
-//   const match = url.match(/\/organizations\/([^/]+)/);
-//   return match?.[1] ?? '';
-// }
-
-// [LOCAL TESTING]
-// function buildLocalAgentPayload(
-//   body: ConversationStreamPayload,
-//   navigatorContext: ServerSideNavigatorContextProvider,
-// ): Promise<Record<string, unknown>> {
-//   return createLocalAgentPayload(body, navigatorContext);
-// }
-//
-// async function createLocalAgentPayload(
-//   body: ConversationStreamPayload,
-//   navigatorContext: ServerSideNavigatorContextProvider,
-// ): Promise<Record<string, unknown>> {
-//   const locale = body.locale ?? {};
-//   const localCoveo = LOCAL_COVEO_CONFIG;
-//   const localContext: Record<string, unknown> = {};
-//
-//   return {
-//     prompt: body.message,
-//     coveo: {
-//       ...localCoveo,
-//       organizationId: localCoveo.organizationId || DEFAULT_ORGANIZATION_ID,
-//       platformUrl: localCoveo.platformUrl || DEFAULT_PLATFORM_URL,
-//       clientId: localCoveo.clientId || navigatorContext.clientId,
-//       trackingId: localCoveo.trackingId || DEFAULT_TRACKING_ID,
-//       language: localCoveo.language || locale.language || 'en',
-//       locale: localCoveo.locale || locale.language || 'en',
-//       country: localCoveo.country || locale.country || 'US',
-//       currency: localCoveo.currency || locale.currency || 'USD',
-//     },
-//     context: {
-//       ...localContext,
-//       user: {
-//         userAgent: navigatorContext.userAgent || '',
-//       },
-//       view: {
-//         url: body.view?.url || navigatorContext.location,
-//         referrer: body.view?.referrer || navigatorContext.referrer || undefined,
-//       },
-//       cart: Array.isArray(body.cart) ? body.cart : [],
-//     },
-//     sessionId: body.sessionId || undefined,
-//   };
-// }
