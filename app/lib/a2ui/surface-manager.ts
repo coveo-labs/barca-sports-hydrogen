@@ -58,21 +58,14 @@ export function deserializeSurface(
   serialized: SerializableSurfaceState,
 ): SurfaceState {
   const dataModel = new DataModelStore();
-  // Reconstruct data model from serialized data
+  // Reconstruct data model from serialized data — use setAll to restore the
+  // already-resolved JS values directly without re-parsing as DataModelEntry.
   if (
     serialized.dataModelData &&
     typeof serialized.dataModelData === 'object'
   ) {
     try {
-      const dataEntries = Object.entries(serialized.dataModelData).map(
-        ([key, value]) => ({
-          key,
-          value,
-        }),
-      );
-      if (dataEntries.length > 0) {
-        dataModel.update(dataEntries as any);
-      }
+      dataModel.setAll(serialized.dataModelData as Record<string, any>);
     } catch (error) {
       // dataModelData malformed — continue with empty model
     }
@@ -193,18 +186,16 @@ export class SurfaceManager {
    */
   dataModelUpdate(operation: {
     surfaceId: string;
-    data: Array<{
+    contents: Array<{
       key: string;
-      value?: any;
       valueString?: string;
       valueNumber?: number;
       valueBoolean?: boolean;
       valueMap?: Array<any>;
-      valueList?: Array<any>;
     }>;
   }): void {
     const surface = this.getSurface(operation.surfaceId);
-    surface.dataModel.update(operation.data as any);
+    surface.dataModel.update(operation.contents as any);
   }
 
   /**

@@ -113,14 +113,12 @@ export type A2UIOperation =
   | {
       dataModelUpdate: {
         surfaceId: string;
-        data: Array<{
+        contents: Array<{
           key: string;
-          value?: unknown;
           valueString?: string;
           valueNumber?: number;
           valueBoolean?: boolean;
           valueMap?: Array<unknown>;
-          valueList?: Array<unknown>;
         }>;
       };
     }

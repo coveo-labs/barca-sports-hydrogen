@@ -12,13 +12,11 @@ type DataValue =
   | null;
 
 type DataModelEntry = {
-  key: string;
-  value?: DataValue;
+  key?: string;
   valueString?: string;
   valueNumber?: number;
   valueBoolean?: boolean;
   valueMap?: Array<DataModelEntry>;
-  valueList?: Array<DataModelEntry | DataValue>;
 };
 
 export class DataModelStore {
@@ -60,11 +58,11 @@ export class DataModelStore {
   }
 
   /**
-   * Update data model with new data structure
-   * @param data - Array of data entries to merge into root model
+   * Update data model with new contents structure
+   * @param contents - Array of data entries to merge into root model
    */
-  update(data: Array<DataModelEntry>): void {
-    const value = this.dataToValue(data);
+  update(contents: Array<DataModelEntry>): void {
+    const value = this.dataToValue(contents);
     // Merge into existing data
     this.data = {...this.data, ...value};
   }
@@ -77,6 +75,13 @@ export class DataModelStore {
   }
 
   /**
+   * Directly set all data (used for deserialization — bypasses entry parsing)
+   */
+  setAll(data: Record<string, DataValue>): void {
+    this.data = data;
+  }
+
+  /**
    * Get entire data model
    */
   getAll(): Record<string, DataValue> {
@@ -86,29 +91,42 @@ export class DataModelStore {
   /**
    * Convert data entries to nested value structure
    */
-  private dataToValue(data: Array<DataModelEntry>): Record<string, DataValue> {
+  private dataToValue(
+    entries: Array<DataModelEntry>,
+  ): Record<string, DataValue> {
     const result: Record<string, DataValue> = {};
 
-    for (const entry of data) {
+    for (const entry of entries) {
       const {key} = entry;
+      // Skip anonymous entries (no key) — these are list items handled via
+      // the isList branch of the parent entry's valueMap processing.
+      if (key === undefined) continue;
 
-      if (entry.value !== undefined) {
-        result[key] = entry.value as DataValue;
-      } else if (entry.valueString !== undefined) {
+      if (entry.valueString !== undefined) {
         result[key] = entry.valueString;
       } else if (entry.valueNumber !== undefined) {
         result[key] = entry.valueNumber;
       } else if (entry.valueBoolean !== undefined) {
         result[key] = entry.valueBoolean;
-      } else if (entry.valueList !== undefined) {
-        result[key] = entry.valueList.map((item) => {
-          if (typeof item === 'object' && item !== null && 'valueMap' in item) {
-            return this.dataToValue((item as DataModelEntry).valueMap!);
-          }
-          return item as DataValue;
-        });
       } else if (entry.valueMap !== undefined) {
-        result[key] = this.dataToValue(entry.valueMap);
+        // valueMap can represent either a nested object (all entries have keys)
+        // or an array of homogeneous items (entries lack top-level keys and
+        // contain nested valueMap themselves — the spec-compliant list format).
+        const firstEntry = entry.valueMap[0];
+        const isList =
+          firstEntry !== undefined &&
+          firstEntry.key === undefined &&
+          firstEntry.valueMap !== undefined;
+
+        if (isList) {
+          // Array of objects: each element is an anonymous { valueMap: [...] }
+          result[key] = entry.valueMap.map((item) =>
+            this.dataToValue(item.valueMap!),
+          );
+        } else {
+          // Nested object: keyed entries
+          result[key] = this.dataToValue(entry.valueMap);
+        }
       } else {
         result[key] = null;
       }
