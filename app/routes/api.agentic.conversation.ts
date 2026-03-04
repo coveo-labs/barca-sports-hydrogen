@@ -315,7 +315,6 @@ function sanitizeMessage(message: ConversationMessage): ConversationMessage {
     'text',
     'status',
     'tool',
-    'products',
     'error',
   ];
   const kind = allowedKinds.includes(message.kind) ? message.kind : 'text';

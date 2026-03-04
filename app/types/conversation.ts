@@ -3,12 +3,7 @@ import type {SerializableSurfaceState} from '~/lib/a2ui/surface-manager';
 
 export type ConversationRole = 'user' | 'assistant' | 'system' | 'tool';
 
-export type ConversationMessageKind =
-  | 'text'
-  | 'status'
-  | 'tool'
-  | 'products'
-  | 'error';
+export type ConversationMessageKind = 'text' | 'status' | 'tool' | 'error';
 
 export type ConversationThinkingUpdateKind = 'status' | 'tool';
 
