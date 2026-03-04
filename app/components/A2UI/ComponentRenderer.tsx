@@ -217,6 +217,8 @@ export function ComponentRenderer({
     }
 
     case 'NextActionsBar': {
+      const isLoading = Boolean(componentProps?.isLoading);
+
       // Resolve template data for actions array
       const actionsProperty = componentProps?.actions;
       const actionsData = actionsProperty?.dataBinding
@@ -229,6 +231,7 @@ export function ComponentRenderer({
         <NextActionsBar
           key={componentId}
           actions={actionsData as any}
+          isLoading={isLoading}
           onSearchAction={onSearchAction}
           onFollowupAction={onFollowupAction}
         />
