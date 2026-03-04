@@ -113,7 +113,7 @@ function BundleDisplaySkeleton() {
       </div>
 
       {/* Slot cards shimmer — always 3-column grid */}
-      <div className="px-6 py-4 grid grid-cols-3 gap-4">
+      <div className="px-6 py-4 grid grid-cols-4 gap-4">
         {Array.from({length: SKELETON_SLOTS}).map((_, i) => (
           <div key={i} className="flex flex-col gap-2">
             {/* Category label */}
@@ -198,7 +198,7 @@ function SlotCard({
       </NavLink>
 
       {/* Product name */}
-      <p className="text-sm font-semibold text-gray-900 line-clamp-2 mt-2">
+      <p className="text-sm font-semibold text-gray-900 line-clamp-2 mt-2 truncate">
         {product.name}
       </p>
 
@@ -332,10 +332,10 @@ export function BundleDisplay({
         {/* Slot cards — always 3-col grid, horizontal scroll for >3 slots */}
         <div className="overflow-x-auto -mx-6 px-6">
           <div
-            className="grid grid-cols-3 gap-4"
+            className="grid grid-cols-4 gap-4"
             style={{
               minWidth:
-                slotProducts.length > 3
+                slotProducts.length > 4
                   ? `${slotProducts.length * 160}px`
                   : undefined,
             }}
