@@ -1,6 +1,7 @@
 import {Money} from '@shopify/hydrogen';
 import {StarIcon} from '@heroicons/react/20/solid';
 import {NavLink} from 'react-router';
+import {A2UIAddToCartButton} from './A2UIAddToCartButton';
 
 interface A2UIProductCardProps {
   productId: string;
@@ -72,7 +73,7 @@ export function A2UIProductCard({
             />
           ))}
         </div>
-        <div className="flex justify-between mt-1 text-sm font-medium">
+        <div className="flex justify-between items-center mt-1 text-sm font-medium">
           {/* Current (sale) price */}
           <div className="text-gray-900">
             <Money
@@ -95,6 +96,18 @@ export function A2UIProductCard({
           )}
         </div>
       </NavLink>
+      {/* Add to Cart icon button — outside NavLink to avoid nested interactive elements */}
+      <div className="flex justify-end -mt-6 relative z-10">
+        <A2UIAddToCartButton
+          variant="icon"
+          item={{
+            merchandiseId: productId,
+            name,
+            price,
+            currency,
+          }}
+        />
+      </div>
       {colors && colors.length > 0 && (
         <div className="flex gap-2 mt-3">
           {colors.map((color) => (

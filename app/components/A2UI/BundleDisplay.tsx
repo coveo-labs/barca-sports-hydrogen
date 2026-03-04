@@ -2,6 +2,7 @@ import {useState} from 'react';
 import {Money} from '@shopify/hydrogen';
 import {NavLink} from 'react-router';
 import type {SurfaceState} from '~/lib/a2ui/surface-manager';
+import {A2UIAddToCartButton} from './A2UIAddToCartButton';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -226,12 +227,16 @@ function SlotCard({
       </div>
 
       {/* Add to Cart button */}
-      <button
-        type="button"
-        className="mt-3 w-full py-2 px-4 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors"
-      >
-        Add to Cart
-      </button>
+      <A2UIAddToCartButton
+        variant="outline"
+        item={{
+          merchandiseId: product.productId,
+          name: product.name,
+          price: product.price,
+          currency: product.currency,
+        }}
+        className="mt-3"
+      />
     </div>
   );
 }

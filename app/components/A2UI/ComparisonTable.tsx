@@ -1,5 +1,6 @@
 import {Money} from '@shopify/hydrogen';
 import {NavLink} from 'react-router';
+import {A2UIAddToCartButton} from './A2UIAddToCartButton';
 
 interface ComparisonProduct {
   productId: string;
@@ -265,16 +266,16 @@ export function ComparisonTable({
                       isRecommended ? 'bg-indigo-50' : 'bg-white'
                     }`}
                   >
-                    <button
-                      type="button"
-                      className={`w-full py-2 px-4 rounded-full text-sm font-semibold transition-colors ${
-                        isRecommended
-                          ? 'bg-indigo-600 text-white hover:bg-indigo-700'
-                          : 'bg-gray-900 text-white hover:bg-gray-700'
-                      }`}
-                    >
-                      Add to Cart
-                    </button>
+                    <A2UIAddToCartButton
+                      variant="full"
+                      highlighted={isRecommended}
+                      item={{
+                        merchandiseId: product.productId,
+                        name: product.name,
+                        price: product.price,
+                        currency: product.currency,
+                      }}
+                    />
                   </td>
                 );
               })}
