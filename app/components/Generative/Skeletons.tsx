@@ -55,26 +55,6 @@ export function InlineProductSkeleton() {
   );
 }
 
-export function NextActionsSkeleton() {
-  return (
-    <div className="mt-4 flex flex-wrap gap-2 border-t border-slate-200 pt-4 animate-pulse">
-      {['action-1', 'action-2', 'action-3'].map((actionId) => (
-        <div key={actionId} className="h-7 w-24 rounded-full bg-slate-200" />
-      ))}
-    </div>
-  );
-}
-
-export function RefinementChipsSkeleton() {
-  return (
-    <div className="mt-3 flex flex-wrap gap-2 animate-pulse">
-      {['chip-1', 'chip-2'].map((chipId) => (
-        <div key={chipId} className="h-7 w-20 rounded-full bg-slate-200" />
-      ))}
-    </div>
-  );
-}
-
 export function MarkdownSkeleton() {
   return (
     <div className="mt-2 flex items-center gap-2 text-xs text-gray-500">

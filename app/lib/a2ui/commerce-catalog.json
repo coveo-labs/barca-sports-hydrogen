@@ -1,0 +1,138 @@
+{
+  "catalogId": "https://shop.barca.group/a2ui/commerce/v1/catalog.json",
+  "version": "1.0.0",
+  "components": [
+    {
+      "id": "ProductCard",
+      "description": "Display an individual product with image, name, price, rating, and color variants. Used for individual product highlights within conversations.",
+      "properties": {
+        "productId": {
+          "type": "string",
+          "description": "Unique identifier for the product"
+        },
+        "name": {
+          "type": "string",
+          "description": "Product name or title"
+        },
+        "imageUrl": {
+          "type": "string",
+          "description": "URL to product image"
+        },
+        "price": {
+          "type": "number",
+          "description": "Current price"
+        },
+        "originalPrice": {
+          "type": "number",
+          "description": "Original price (if on sale)",
+          "optional": true
+        },
+        "currency": {
+          "type": "string",
+          "description": "Currency code (USD, CAD, GBP)",
+          "default": "USD"
+        },
+        "rating": {
+          "type": "number",
+          "description": "Product rating (0-5)",
+          "optional": true
+        },
+        "url": {
+          "type": "string",
+          "description": "Product detail page URL"
+        },
+        "colors": {
+          "type": "array",
+          "description": "Available color variants",
+          "optional": true,
+          "items": {
+            "type": "string"
+          }
+        },
+        "selectedColor": {
+          "type": "string",
+          "description": "Currently selected color",
+          "optional": true
+        }
+      }
+    },
+    {
+      "id": "ProductCarousel",
+      "description": "Horizontal scrolling list of products. Use this for product recommendations, search results, or category browsing within a conversation.",
+      "properties": {
+        "headline": {
+          "type": "string",
+          "description": "Title/heading for the carousel",
+          "optional": true
+        },
+        "products": {
+          "type": "array",
+          "description": "Array of products to display",
+          "items": {
+            "type": "template",
+            "componentId": "ProductCard"
+          }
+        }
+      }
+    },
+    {
+      "id": "ComparisonTable",
+      "description": "Side-by-side product comparison table with key attributes. Use this when the user requests to compare multiple products.",
+      "properties": {
+        "headline": {
+          "type": "string",
+          "description": "Title for the comparison",
+          "optional": true
+        },
+        "products": {
+          "type": "array",
+          "description": "Products to compare (2-4 recommended)",
+          "items": {
+            "type": "template",
+            "componentId": "ProductCard"
+          }
+        },
+        "attributes": {
+          "type": "array",
+          "description": "Attribute names to compare",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    {
+      "id": "ConversationAnswer",
+      "description": "Complete answer to user's question, wrapping text and other components. This is the top-level container for agent responses.",
+      "properties": {
+        "children": {
+          "type": "array",
+          "description": "Child components (Text, ProductCarousel, ComparisonTable, etc.)",
+          "items": {
+            "type": "component"
+          }
+        }
+      }
+    },
+    {
+      "id": "NextActionsBar",
+      "description": "Action buttons for follow-up questions or navigation. Display at the end of agent responses to guide the user's next action.",
+      "properties": {
+        "actions": {
+          "type": "array",
+          "description": "Array of action buttons",
+          "items": {
+            "type": "template",
+            "componentId": "Button"
+          }
+        }
+      }
+    }
+  ],
+  "imports": [
+    {
+      "catalogId": "https://a2ui.ai/v1/basic-catalog.json",
+      "components": ["Text", "Button"]
+    }
+  ]
+}
