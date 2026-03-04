@@ -96,7 +96,7 @@ export function SurfaceRenderer({
 
       return (
         <div key={componentId} className={containerClass}>
-          {items.map((item, index) => {
+          {items.map((_item, index) => {
             // Render template component with item context
             const itemComponent = surface.components.get(templateComponentId);
             if (!itemComponent) {
