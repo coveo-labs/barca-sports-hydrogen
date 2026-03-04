@@ -83,9 +83,7 @@ export function ComponentRenderer({
       const productsProperty = componentProps?.products;
       const productsData = productsProperty?.dataBinding
         ? resolveTemplateData(productsProperty.dataBinding, dataModel)
-        : productsProperty?.template
-          ? resolveTemplateData(productsProperty as any, dataModel)
-          : [];
+        : [];
 
       // heading lives at resolved.component.heading because resolveComponentBindings
       // is called with {catalogComponentId, component: componentProps}, so the
@@ -223,9 +221,7 @@ export function ComponentRenderer({
       const actionsProperty = componentProps?.actions;
       const actionsData = actionsProperty?.dataBinding
         ? resolveTemplateData(actionsProperty.dataBinding, dataModel)
-        : actionsProperty?.template
-          ? resolveTemplateData(actionsProperty as any, dataModel)
-          : [];
+        : [];
 
       return (
         <NextActionsBar
@@ -240,9 +236,10 @@ export function ComponentRenderer({
 
     case 'Text': {
       // Basic catalog Text component
+      const resolvedProps = (resolved as any).component || resolved;
       const text =
-        (resolved.text as string) || (resolved.content as string) || '';
-      const usageHint = (resolved.usageHint as string) || 'body';
+        (resolvedProps.text as string) || (resolvedProps.content as string) || '';
+      const usageHint = (resolvedProps.usageHint as string) || 'body';
 
       switch (usageHint) {
         case 'h1':
@@ -289,9 +286,10 @@ export function ComponentRenderer({
     }
 
     case 'Image': {
-      const url = (resolved.url as string) || '';
-      const usageHint = (resolved.usageHint as string) || 'mediumFeature';
-      const alt = (resolved.alt as string) || '';
+      const resolvedProps = (resolved as any).component || resolved;
+      const url = (resolvedProps.url as string) || '';
+      const usageHint = (resolvedProps.usageHint as string) || 'mediumFeature';
+      const alt = (resolvedProps.alt as string) || '';
 
       const sizeClass =
         usageHint === 'mediumFeature' ? 'w-full h-48' : 'w-full';
@@ -308,9 +306,10 @@ export function ComponentRenderer({
 
     case 'Button': {
       // Basic catalog Button component
-      const text = (resolved.text as string) || '';
-      const variant = (resolved.variant as string) || 'followup';
-      const action = resolved.action as any;
+      const resolvedProps = (resolved as any).component || resolved;
+      const text = (resolvedProps.text as string) || '';
+      const variant = (resolvedProps.variant as string) || 'followup';
+      const action = resolvedProps.action as any;
 
       const handleClick = () => {
         if (action?.type === 'search' && action.query) {

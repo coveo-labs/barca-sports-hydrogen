@@ -67,8 +67,7 @@ export function NextActionsBar({
             key={index}
             onClick={() => handleClick(action)}
             className={`
-              inline-flex items-center gap-1.5 px-4 py-2 rounded-3xl font-small text-sm transition-colors text-gray-700 hover:bg-gray-200 border border-gray-300'
-`}
+              inline-flex items-center gap-1.5 px-4 py-2 rounded-3xl font-sm text-sm transition-colors text-gray-700 hover:bg-gray-200 border border-gray-300`}
           >
             {isSearch ? (
               <MagnifyingGlassIcon className="w-4 h-4 shrink-0" />
