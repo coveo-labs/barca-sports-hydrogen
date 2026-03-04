@@ -61,7 +61,7 @@ export function A2UIProductCard({
           src={imageUrl}
           className="aspect-square w-full rounded-lg bg-gray-200 object-cover group-hover:opacity-75"
         />
-        <h3 className="result-title mt-4 text-sm text-gray-700 line-clamp-2">
+        <h3 className="result-title mt-4 text-sm text-gray-700 line-clamp-2 truncate">
           {name}
         </h3>
         <div className="flex mt-1">
