@@ -4,7 +4,6 @@ import {ProductCarousel} from './ProductCarousel';
 import {ComparisonTable} from './ComparisonTable';
 import {ComparisonSummary} from './ComparisonSummary';
 import {BundleDisplay} from './BundleDisplay';
-import {ConversationAnswer} from './ConversationAnswer';
 import {NextActionsBar} from './NextActionsBar';
 import type {
   ComponentDefinition,
@@ -42,17 +41,9 @@ export function ComponentRenderer({
 }: ComponentRendererProps): ReactNode {
   const {catalogComponentId} = component;
 
-  console.log('[ComponentRenderer] Rendering:', {
-    componentId,
-    catalogComponentId,
-    componentKeys: Object.keys(component.component),
-  });
-
   // Extract component properties from nested structure
   // Component format: {catalogComponentId: "Text", component: {"Text": {props...}}}
   const componentProps = (component.component as any)[catalogComponentId] || {};
-
-  console.log('[ComponentRenderer] Component props:', componentProps);
 
   // Resolve all data bindings in the component properties
   const resolved = resolveComponentBindings(
@@ -60,13 +51,10 @@ export function ComponentRenderer({
     dataModel,
   );
 
-  console.log('[ComponentRenderer] Resolved bindings:', resolved);
-
   switch (catalogComponentId) {
     case 'ProductCard': {
       // Map Coveo product fields to ProductCard props
       const productData = (resolved as any).component || resolved;
-      console.log('[ComponentRenderer] ProductCard data:', productData);
 
       return (
         <A2UIProductCard
@@ -93,10 +81,6 @@ export function ComponentRenderer({
     case 'ProductCarousel': {
       // Resolve template data for products array
       const productsProperty = componentProps?.products;
-      console.log(
-        '[ComponentRenderer] ProductCarousel productsProperty:',
-        productsProperty,
-      );
       const productsData = productsProperty?.dataBinding
         ? resolveTemplateData(productsProperty.dataBinding, dataModel)
         : productsProperty?.template
@@ -111,13 +95,6 @@ export function ComponentRenderer({
         (resolvedProps.heading as string | undefined) ??
         (resolvedProps.headline as string | undefined);
       const isLoading = Boolean(componentProps?.isLoading);
-
-      console.log('[ComponentRenderer] ProductCarousel resolved:', {
-        heading,
-        isLoading,
-        productsCount: productsData.length,
-        products: productsData,
-      });
 
       return (
         <ProductCarousel
@@ -210,8 +187,6 @@ export function ComponentRenderer({
           ? titleProp
           : ((titleProp as any)?.literalString ?? undefined);
 
-      console.log('[ComponentRenderer] BundleDisplay bundles:', bundles);
-
       if (!Array.isArray(bundles) || bundles.length === 0) {
         const isLoading = Boolean(componentProps?.isLoading);
         if (isLoading) {
@@ -226,7 +201,6 @@ export function ComponentRenderer({
             />
           );
         }
-        console.warn('[ComponentRenderer] BundleDisplay: no bundles found');
         return null;
       }
 
@@ -239,20 +213,6 @@ export function ComponentRenderer({
           isLoading={Boolean(componentProps?.isLoading)}
           onProductSelect={onProductSelect}
         />
-      );
-    }
-
-    case 'ConversationAnswer': {
-      // Recursively render child components
-      const childComponents = (component.children as any)?.children || [];
-      const renderedChildren = Array.isArray(childComponents)
-        ? childComponents.map((_: unknown) => null)
-        : [];
-
-      return (
-        <ConversationAnswer key={componentId}>
-          {renderedChildren}
-        </ConversationAnswer>
       );
     }
 
@@ -384,7 +344,6 @@ export function ComponentRenderer({
       return null;
 
     default:
-      console.warn(`Unknown component type: ${component.catalogComponentId}`);
       return null;
   }
 }

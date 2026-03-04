@@ -43,18 +43,6 @@ export async function loadConversations(): Promise<ConversationRecord[]> {
   }
 }
 
-export async function saveConversation(
-  record: ConversationRecord,
-): Promise<void> {
-  if (globalThis.window === undefined) return;
-  try {
-    const db = await getDB();
-    await db.put(STORE_NAME, record);
-  } catch (error) {
-    console.error('[storage] Failed to save conversation', error);
-  }
-}
-
 export async function saveAllConversations(
   records: ConversationRecord[],
 ): Promise<void> {
@@ -78,25 +66,5 @@ export async function saveAllConversations(
     await Promise.all([...deletePromises, ...putPromises, tx.done]);
   } catch (error) {
     console.error('[storage] Failed to save conversations', error);
-  }
-}
-
-export async function deleteConversation(localId: string): Promise<void> {
-  if (globalThis.window === undefined) return;
-  try {
-    const db = await getDB();
-    await db.delete(STORE_NAME, localId);
-  } catch (error) {
-    console.error('[storage] Failed to delete conversation', error);
-  }
-}
-
-export async function clearAllConversations(): Promise<void> {
-  if (globalThis.window === undefined) return;
-  try {
-    const db = await getDB();
-    await db.clear(STORE_NAME);
-  } catch (error) {
-    console.error('[storage] Failed to clear conversations', error);
   }
 }

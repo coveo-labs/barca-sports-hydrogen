@@ -10,7 +10,6 @@ interface UseConversationScrollArgs {
 interface ConversationScrollApi {
   containerRef: RefObject<HTMLDivElement>;
   queueScrollToMessage: (messageId: string) => void;
-  setAutoScrollSuspended: (isSuspended: boolean) => void;
   resetScrollState: () => void;
 }
 
@@ -76,10 +75,6 @@ export function useConversationScroll({
     suspendAutoScrollRef.current = true;
   }, []);
 
-  const setAutoScrollSuspended = useCallback((isSuspended: boolean) => {
-    suspendAutoScrollRef.current = isSuspended;
-  }, []);
-
   const resetScrollState = useCallback(() => {
     pendingScrollMessageIdRef.current = null;
     suspendAutoScrollRef.current = false;
@@ -88,7 +83,6 @@ export function useConversationScroll({
   return {
     containerRef,
     queueScrollToMessage,
-    setAutoScrollSuspended,
     resetScrollState,
   };
 }

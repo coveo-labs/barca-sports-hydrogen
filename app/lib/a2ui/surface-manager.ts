@@ -48,12 +48,6 @@ export function serializeSurface(
     dataModelData: surface.dataModel.getAll(),
     isRendered: surface.isRendered,
   };
-  console.log('[serializeSurface] Serialized surface:', {
-    surfaceId: serialized.surfaceId,
-    componentCount: serialized.components.length,
-    dataModelKeys: Object.keys(serialized.dataModelData),
-    isRendered: serialized.isRendered,
-  });
   return serialized;
 }
 
@@ -63,8 +57,6 @@ export function serializeSurface(
 export function deserializeSurface(
   serialized: SerializableSurfaceState,
 ): SurfaceState {
-  console.log('[deserializeSurface] Input:', serialized);
-
   const dataModel = new DataModelStore();
   // Reconstruct data model from serialized data
   if (
@@ -78,15 +70,11 @@ export function deserializeSurface(
           value,
         }),
       );
-      console.log('[deserializeSurface] Data entries:', dataEntries);
       if (dataEntries.length > 0) {
         dataModel.update(dataEntries as any);
       }
     } catch (error) {
-      console.error(
-        '[deserializeSurface] Error processing dataModelData:',
-        error,
-      );
+      // dataModelData malformed — continue with empty model
     }
   }
 
@@ -107,13 +95,6 @@ export function deserializeSurface(
     dataModel,
     isRendered: serialized.isRendered ?? false,
   };
-
-  console.log('[deserializeSurface] Output:', {
-    surfaceId: surface.surfaceId,
-    root: surface.root,
-    componentCount: surface.components.size,
-    dataModelKeys: Object.keys(surface.dataModel.getAll()),
-  });
 
   return surface;
 }
@@ -193,12 +174,8 @@ export class SurfaceManager {
       if (component.component && typeof component.component === 'object') {
         const keys = Object.keys(component.component);
         if (keys.length > 0) {
-          catalogComponentId = keys[0]; // First key is the component type
-        } else {
-          console.error('Component has empty component object:', component);
+          catalogComponentId = keys[0];
         }
-      } else {
-        console.error('Component missing component property:', component);
       }
 
       const componentDef: ComponentDefinition = {

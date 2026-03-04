@@ -321,16 +321,3 @@ export function generateId(): string {
     .toString(36)
     .slice(2, 8)}`;
 }
-
-export function getProductGridClass(count: number) {
-  if (count >= 6) {
-    return 'sm:grid-cols-2 xl:grid-cols-3';
-  }
-  if (count >= 4) {
-    return 'sm:grid-cols-2 lg:grid-cols-3';
-  }
-  if (count >= 2) {
-    return 'sm:grid-cols-2';
-  }
-  return 'sm:grid-cols-1';
-}

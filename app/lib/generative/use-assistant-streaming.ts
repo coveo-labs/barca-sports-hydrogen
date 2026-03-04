@@ -169,19 +169,12 @@ export function useAssistantStreaming({
       };
 
       const syncA2UISurfaces = () => {
-        console.log(
-          '[syncA2UISurfaces] Called, assistantMessageId:',
-          assistantMessageId,
-        );
         if (!assistantMessageId) {
-          console.warn('[syncA2UISurfaces] No assistantMessageId, skipping');
           return;
         }
         const surfaceManager = a2uiProcessor.getSurfaceManager();
         const surfaceIds = surfaceManager.getAllSurfaceIds();
-        console.log('[syncA2UISurfaces] Surface IDs:', surfaceIds);
         if (surfaceIds.length === 0) {
-          console.warn('[syncA2UISurfaces] No surfaces to sync');
           return;
         }
 
@@ -189,22 +182,10 @@ export function useAssistantStreaming({
         for (const surfaceId of surfaceIds) {
           const surface = surfaceManager.getSurface(surfaceId);
           if (surface) {
-            console.log('[syncA2UISurfaces] Serializing surface:', {
-              surfaceId,
-              isRendered: surface.isRendered,
-              root: surface.root,
-              componentCount: surface.components.size,
-              dataModelKeys: Object.keys(surface.dataModel.getAll()),
-            });
             // Serialize surface for React state storage
             surfaces[surfaceId] = serializeSurface(surface);
           }
         }
-
-        console.log('[syncA2UISurfaces] Syncing surfaces to message:', {
-          messageId: assistantMessageId,
-          surfaceCount: Object.keys(surfaces).length,
-        });
 
         applyUpdate((conversation) => {
           const messages = [...conversation.messages];
@@ -212,10 +193,6 @@ export function useAssistantStreaming({
             (message) => message.id === assistantMessageId,
           );
           if (index === -1) {
-            console.error(
-              '[syncA2UISurfaces] Message not found:',
-              assistantMessageId,
-            );
             return conversation;
           }
           const existingMetadata = messages[index].metadata ?? {};
@@ -226,10 +203,6 @@ export function useAssistantStreaming({
               a2uiSurfaces: surfaces,
             },
           };
-          console.log('[syncA2UISurfaces] Updated message metadata:', {
-            messageId: assistantMessageId,
-            surfaceCount: Object.keys(surfaces).length,
-          });
           return {...conversation, messages};
         });
       };
@@ -704,7 +677,6 @@ export function useAssistantStreaming({
             }
             case 'STATE_SNAPSHOT': {
               updateSessionFromEvent(parsedEvent);
-              a2uiProcessor.processStateSnapshot(parsedEvent);
               return;
             }
             case 'CUSTOM': {

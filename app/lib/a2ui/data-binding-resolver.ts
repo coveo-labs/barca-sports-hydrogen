@@ -35,21 +35,21 @@ export function resolveBoundValue(
 
     // Check for literal values to write to the model
     if ('literalString' in binding) {
-      dataModel.update(path, [
+      dataModel.update([
         {
           key: path.split('/').pop() || '',
           valueString: String(binding.literalString),
         },
       ]);
     } else if ('literalNumber' in binding) {
-      dataModel.update(path, [
+      dataModel.update([
         {
           key: path.split('/').pop() || '',
           valueNumber: Number(binding.literalNumber),
         },
       ]);
     } else if ('literalBoolean' in binding) {
-      dataModel.update(path, [
+      dataModel.update([
         {
           key: path.split('/').pop() || '',
           valueBoolean: Boolean(binding.literalBoolean),
@@ -128,21 +128,11 @@ export function resolveTemplateData(
   path: string,
   dataModel: DataModelStore,
 ): unknown[] {
-  console.log('[resolveTemplateData] Resolving path:', path);
   const value = dataModel.get(path);
-  console.log('[resolveTemplateData] Retrieved value:', value);
 
   if (Array.isArray(value)) {
-    console.log(
-      '[resolveTemplateData] Returning array of',
-      value.length,
-      'items',
-    );
     return value;
   }
 
-  console.warn(
-    '[resolveTemplateData] Value is not an array, returning empty array',
-  );
   return [];
 }

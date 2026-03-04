@@ -1,5 +1,6 @@
 import type {ReactNode} from 'react';
 import type {SurfaceState} from '~/lib/a2ui/surface-manager';
+import {ConversationAnswer} from './ConversationAnswer';
 import {ComponentRenderer} from './ComponentRenderer';
 
 interface SurfaceRendererProps {
@@ -22,21 +23,8 @@ export function SurfaceRenderer({
   onSearchAction,
   onFollowupAction,
 }: SurfaceRendererProps): ReactNode {
-  console.log('[SurfaceRenderer] Rendering surface:', {
-    surfaceId: surface.surfaceId,
-    isRendered: surface.isRendered,
-    root: surface.root,
-    componentCount: surface.components.size,
-    dataModelKeys: Object.keys(surface.dataModel.getAll()),
-    dataModel: surface.dataModel.getAll(),
-  });
-
   if (!surface.isRendered || !surface.root) {
     // Surface not ready to render yet (waiting for beginRendering)
-    console.warn('[SurfaceRenderer] Surface not ready:', {
-      isRendered: surface.isRendered,
-      root: surface.root,
-    });
     return null;
   }
 
@@ -49,23 +37,13 @@ export function SurfaceRenderer({
 
   const renderComponent = (componentId: string): ReactNode => {
     const component = surface.components.get(componentId);
-    console.log('[SurfaceRenderer] Rendering component:', {
-      componentId,
-      found: !!component,
-    });
     if (!component) {
-      console.warn(`Component not found: ${componentId}`);
       return null;
     }
 
     const {catalogComponentId} = component;
     const componentProps =
       (component.component as any)[catalogComponentId] || {};
-    console.log('[SurfaceRenderer] Component details:', {
-      componentId,
-      catalogComponentId,
-      componentProps,
-    });
 
     // Handle layout components that have children
     if (catalogComponentId === 'Column') {
@@ -165,9 +143,9 @@ export function SurfaceRenderer({
         .filter(Boolean);
 
       return (
-        <div key={componentId} className="flex flex-col gap-6 w-full">
+        <ConversationAnswer key={componentId}>
           {renderedChildren}
-        </div>
+        </ConversationAnswer>
       );
     }
 
@@ -187,7 +165,6 @@ export function SurfaceRenderer({
   };
 
   // Start rendering from root component
-  console.log('[SurfaceRenderer] Rendering root component:', surface.root);
   const rootResult = renderComponent(surface.root);
 
   // Collect the set of component IDs that are referenced as template sub-components

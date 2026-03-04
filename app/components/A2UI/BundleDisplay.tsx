@@ -204,18 +204,8 @@ function SlotCard({
 
       {/* Price */}
       <div className="flex items-baseline gap-1.5 mt-0.5">
-        <span
-          className={`text-sm font-semibold ${hasPromo ? 'text-gray-400 line-through' : 'text-gray-900'}`}
-        >
-          <Money
-            data={{
-              amount: product.price.toString(),
-              currencyCode: product.currency as any,
-            }}
-          />
-        </span>
         {hasPromo && (
-          <span className="text-sm font-semibold text-gray-900">
+          <span className="text-sm font-semibold text-gray-400 line-through">
             <Money
               data={{
                 amount: product.originalPrice!.toString(),
@@ -224,6 +214,14 @@ function SlotCard({
             />
           </span>
         )}
+        <span className="text-sm font-semibold text-gray-900">
+          <Money
+            data={{
+              amount: product.price.toString(),
+              currencyCode: product.currency as any,
+            }}
+          />
+        </span>
       </div>
 
       {/* Add to Cart button */}
@@ -293,15 +291,6 @@ export function BundleDisplay({
     }
     return sum;
   }, 0);
-
-  console.log('[BundleDisplay] Rendering:', {
-    title,
-    bundleCount: bundles.length,
-    activeIndex,
-    activeBundleId: activeBundle.bundleId,
-    slotCount: slotProducts.length,
-    total,
-  });
 
   return (
     <div className="w-full flex flex-col rounded-2xl border border-gray-200 bg-white overflow-hidden shadow-sm">

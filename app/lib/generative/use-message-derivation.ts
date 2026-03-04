@@ -14,7 +14,6 @@ type UseMessageDerivationReturn = {
   activeConversation: ConversationRecord | null;
   messages: ConversationMessage[];
   visibleMessages: ConversationMessage[];
-  hasVisibleMessages: boolean;
   latestUserMessageId: string | null;
   latestStreamingAssistantId: string | null;
 };
@@ -49,8 +48,6 @@ export function useMessageDerivation({
     [messages],
   );
 
-  const hasVisibleMessages = visibleMessages.length > 0;
-
   const latestUserMessageId = useMemo(() => {
     for (let index = visibleMessages.length - 1; index >= 0; index -= 1) {
       const candidate = visibleMessages[index];
@@ -82,7 +79,6 @@ export function useMessageDerivation({
     activeConversation,
     messages,
     visibleMessages,
-    hasVisibleMessages,
     latestUserMessageId,
     latestStreamingAssistantId,
   };

@@ -13,8 +13,6 @@ export function NextActionsBar({
   onSearchAction,
   onFollowupAction,
 }: NextActionsBarProps) {
-  console.log('[NextActionsBar] Rendering with actions:', actions);
-
   const handleClick = (action: Record<string, unknown>) => {
     const actionData = action.action as
       | {type: string; query?: string; message?: string}
