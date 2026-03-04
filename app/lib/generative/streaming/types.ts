@@ -82,6 +82,10 @@ export type CustomEvent = {
   value: unknown;
 };
 
+export type TurnStartedEvent = {
+  type: 'turn_started';
+};
+
 export type UnknownEvent = {
   type: 'UNKNOWN';
   event: string;
@@ -136,6 +140,7 @@ export type ActivitySnapshotEvent = {
 };
 
 export type AssistantStreamEvent =
+  | TurnStartedEvent
   | RunStartedEvent
   | RunFinishedEvent
   | RunErrorEvent

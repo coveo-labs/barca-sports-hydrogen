@@ -494,6 +494,16 @@ export function useAssistantStreaming({
           const parsedEvent = parseAssistantStreamEvent(event);
 
           switch (parsedEvent.type) {
+            case 'turn_started': {
+              // Theres a platform-level envelope — arrives before RUN_STARTED so
+              // we use it to show the initial thinking status immediately.
+              if (thinkingUpdates.length === 0) {
+                recordThinkingUpdate(DEFAULT_STATUS_MESSAGE, 'status');
+              } else {
+                emitThinkingSnapshot();
+              }
+              return;
+            }
             case 'RUN_STARTED': {
               updateSessionFromEvent(parsedEvent);
 
