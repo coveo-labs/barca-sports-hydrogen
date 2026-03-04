@@ -77,8 +77,8 @@ export function ProductCarousel({
                     productId={productId}
                     name={(product.ec_name as string) || ''}
                     imageUrl={(product.ec_image as string) || ''}
-                    price={(product.ec_price as number) || 0}
-                    originalPrice={product.ec_promo_price as number | undefined}
+                    price={((product.ec_promo_price ?? product.ec_price) as number) || 0}
+                    originalPrice={product.ec_promo_price != null ? (product.ec_price as number) : undefined}
                     currency={(product.ec_currency as string) || 'USD'}
                     rating={product.ec_rating as number | undefined}
                     url={(product.ec_url as string) || '#'}

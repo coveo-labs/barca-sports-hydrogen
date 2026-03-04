@@ -47,29 +47,34 @@ function extractProductFromSurface(
   if (!p) return null;
 
   // Prices are stored as strings by the data model builder (str(float(price)))
-  const rawPrice = p.ec_price;
-  if (rawPrice === undefined || rawPrice === null) return null;
-  const price =
-    typeof rawPrice === 'number' ? rawPrice : parseFloat(rawPrice as string);
-  if (isNaN(price)) return null;
+  const rawEcPrice = p.ec_price;
+  if (rawEcPrice === undefined || rawEcPrice === null) return null;
+  const ecPrice =
+    typeof rawEcPrice === 'number'
+      ? rawEcPrice
+      : parseFloat(rawEcPrice as string);
+  if (isNaN(ecPrice)) return null;
 
   const rawPromoPrice = p.ec_promo_price;
-  const originalPrice =
+  const ecPromoPrice =
     rawPromoPrice !== undefined && rawPromoPrice !== null
       ? typeof rawPromoPrice === 'number'
         ? rawPromoPrice
         : parseFloat(rawPromoPrice as string)
       : undefined;
 
+  // price = what the customer pays now (promo if on sale, otherwise regular)
+  // originalPrice = full price shown struck-through, only set when on promo
+  const hasPromo = ecPromoPrice !== undefined && !isNaN(ecPromoPrice);
+  const price = hasPromo ? ecPromoPrice! : ecPrice;
+  const originalPrice = hasPromo ? ecPrice : undefined;
+
   return {
     productId: (p.ec_product_id as string) || '',
     name: (p.ec_name as string) || '',
     imageUrl: (p.ec_image as string) || '',
     price,
-    originalPrice:
-      originalPrice !== undefined && isNaN(originalPrice)
-        ? undefined
-        : originalPrice,
+    originalPrice,
     currency: (p.ec_currency as string) || 'USD',
     rating: p.ec_rating as number | undefined,
     url: (p.ec_url as string) || '#',
@@ -265,15 +270,10 @@ export function BundleDisplay({
   }));
 
   // Compute bundle total from resolved prices
+  // product.price is already the effective (sale or regular) price
   const total = slotProducts.reduce((sum, {product}) => {
     if (!product) return sum;
-    // Use promo price if lower, otherwise regular price
-    const effectivePrice =
-      product.originalPrice !== undefined &&
-      product.originalPrice < product.price
-        ? product.originalPrice
-        : product.price;
-    return sum + effectivePrice;
+    return sum + product.price;
   }, 0);
 
   const currency =
