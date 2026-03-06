@@ -1,15 +1,20 @@
+import {useState} from 'react';
 import {Money} from '@shopify/hydrogen';
 import {NavLink} from 'react-router';
 import {A2UIAddToCartButton} from './A2UIAddToCartButton';
+import {ProductDrawer} from './ProductDrawer';
 
 interface ComparisonProduct {
   productId: string;
   name: string;
+  brand?: string;
   imageUrl: string;
   price: number;
   originalPrice?: number;
   currency?: string;
   rating?: number;
+  description?: string;
+  category?: string;
   url: string;
   recommended?: boolean;
   // Additional attributes for comparison
@@ -112,6 +117,16 @@ export function ComparisonTable({
   isLoading = false,
   onProductSelect,
 }: ComparisonTableProps) {
+  const [drawerProduct, setDrawerProduct] = useState<ComparisonProduct | null>(null);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+
+  const openDrawer = (product: ComparisonProduct) => {
+    setDrawerProduct(product);
+    setIsDrawerOpen(true);
+  };
+
+  const closeDrawer = () => setIsDrawerOpen(false);
+
   if (isLoading && products.length === 0) {
     return <ComparisonTableSkeleton />;
   }
@@ -161,20 +176,20 @@ export function ComparisonTable({
                       )
                     )}
 
-                    <NavLink
-                      to={product.url}
-                      onClick={() => onProductSelect?.(product.productId)}
-                      className="group block"
+                    <button
+                      type="button"
+                      onClick={() => openDrawer(product)}
+                      className="group block w-full text-left"
                     >
                       <img
                         src={product.imageUrl}
                         alt={product.name}
                         className="h-[200px] w-[200px] mx-auto object-cover bg-gray-50 group-hover:opacity-90 transition-opacity"
                       />
-                      <p className="mt-3 text-sm font-semibold text-gray-900 leading-snug">
+                      <p className="mt-3 text-sm font-semibold text-gray-900 leading-snug truncate">
                         {product.name}
                       </p>
-                    </NavLink>
+                    </button>
                   </th>
                 );
               })}
@@ -283,6 +298,21 @@ export function ComparisonTable({
           </tbody>
         </table>
       </div>
+      <ProductDrawer
+          isOpen={isDrawerOpen}
+          onClose={closeDrawer}
+          productId={drawerProduct?.productId ?? ''}
+          name={drawerProduct?.name ?? ''}
+          brand={drawerProduct?.brand}
+          imageUrl={drawerProduct?.imageUrl ?? ''}
+          price={drawerProduct?.price ?? 0}
+          originalPrice={drawerProduct?.originalPrice}
+          currency={drawerProduct?.currency}
+          description={drawerProduct?.description}
+          category={drawerProduct?.category}
+          rating={drawerProduct?.rating}
+          productUrl={drawerProduct?.url ?? '#'}
+        />
     </div>
   );
 }

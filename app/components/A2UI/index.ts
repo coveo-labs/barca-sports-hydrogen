@@ -6,6 +6,7 @@ export {ComparisonSummary} from './ComparisonSummary';
 export {BundleDisplay} from './BundleDisplay';
 export {ConversationAnswer} from './ConversationAnswer';
 export {NextActionsBar} from './NextActionsBar';
+export {ProductDrawer} from './ProductDrawer';
 
 // Component Rendering
 export {ComponentRenderer} from './ComponentRenderer';

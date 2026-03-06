@@ -3,6 +3,7 @@ import {Money} from '@shopify/hydrogen';
 import {NavLink} from 'react-router';
 import type {SurfaceState} from '~/lib/a2ui/surface-manager';
 import {A2UIAddToCartButton} from './A2UIAddToCartButton';
+import {ProductDrawer} from './ProductDrawer';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -72,23 +73,29 @@ function extractProductFromSurface(
   return {
     productId: (p.ec_product_id as string) || '',
     name: (p.ec_name as string) || '',
+    brand: (p.ec_brand as string) || undefined,
     imageUrl: (p.ec_image as string) || '',
     price,
     originalPrice,
     currency: (p.ec_currency as string) || 'USD',
     rating: p.ec_rating as number | undefined,
-    url: (p.ec_url as string) || '#',
+    description: (p.ec_description as string) || undefined,
+    category: (p.ec_category as string) || undefined,
+    url: (p.clickUri as string) || '#',
   };
 }
 
 interface ProductSlotData {
   productId: string;
   name: string;
+  brand?: string;
   imageUrl: string;
   price: number;
   originalPrice?: number;
   currency: string;
   rating?: number;
+  description?: string;
+  category?: string;
   url: string;
 }
 
@@ -153,10 +160,12 @@ function SlotCard({
   categoryLabel,
   product,
   onProductSelect,
+  onImageClick,
 }: {
   categoryLabel: string;
   product: ProductSlotData | null;
   onProductSelect?: (productId: string) => void;
+  onImageClick?: (product: ProductSlotData) => void;
 }) {
   if (!product) {
     // Skeleton while this specific slot's data loads
@@ -185,10 +194,10 @@ function SlotCard({
       </span>
 
       {/* Product image with In Stock badge */}
-      <NavLink
-        to={product.url}
-        onClick={() => onProductSelect?.(product.productId)}
-        className="group relative block"
+      <button
+        type="button"
+        onClick={() => onImageClick?.(product)}
+        className="group relative block w-full text-left"
         data-product-id={product.productId}
       >
         <img
@@ -200,12 +209,12 @@ function SlotCard({
         <span className="absolute top-2 right-2 bg-green-500 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full">
           In Stock
         </span>
-      </NavLink>
+      </button>
 
       {/* Product name */}
-      <p className="text-sm font-semibold text-gray-900 line-clamp-2 mt-2 truncate">
-        {product.name}
-      </p>
+        <p className="text-sm font-semibold text-gray-900 truncate mt-2">
+          {product.name}
+        </p>
 
       {/* Price */}
       <div className="flex items-baseline gap-1.5 mt-0.5">
@@ -254,6 +263,15 @@ export function BundleDisplay({
   onProductSelect,
 }: BundleDisplayProps) {
   const [activeIndex, setActiveIndex] = useState(0);
+  const [drawerProduct, setDrawerProduct] = useState<ProductSlotData | null>(null);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+
+  const openDrawer = (product: ProductSlotData) => {
+    setDrawerProduct(product);
+    setIsDrawerOpen(true);
+  };
+
+  const closeDrawer = () => setIsDrawerOpen(false);
 
   if (isLoading && (!bundles || bundles.length === 0)) {
     return <BundleDisplaySkeleton />;
@@ -293,6 +311,7 @@ export function BundleDisplay({
   }, 0);
 
   return (
+    <>
     <div className="w-full flex flex-col rounded-2xl border border-gray-200 bg-white overflow-hidden shadow-sm">
       {/* Header */}
       <div className="px-6 pt-6 pb-0">
@@ -346,6 +365,7 @@ export function BundleDisplay({
                 categoryLabel={categoryLabel}
                 product={product}
                 onProductSelect={onProductSelect}
+                onImageClick={openDrawer}
               />
             ))}
           </div>
@@ -402,5 +422,22 @@ export function BundleDisplay({
         )}
       </div>
     </div>
+
+      <ProductDrawer
+          isOpen={isDrawerOpen}
+          onClose={closeDrawer}
+          productId={drawerProduct?.productId ?? ''}
+          name={drawerProduct?.name ?? ''}
+          brand={drawerProduct?.brand}
+          imageUrl={drawerProduct?.imageUrl ?? ''}
+          price={drawerProduct?.price ?? 0}
+          originalPrice={drawerProduct?.originalPrice}
+          currency={drawerProduct?.currency ?? 'USD'}
+          description={drawerProduct?.description}
+          category={drawerProduct?.category}
+          rating={drawerProduct?.rating}
+          productUrl={drawerProduct?.url ?? '#'}
+        />
+    </>
   );
 }

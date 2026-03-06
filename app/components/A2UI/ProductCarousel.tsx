@@ -76,12 +76,15 @@ export function ProductCarousel({
                   <A2UIProductCard
                     productId={productId}
                     name={(product.ec_name as string) || ''}
+                    brand={product.ec_brand as string | undefined}
                     imageUrl={(product.ec_image as string) || ''}
                     price={((product.ec_promo_price ?? product.ec_price) as number) || 0}
                     originalPrice={product.ec_promo_price != null ? (product.ec_price as number) : undefined}
                     currency={(product.ec_currency as string) || 'USD'}
                     rating={product.ec_rating as number | undefined}
-                    url={(product.ec_url as string) || '#'}
+                    description={product.ec_description as string | undefined}
+                    category={product.ec_category as string | undefined}
+                    url={(product.clickUri as string) || '#'}
                     colors={product.ec_colors as string[] | undefined}
                     selectedColor={
                       product.ec_selected_color as string | undefined

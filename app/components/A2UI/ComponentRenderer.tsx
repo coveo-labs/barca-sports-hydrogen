@@ -61,12 +61,15 @@ export function ComponentRenderer({
           key={componentId}
           productId={(productData.ec_product_id as string) || componentId}
           name={(productData.ec_name as string) || ''}
+          brand={productData.ec_brand as string | undefined}
           imageUrl={(productData.ec_image as string) || ''}
           price={(productData.ec_price as number) || 0}
           originalPrice={productData.ec_promo_price as number | undefined}
           currency={(productData.ec_currency as string) || 'USD'}
           rating={productData.ec_rating as number | undefined}
-          url={(productData.ec_url as string) || '#'}
+          description={productData.ec_description as string | undefined}
+          category={productData.ec_category as string | undefined}
+          url={(productData.clickUri as string) || '#'}
           colors={productData.ec_colors as string[] | undefined}
           selectedColor={productData.ec_selected_color as string | undefined}
           onSelect={() =>
@@ -134,12 +137,15 @@ export function ComponentRenderer({
         return {
           productId: (p.ec_product_id as string) || '',
           name: (p.ec_name as string) || '',
+          brand: (p.ec_brand as string) || undefined,
           imageUrl: (p.ec_image as string) || '',
           price: isOnSale ? promoPrice! : regularPrice,
           originalPrice: isOnSale ? regularPrice : undefined,
           currency: (p.ec_currency as string) || 'USD',
           rating: p.ec_rating != null ? Number(p.ec_rating) : undefined,
-          url: (p.ec_url as string) || '#',
+          description: (p.ec_description as string) || undefined,
+          category: (p.ec_category as string) || undefined,
+          url: (p.clickUri as string) || '#',
           // Spread all remaining keys so custom attributes (standout, trade_off,
           // best_for, etc.) are accessible as product[attr] in the table rows.
           ...p,

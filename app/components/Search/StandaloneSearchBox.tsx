@@ -26,9 +26,10 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
   const conversationalPrompts = useMemo(
     () => [
       'Build a surf travel checklist with board protection and repairs',
-      'Compare waterproof deck bags for a weekend surf trip',
+      'Compare wetsuits for cold water surfing',
       'Suggest a paddleboarding accessory kit for beginners',
-      'What safety gear do I need for a twilight kayak tour?'
+      'What safety gear do I need for a twilight kayak tour?',
+      'Compare waterproof deck bags for a weekend surf trip'
     ],
     [],
   );

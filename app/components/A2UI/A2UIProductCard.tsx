@@ -1,16 +1,22 @@
-import {Money} from '@shopify/hydrogen';
-import {StarIcon} from '@heroicons/react/20/solid';
 import {NavLink} from 'react-router';
+import {Money} from '@shopify/hydrogen';
+import type {CurrencyCode} from '@shopify/hydrogen/storefront-api-types';
+import {StarIcon} from '@heroicons/react/20/solid';
+import {useState} from 'react';
 import {A2UIAddToCartButton} from './A2UIAddToCartButton';
+import {ProductDrawer} from './ProductDrawer';
 
 interface A2UIProductCardProps {
   productId: string;
   name: string;
+  brand?: string;
   imageUrl: string;
   price: number;
   originalPrice?: number;
   currency?: string;
   rating?: number;
+  description?: string;
+  category?: string;
   url: string;
   colors?: string[];
   selectedColor?: string;
@@ -19,21 +25,31 @@ interface A2UIProductCardProps {
 
 /**
  * A2UI-compatible ProductCard component
- * Receives data via A2UI data binding resolution
+ * Receives data via A2UI data binding resolution (ec_* fields from data model).
  */
 export function A2UIProductCard({
   productId,
   name,
+  brand,
   imageUrl,
   price,
   originalPrice,
   currency = 'USD',
   rating,
+  description,
+  category,
   url,
   colors,
   selectedColor,
   onSelect,
 }: A2UIProductCardProps) {
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+
+  const handleCardClick = () => {
+    onSelect?.();
+    setIsDrawerOpen(true);
+  };
+
   if (price === undefined || price === null) {
     return (
       <div className="text-red-500 text-xs">Error: Invalid product data</div>
@@ -43,15 +59,14 @@ export function A2UIProductCard({
   // originalPrice is the pre-discount (higher) price; price is the sale price.
   // hasPromo is true when there is a lower sale price than the original.
   const hasPromo = originalPrice !== undefined && originalPrice > price;
-  const displayRating = rating || 0;
 
   return (
     <div className="w-full">
-      <NavLink
+      <button
+        type="button"
         data-product-id={productId}
-        onClick={onSelect}
-        to={url}
-        className="group"
+        onClick={handleCardClick}
+        className="group w-full text-left"
       >
         <img
           loading="lazy"
@@ -61,25 +76,16 @@ export function A2UIProductCard({
           src={imageUrl}
           className="aspect-square w-full rounded-lg bg-gray-200 object-cover group-hover:opacity-75"
         />
-        <h3 className="result-title mt-4 text-sm text-gray-700 line-clamp-2 truncate">
+        <h3 className="result-title mt-4 text-sm text-gray-700 line-clamp-2">
           {name}
         </h3>
-        <div className="flex mt-1">
-          {Array.from(Array(5).keys()).map((i) => (
-            <StarIcon
-              key={i}
-              height={20}
-              fill={i < Math.floor(displayRating) ? '#fde047' : '#94a3b8'}
-            />
-          ))}
-        </div>
         <div className="flex justify-between items-center mt-1 text-sm font-medium">
           {/* Current (sale) price */}
           <div className="text-gray-900">
             <Money
               data={{
                 amount: price.toString(),
-                currencyCode: currency as any,
+                currencyCode: currency as CurrencyCode,
               }}
             />
           </div>
@@ -89,14 +95,14 @@ export function A2UIProductCard({
               <Money
                 data={{
                   amount: originalPrice!.toString(),
-                  currencyCode: currency as any,
+                  currencyCode: currency as CurrencyCode,
                 }}
               />
             </div>
           )}
         </div>
-      </NavLink>
-      {/* Add to Cart icon button — outside NavLink to avoid nested interactive elements */}
+      </button>
+      {/* Add to Cart icon button — outside card button to avoid nested interactive elements */}
       <div className="flex justify-end -mt-6 relative z-10">
         <A2UIAddToCartButton
           variant="icon"
@@ -122,6 +128,21 @@ export function A2UIProductCard({
           ))}
         </div>
       )}
+
+      <ProductDrawer
+        isOpen={isDrawerOpen}
+        onClose={() => setIsDrawerOpen(false)}
+        productId={productId}
+        name={name}
+        brand={brand}
+        imageUrl={imageUrl}
+        price={price}
+        originalPrice={originalPrice}
+        currency={currency}
+        description={description}
+        category={category}
+        productUrl={url}
+      />
     </div>
   );
 }
