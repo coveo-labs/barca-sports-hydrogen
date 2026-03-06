@@ -6,6 +6,23 @@ import {XMarkIcon} from '@heroicons/react/24/outline';
 import {Fragment} from 'react';
 import {A2UIAddToCartButton} from './A2UIAddToCartButton';
 
+/**
+ * Parse Color and Size from a Coveo ec_name variant string.
+ * Expected format: "Base Name - Color" or "Base Name - Color / Size"
+ * e.g. "HydroGlide Inflatable Paddleboard - Yellow" → {Color: 'Yellow'}
+ * e.g. "VividDenim Short - Green / L" → {Color: 'Green', Size: 'L'}
+ */
+function parseVariantsFromName(name: string): {Color?: string; Size?: string} {
+  const dashIdx = name.lastIndexOf(' - ');
+  if (dashIdx === -1) return {};
+  const variantPart = name.slice(dashIdx + 3);
+  const parts = variantPart.split(' / ').map((p) => p.trim()).filter(Boolean);
+  return {
+    ...(parts[0] ? {Color: parts[0]} : {}),
+    ...(parts[1] ? {Size: parts[1]} : {}),
+  };
+}
+
 interface ProductDrawerProps {
   isOpen: boolean;
   onClose: () => void;
@@ -37,6 +54,13 @@ export function ProductDrawer({
   productUrl,
 }: ProductDrawerProps) {
   const hasPromo = originalPrice !== undefined && originalPrice > price;
+
+  const {Color, Size} = parseVariantsFromName(name);
+  const params = new URLSearchParams();
+  if (Color) params.set('Color', Color);
+  if (Size) params.set('Size', Size);
+  const qs = params.toString();
+  const resolvedUrl = productUrl ? `${productUrl}${qs ? `?${qs}` : ''}` : '#';
 
   return (
     <Transition show={isOpen} as={Fragment}>
@@ -147,7 +171,7 @@ export function ProductDrawer({
                   }}
                 />
                 <NavLink
-                  to={productUrl || '#'}
+                  to={resolvedUrl}
                   onClick={onClose}
                   className="block w-full text-center text-sm font-medium text-gray-700 border border-gray-300 rounded-full py-2.5 hover:bg-gray-50 transition-colors"
                 >

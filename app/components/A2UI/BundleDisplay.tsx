@@ -81,7 +81,7 @@ function extractProductFromSurface(
     rating: p.ec_rating as number | undefined,
     description: (p.ec_description as string) || undefined,
     category: (p.ec_category as string) || undefined,
-    url: (p.ec_url as string) || '#',
+    url: (p.clickUri as string) || '#',
   };
 }
 
@@ -212,15 +212,9 @@ function SlotCard({
       </button>
 
       {/* Product name */}
-      <NavLink
-        to={product.url}
-        onClick={() => onProductSelect?.(product.productId)}
-        className="hover:underline"
-      >
-        <p className="text-sm font-semibold text-gray-900 line-clamp-2 mt-2">
+        <p className="text-sm font-semibold text-gray-900 truncate mt-2">
           {product.name}
         </p>
-      </NavLink>
 
       {/* Price */}
       <div className="flex items-baseline gap-1.5 mt-0.5">

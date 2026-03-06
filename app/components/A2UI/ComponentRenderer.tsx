@@ -69,7 +69,7 @@ export function ComponentRenderer({
           rating={productData.ec_rating as number | undefined}
           description={productData.ec_description as string | undefined}
           category={productData.ec_category as string | undefined}
-          url={(productData.ec_url as string) || '#'}
+          url={(productData.clickUri as string) || '#'}
           colors={productData.ec_colors as string[] | undefined}
           selectedColor={productData.ec_selected_color as string | undefined}
           onSelect={() =>
@@ -145,7 +145,7 @@ export function ComponentRenderer({
           rating: p.ec_rating != null ? Number(p.ec_rating) : undefined,
           description: (p.ec_description as string) || undefined,
           category: (p.ec_category as string) || undefined,
-          url: (p.ec_url as string) || '#',
+          url: (p.clickUri as string) || '#',
           // Spread all remaining keys so custom attributes (standout, trade_off,
           // best_for, etc.) are accessible as product[attr] in the table rows.
           ...p,

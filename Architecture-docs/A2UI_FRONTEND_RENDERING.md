@@ -525,7 +525,7 @@ Skeleton: renders `SKELETON_CARD_COUNT` (4) `SkeletonCard` shimmer cards when
 | `ec_promo_price`         | Becomes `price` when lower than `ec_price`; `originalPrice` = `ec_price` |
 | `ec_currency`            | `currency`                                                               |
 | `ec_rating`              | `rating`                                                                 |
-| `ec_url`                 | `url`                                                                    |
+| `clickUri`                 | `url`                                                                    |
 | all remaining `p.*` keys | Spread onto `ComparisonProduct` for `attributes` row lookup              |
 
 Skeleton: renders `ComparisonTableSkeleton` (3 columns × 4 rows shimmer) when
@@ -589,7 +589,7 @@ component props (for a standalone `ProductCard` surface component).
 | `originalPrice` | `number \| undefined` — `ec_promo_price`    |
 | `currency`      | `string` — `ec_currency` (default `"USD"`)  |
 | `rating`        | `number \| undefined` — `ec_rating`         |
-| `url`           | `string` — `ec_url`                         |
+| `url`           | `string` — `clickUri`                         |
 | `colors`        | `string[] \| undefined` — `ec_colors`       |
 | `selectedColor` | `string \| undefined` — `ec_selected_color` |
 

@@ -186,16 +186,10 @@ export function ComparisonTable({
                         alt={product.name}
                         className="h-[200px] w-[200px] mx-auto object-cover bg-gray-50 group-hover:opacity-90 transition-opacity"
                       />
-                    </button>
-                    <NavLink
-                      to={product.url}
-                      onClick={() => onProductSelect?.(product.productId)}
-                      className="hover:underline"
-                    >
-                      <p className="mt-3 text-sm font-semibold text-gray-900 leading-snug">
+                      <p className="mt-3 text-sm font-semibold text-gray-900 leading-snug truncate">
                         {product.name}
                       </p>
-                    </NavLink>
+                    </button>
                   </th>
                 );
               })}

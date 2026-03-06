@@ -84,7 +84,7 @@ export function ProductCarousel({
                     rating={product.ec_rating as number | undefined}
                     description={product.ec_description as string | undefined}
                     category={product.ec_category as string | undefined}
-                    url={(product.ec_url as string) || '#'}
+                    url={(product.clickUri as string) || '#'}
                     colors={product.ec_colors as string[] | undefined}
                     selectedColor={
                       product.ec_selected_color as string | undefined
