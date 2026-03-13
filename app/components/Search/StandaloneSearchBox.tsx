@@ -143,6 +143,11 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
       // In conversational mode, use local inputValue
       if (isConversationalMode) {
         handleGenerativeSearch(query);
+        window.dataLayer.push({
+          event: 'search',
+          search_type: 'conversational',
+          search_term: encodeURIComponent(query),
+        });     
         return;
       }
 
