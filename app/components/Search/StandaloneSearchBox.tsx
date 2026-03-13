@@ -181,6 +181,12 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
 
   const handlePromptClick = (prompt: string) => {
     handleGenerativeSearch(prompt);
+    window.dataLayer = window.dataLayer || [];
+    window.dataLayer.push({
+      event: 'search',
+      search_type: 'conversational',
+      search_term: encodeURIComponent(prompt)
+    });
   };
 
   return (
