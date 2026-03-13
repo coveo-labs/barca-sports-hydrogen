@@ -317,11 +317,22 @@ export default function GenerativeShoppingAssistant() {
     [],
   );
 
+  const trackConversationalSearch = (userQuery: string) => {
+    window.dataLayer = window.dataLayer || [];
+    window.dataLayer.push({
+      event: 'search',
+      search_type: 'conversational',
+      search_term: userQuery,
+      conversation_id: window.location.search.split('=')[1] || null
+    })
+  };
+
   const handleSuggestionClick = useCallback(
     (text: string) => {
       if (isStreaming) return;
       setInputValue('');
       void sendMessage(text);
+      trackConversationalSearch(text);
     },
     [isStreaming, sendMessage],
   );
