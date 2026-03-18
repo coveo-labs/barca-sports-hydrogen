@@ -10,11 +10,13 @@ import {SearchSummary} from '~/components/Generative/SearchSummary';
 import {useEffect, useRef, useState} from 'react';
 import {useProductList} from '~/lib/coveo/engine';
 import {useFeatureSettings} from '~/components/FeaturePanel';
+import type {BadgePlacementContext} from '../Products/ProductBadges';
 
 interface SearchPageProps {
   headline: string;
   tagline: string;
   searchQuery?: string;
+  badgePlacementContext?: BadgePlacementContext;
 }
 
 function useWindowSize() {
@@ -48,6 +50,7 @@ export function FullSearch({
   headline,
   tagline,
   searchQuery = '',
+  badgePlacementContext = 'plp',
 }: SearchPageProps) {
   const facetsContainer = useRef<HTMLDivElement>(null);
   const numFacetsInline = useNumFacetsInline();
@@ -114,7 +117,10 @@ export function FullSearch({
         </h2>
         {hasResults ? (
           <>
-            <ProductList searchQuery={searchQuery} />
+            <ProductList
+              searchQuery={searchQuery}
+              badgePlacementContext={badgePlacementContext}
+            />
             <PaginationFooter />
           </>
         ) : (

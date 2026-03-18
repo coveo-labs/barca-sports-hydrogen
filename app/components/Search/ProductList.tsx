@@ -16,12 +16,13 @@ const trackedResponseIds = new Set<string>();
 
 interface ProductListProps {
   searchQuery?: string;
+  badgePlacementContext?: BadgePlacementContext;
 }
 
-export function ProductList({searchQuery = ''}: ProductListProps) {
-  const badgePlacementContext: BadgePlacementContext = searchQuery
-    ? 'search'
-    : 'plp';
+export function ProductList({
+  searchQuery = '',
+  badgePlacementContext = 'plp',
+}: ProductListProps) {
   const productList = useProductList() as {
     state: ProductListState;
     methods: Pick<

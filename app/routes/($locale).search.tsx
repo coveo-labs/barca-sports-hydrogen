@@ -81,6 +81,7 @@ export default function SearchPage() {
           headline={`Browse ${q}`}
           tagline="Find Your Perfect Splash! Dive into our collection and search for the water sports gear that takes your adventure to the next level. Your journey starts with a click!"
           searchQuery={searchQuery}
+          badgePlacementContext="search"
         />
       )}
     </SearchProvider>

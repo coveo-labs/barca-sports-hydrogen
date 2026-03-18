@@ -119,6 +119,11 @@ async function loadCriticalData({
     throw redirectToAvailableFirstVariant({product, variants, request});
   }
 
+  const firstVariant =
+    variants.find((n: ProductVariantFragment) => n.availableForSale) ||
+    variants[0];
+  product.selectedVariant = product.selectedVariant || firstVariant;
+
   return {
     product,
     variants,
