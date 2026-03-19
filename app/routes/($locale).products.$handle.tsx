@@ -1,28 +1,11 @@
-import type {
-  ProductFragment,
-  ProductVariantFragment,
-} from 'storefrontapi.generated';
+import {buildProductEnrichment} from '@coveo/headless/commerce';
+import {HeartIcon} from '@heroicons/react/24/outline';
 import {
   getSelectedProductOptions,
   useOptimisticVariant,
 } from '@shopify/hydrogen';
 import type {SelectedOption} from '@shopify/hydrogen/storefront-api-types';
-import {getVariantUrl} from '~/lib/shopify/variants';
-import {HeartIcon} from '@heroicons/react/24/outline';
-import {AddToCartButton} from '~/components/AddToCartButton';
-import {ImageGallery} from '~/components/Products/ImageGallery';
-import {Colors} from '~/components/Products/Colors';
-import {Sizes} from '~/components/Products/Sizes';
-import {Description} from '~/components/Products/Description';
-import {engineDefinition, useProductView} from '~/lib/coveo/engine';
-import {fetchRecommendationStaticState} from '~/lib/coveo/engine.server';
-import {useCallback, useEffect, useState} from 'react';
-import {ProductRecommendations} from '~/components/Products/Recommendations';
-import {RecommendationProvider} from '~/components/Search/Context';
-import {
-  ClientSideNavigatorContextProvider,
-  ServerSideNavigatorContextProvider,
-} from '~/lib/coveo/navigator.provider';
+import {useCallback, useEffect, useMemo, useState} from 'react';
 import {
   redirect,
   useLoaderData,
@@ -31,6 +14,31 @@ import {
   type LoaderFunctionArgs,
   type MetaFunction,
 } from 'react-router';
+import type {
+  ProductFragment,
+  ProductVariantFragment,
+} from 'storefrontapi.generated';
+import {AddToCartButton} from '~/components/AddToCartButton';
+import {Colors} from '~/components/Products/Colors';
+import {Description} from '~/components/Products/Description';
+import {ImageGallery} from '~/components/Products/ImageGallery';
+import type {BadgePlacement} from '~/components/Products/ProductBadges';
+import {ProductBadges} from '~/components/Products/ProductBadges';
+import {ProductRecommendations} from '~/components/Products/Recommendations';
+import {Sizes} from '~/components/Products/Sizes';
+import {RecommendationProvider} from '~/components/Search/Context';
+import {
+  engineDefinition,
+  getBadgePlacementId,
+  useEngine,
+  useProductView,
+} from '~/lib/coveo/engine';
+import {fetchRecommendationStaticState} from '~/lib/coveo/engine.server';
+import {
+  ClientSideNavigatorContextProvider,
+  ServerSideNavigatorContextProvider,
+} from '~/lib/coveo/navigator.provider';
+import {getVariantUrl} from '~/lib/shopify/variants';
 
 export const meta: MetaFunction<typeof loader> = ({data}) => {
   return [{title: `Hydrogen | ${data?.product.title ?? ''}`}];
@@ -114,7 +122,7 @@ async function loadCriticalData({
   const firstVariant =
     variants.find((n: ProductVariantFragment) => n.availableForSale) ||
     variants[0];
-  product.selectedVariant = firstVariant;
+  product.selectedVariant = product.selectedVariant || firstVariant;
 
   return {
     product,
@@ -165,6 +173,7 @@ function getColorOptionIdx(product: ProductFragment, color: string) {
 export default function Product() {
   const {product, variants, recommendationStaticState, accessToken} =
     useLoaderData<typeof loader>();
+  const engine = useEngine();
   const productView = useProductView();
   const selectedVariant = useOptimisticVariant(
     product.selectedVariant,
@@ -180,18 +189,26 @@ export default function Product() {
   const [availableSizes, setAvailableSizes] = useState<{
     [key: string]: boolean;
   }>({});
+  const [productBadgePlacements, setProductBadgePlacements] = useState<
+    BadgePlacement[] | undefined
+  >();
 
   // Find the variant that matches the current color and selected size
-  const variantForCart =
-    variants.find((variant: ProductVariantFragment) => {
-      const variantColor = variant.selectedOptions.find(
-        (opt: SelectedOption) => opt.name === 'Color',
-      )?.value;
-      const variantSize = variant.selectedOptions.find(
-        (opt: SelectedOption) => opt.name === 'Size',
-      )?.value;
-      return variantColor === currentColor && variantSize === currentSize;
-    }) || selectedVariant;
+  const variantForSelection = useMemo(
+    () =>
+      variants.find((variant: ProductVariantFragment) => {
+        const variantColor = variant.selectedOptions.find(
+          (opt: SelectedOption) => opt.name === 'Color',
+        )?.value;
+        const variantSize = variant.selectedOptions.find(
+          (opt: SelectedOption) => opt.name === 'Size',
+        )?.value;
+        return variantColor === currentColor && variantSize === currentSize;
+      }),
+    [variants, currentColor, currentSize],
+  );
+  const activeVariant = variantForSelection || selectedVariant;
+  const variantForCart = activeVariant;
 
   useEffect(() => {
     setDefaultImageIdx(getColorOptionIdx(product, currentColor));
@@ -215,22 +232,55 @@ export default function Product() {
   }, [variants, currentColor]);
 
   // UNI-1358
-  const productId = product.selectedVariant
-    ? product.selectedVariant.id
-    : product.id;
+  const productId = activeVariant?.id || product.id;
+  const productEnrichment = useMemo(
+    () =>
+      engine
+        ? buildProductEnrichment(engine, {
+            options: {
+              productId,
+              placementIds: [getBadgePlacementId('pdp')],
+            },
+          })
+        : null,
+    [engine, productId],
+  );
 
   const logProductView = useCallback(() => {
     productView.methods?.view({
       name: product.title,
       productId,
-      price: Number(selectedVariant.price.amount),
+      price: Number(activeVariant?.price.amount || 0),
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [product.title, selectedVariant.price.amount, handle, currentColor]);
+  }, [product.title, productId, activeVariant?.price.amount, handle, currentColor]);
 
   useEffect(() => {
     logProductView();
   }, [logProductView]);
+
+  useEffect(() => {
+    if (!productEnrichment) {
+      return;
+    }
+    setProductBadgePlacements(undefined);
+    productEnrichment.getBadges();
+  }, [productEnrichment]);
+
+  useEffect(() => {
+    if (!productEnrichment) {
+      return;
+    }
+
+    const unsubscribe = productEnrichment.subscribe(() => {
+      const productWithBadges = productEnrichment.state.products.find(
+        (enrichedProduct) => enrichedProduct.productId === productId,
+      );
+      setProductBadgePlacements(productWithBadges?.badgePlacements || []);
+    });
+
+    return unsubscribe;
+  }, [productEnrichment, productId]);
 
   const setColorParam = (color: string) => {
     setSearchParams((prev) => {
@@ -250,17 +300,23 @@ export default function Product() {
     <main className="pdp-container mx-auto max-w-7xl sm:px-6 sm:pt-16 lg:px-8">
       <div className="mx-auto max-w-2xl lg:max-w-none">
         <div className="lg:grid lg:grid-cols-2 lg:items-start lg:gap-x-8">
-          <ImageGallery
-            product={product}
-            defaultImgIdx={defaultImageIdx}
-            onImgSelect={(idx) => {
-              setDefaultImageIdx(idx);
-              setColorParam(
-                product.options.find((opt) => opt.name === 'Color')
-                  ?.optionValues[idx].name || '',
-              );
-            }}
-          />
+          <div className="relative">
+            <ProductBadges
+              badgePlacements={productBadgePlacements}
+              context="pdp"
+            />
+            <ImageGallery
+              product={product}
+              defaultImgIdx={defaultImageIdx}
+              onImgSelect={(idx) => {
+                setDefaultImageIdx(idx);
+                setColorParam(
+                  product.options.find((opt) => opt.name === 'Color')
+                    ?.optionValues[idx].name || '',
+                );
+              }}
+            />
+          </div>
 
           <div className="mt-10 px-4 sm:mt-16 sm:px-0 lg:mt-0">
             <Description product={product} />

@@ -21,6 +21,25 @@ import {
 } from '@coveo/headless-react/ssr-commerce';
 import {fetchToken} from '~/lib/auth/fetch-token';
 
+export type ProductBadgePlacementContext = 'plp' | 'search' | 'pdp';
+
+export const coveoRecommendationSlotIds = {
+  homepage: '046e2c92-63a5-47dd-8266-b8e5027ae031',
+  cart: 'b236b1e2-f9b1-4f5d-b384-c1872f6d0b37',
+  pdpLowerCarousel: '43b896c6-57a6-4eb0-a511-69eb7b35f7e3',
+  pdpUpperCarousel: '68f1384f-b27c-4355-ac9a-7b63ba084e71',
+} as const;
+
+export const coveoBadgePlacementIds = {
+  plp: 'a0d74b42-ff00-4c92-a9e7-0269ee9a1f32',
+  search: 'bc4a5816-8e48-4960-8866-9765b99a422e',
+  pdp: '18449c53-c9ba-4ddb-97fb-52cd1663242c',
+} as const satisfies Record<ProductBadgePlacementContext, string>;
+
+export function getBadgePlacementId(context: ProductBadgePlacementContext) {
+  return coveoBadgePlacementIds[context];
+}
+
 /**
  * Placeholder token used for initial engine configuration.
  *
@@ -81,16 +100,16 @@ export const engineConfig = {
     facetGenerator: defineFacetGenerator(),
     breadcrumbManager: defineBreadcrumbManager(),
     homepageRecommendations: defineRecommendations({
-      options: {slotId: '046e2c92-63a5-47dd-8266-b8e5027ae031'},
+      options: {slotId: coveoRecommendationSlotIds.homepage},
     }),
     cartRecommendations: defineRecommendations({
-      options: {slotId: 'b236b1e2-f9b1-4f5d-b384-c1872f6d0b37'},
+      options: {slotId: coveoRecommendationSlotIds.cart},
     }),
     pdpRecommendationsLowerCarousel: defineRecommendations({
-      options: {slotId: '43b896c6-57a6-4eb0-a511-69eb7b35f7e3'},
+      options: {slotId: coveoRecommendationSlotIds.pdpLowerCarousel},
     }),
     pdpRecommendationsUpperCarousel: defineRecommendations({
-      options: {slotId: '68f1384f-b27c-4355-ac9a-7b63ba084e71'},
+      options: {slotId: coveoRecommendationSlotIds.pdpUpperCarousel},
     }),
     parameterManager: defineParameterManager(),
   },

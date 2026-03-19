@@ -9,15 +9,20 @@ import type {
 import {useEffect} from 'react';
 import {createGTMItemFromProduct} from '~/lib/coveo/map.coveo.shopify';
 import '~/types/gtm';
+import type {BadgePlacementContext} from '../Products/ProductBadges';
 
 // Global tracking to ensure analytics only fire once per response
 const trackedResponseIds = new Set<string>();
 
 interface ProductListProps {
   searchQuery?: string;
+  badgePlacementContext?: BadgePlacementContext;
 }
 
-export function ProductList({searchQuery = ''}: ProductListProps) {
+export function ProductList({
+  searchQuery = '',
+  badgePlacementContext = 'plp',
+}: ProductListProps) {
   const productList = useProductList() as {
     state: ProductListState;
     methods: Pick<
@@ -97,6 +102,7 @@ export function ProductList({searchQuery = ''}: ProductListProps) {
               className="result-card"
               key={product.permanentid}
               product={product}
+              badgePlacementContext={badgePlacementContext}
               onSelect={() => {
                 productList.methods
                   ?.interactiveProduct({

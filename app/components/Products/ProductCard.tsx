@@ -6,6 +6,15 @@ import type {RootLoader} from '~/root';
 import {Colors} from './Colors';
 import {useState} from 'react';
 import {NavLink, useRouteLoaderData} from 'react-router';
+import {
+  ProductBadges,
+  type BadgePlacement,
+  type BadgePlacementContext,
+} from './ProductBadges';
+
+type ProductWithBadgePlacements = Product & {
+  badgePlacements?: BadgePlacement[];
+};
 
 interface ProductCardProps {
   product: Product;
@@ -13,6 +22,7 @@ interface ProductCardProps {
   className?: string;
   onSwapColor?: (color: string) => void;
   variant?: 'default' | 'compact';
+  badgePlacementContext?: BadgePlacementContext;
 }
 export function ProductCard({
   product,
@@ -20,7 +30,9 @@ export function ProductCard({
   className = '',
   onSwapColor,
   variant = 'default',
+  badgePlacementContext = null,
 }: ProductCardProps) {
+  const productWithBadges = product as ProductWithBadgePlacements;
   const rootData = useRouteLoaderData<RootLoader>('root');
   const hasPromo =
     (product.ec_promo_price && product.ec_promo_price < product.ec_price!) ||
@@ -61,19 +73,25 @@ export function ProductCard({
         to={`${productLink}?Color=${selectedColor}`}
         className={`${className} group`}
       >
-        <img
-          loading="lazy"
-          width={isCompact ? 160 : 1024}
-          height={isCompact ? 160 : 1024}
-          alt={productName}
-          src={productImage}
-          className={
-            isCompact
-              ? 'aspect-square w-full rounded-lg bg-gray-200 object-cover group-hover:opacity-75'
-              : 'aspect-square w-full rounded-lg bg-gray-200 object-cover group-hover:opacity-75'
-          }
-          style={isCompact ? {width: '160px', height: '160px'} : undefined}
-        />
+        <div className="relative">
+          <ProductBadges
+            badgePlacements={productWithBadges.badgePlacements}
+            context={badgePlacementContext}
+          />
+          <img
+            loading="lazy"
+            width={isCompact ? 160 : 1024}
+            height={isCompact ? 160 : 1024}
+            alt={productName}
+            src={productImage}
+            className={
+              isCompact
+                ? 'aspect-square w-full rounded-lg bg-gray-200 object-cover group-hover:opacity-75'
+                : 'aspect-square w-full rounded-lg bg-gray-200 object-cover group-hover:opacity-75'
+            }
+            style={isCompact ? {width: '160px', height: '160px'} : undefined}
+          />
+        </div>
         <h3
           className={
             isCompact
