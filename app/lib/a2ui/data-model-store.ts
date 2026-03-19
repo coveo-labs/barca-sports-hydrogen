@@ -109,30 +109,67 @@ export class DataModelStore {
       } else if (entry.valueBoolean !== undefined) {
         result[key] = entry.valueBoolean;
       } else if (entry.valueMap !== undefined) {
-        // valueMap can represent either a nested object (all entries have keys)
-        // or an array of homogeneous items (entries lack top-level keys and
-        // contain nested valueMap themselves — the spec-compliant list format).
-        const firstEntry = entry.valueMap[0];
-        const isList =
-          firstEntry !== undefined &&
-          firstEntry.key === undefined &&
-          firstEntry.valueMap !== undefined;
-
-        if (isList) {
-          // Array of objects: each element is an anonymous { valueMap: [...] }
-          result[key] = entry.valueMap.map((item) =>
-            this.dataToValue(item.valueMap!),
-          );
-        } else {
-          // Nested object: keyed entries
-          result[key] = this.dataToValue(entry.valueMap);
-        }
+        result[key] = this.mapEntriesToValue(entry.valueMap);
       } else {
         result[key] = null;
       }
     }
 
     return result;
+  }
+
+  private mapEntriesToValue(entries: Array<DataModelEntry>): DataValue {
+    if (this.isAnonymousList(entries)) {
+      return entries.map((entry) => this.listEntryToValue(entry));
+    }
+
+    if (this.isIndexedList(entries)) {
+      return [...entries]
+        .sort((left, right) => Number(left.key) - Number(right.key))
+        .map((entry) => this.listEntryToValue(entry));
+    }
+
+    return this.dataToValue(entries);
+  }
+
+  private listEntryToValue(entry: DataModelEntry): DataValue {
+    if (entry.valueString !== undefined) {
+      return entry.valueString;
+    }
+    if (entry.valueNumber !== undefined) {
+      return entry.valueNumber;
+    }
+    if (entry.valueBoolean !== undefined) {
+      return entry.valueBoolean;
+    }
+    if (entry.valueMap !== undefined) {
+      return this.mapEntriesToValue(entry.valueMap);
+    }
+    return null;
+  }
+
+  private isAnonymousList(entries: Array<DataModelEntry>): boolean {
+    return (
+      entries.length > 0 &&
+      entries.every(
+        (entry) => entry.key === undefined && entry.valueMap !== undefined,
+      )
+    );
+  }
+
+  private isIndexedList(entries: Array<DataModelEntry>): boolean {
+    return (
+      entries.length > 0 &&
+      entries.every(
+        (entry) =>
+          typeof entry.key === 'string' &&
+          /^\d+$/.test(entry.key) &&
+          (entry.valueString !== undefined ||
+            entry.valueNumber !== undefined ||
+            entry.valueBoolean !== undefined ||
+            entry.valueMap !== undefined),
+      )
+    );
   }
 
   /**

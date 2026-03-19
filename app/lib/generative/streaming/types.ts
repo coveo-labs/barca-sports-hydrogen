@@ -50,6 +50,33 @@ export type TextMessageChunkEvent = {
   delta?: string;
 };
 
+export type ReasoningStartEvent = {
+  type: 'REASONING_START';
+  messageId: string;
+};
+
+export type ReasoningEndEvent = {
+  type: 'REASONING_END';
+  messageId: string;
+};
+
+export type ReasoningMessageStartEvent = {
+  type: 'REASONING_MESSAGE_START';
+  messageId: string;
+  role: 'assistant';
+};
+
+export type ReasoningMessageContentEvent = {
+  type: 'REASONING_MESSAGE_CONTENT';
+  messageId: string;
+  delta: string;
+};
+
+export type ReasoningMessageEndEvent = {
+  type: 'REASONING_MESSAGE_END';
+  messageId: string;
+};
+
 export type ToolCallStartEvent = {
   type: 'TOOL_CALL_START';
   toolCallId: string;
@@ -148,6 +175,11 @@ export type AssistantStreamEvent =
   | TextMessageContentEvent
   | TextMessageEndEvent
   | TextMessageChunkEvent
+  | ReasoningStartEvent
+  | ReasoningEndEvent
+  | ReasoningMessageStartEvent
+  | ReasoningMessageContentEvent
+  | ReasoningMessageEndEvent
   | ToolCallStartEvent
   | ToolCallArgsEvent
   | ToolCallEndEvent
