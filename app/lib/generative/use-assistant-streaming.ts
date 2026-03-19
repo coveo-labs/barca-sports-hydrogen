@@ -83,8 +83,14 @@ export function useAssistantStreaming({
           : undefined;
 
       let resolvedSessionId = sessionId;
+      // Local assistant bubble ID for the current run. The new agent emits
+      // multiple transient reasoning/tool message IDs per turn, so we no
+      // longer bind the conversation bubble directly to backend message IDs.
       let assistantMessageId: string | null = null;
       let accumulatedContent = '';
+      let activeReasoningMessageId: string | null = null;
+      let activeReasoningBuffer = '';
+      let pendingFinalReasoningBlock: string | null = null;
       let latestSnapshot: ConversationRecord | null = null;
       let capturedErrorMessage: string | null = null;
       let turnCompleted = false;
@@ -257,6 +263,101 @@ export function useAssistantStreaming({
         syncThinkingMetadata();
       };
 
+      const ensureAssistantMessage = (initialContent = '') => {
+        if (assistantMessageId) {
+          return assistantMessageId;
+        }
+
+        const messageId = generateId();
+        const createdAt = new Date().toISOString();
+        assistantMessageId = messageId;
+
+        applyUpdate((conversation) => {
+          if (
+            conversation.messages.some((message) => message.id === messageId)
+          ) {
+            return conversation;
+          }
+
+          return {
+            ...conversation,
+            updatedAt: createdAt,
+            messages: [
+              ...conversation.messages,
+              {
+                id: messageId,
+                role: 'assistant',
+                content: initialContent,
+                createdAt,
+                kind: 'text',
+                metadata: getAssistantMetadataSnapshot(),
+              },
+            ],
+          };
+        });
+
+        return messageId;
+      };
+
+      const setAssistantMessageContent = (content: string) => {
+        const trimmedContent = content.trim();
+        accumulatedContent = content;
+        const messageId = ensureAssistantMessage(trimmedContent);
+
+        applyUpdate((conversation) => {
+          const messages = [...conversation.messages];
+          const index = messages.findIndex(
+            (message) => message.id === messageId,
+          );
+          if (index === -1) {
+            return conversation;
+          }
+
+          messages[index] = {
+            ...messages[index],
+            content: trimmedContent,
+            kind: 'text',
+            metadata:
+              getAssistantMetadataSnapshot() ?? messages[index].metadata,
+          };
+
+          return {
+            ...conversation,
+            updatedAt: new Date().toISOString(),
+            sessionId: resolvedSessionId ?? conversation.sessionId,
+            messages,
+          };
+        });
+      };
+
+      const appendAssistantText = (delta: string) => {
+        if (!delta) {
+          return;
+        }
+        accumulatedContent += delta;
+        setAssistantMessageContent(accumulatedContent);
+      };
+
+      const demotePendingReasoningBlock = () => {
+        if (!pendingFinalReasoningBlock) {
+          return;
+        }
+        recordThinkingUpdate(pendingFinalReasoningBlock, 'reasoning');
+        pendingFinalReasoningBlock = null;
+      };
+
+      const finalizeAssistantResponse = () => {
+        if (activeReasoningBuffer.trim()) {
+          pendingFinalReasoningBlock = activeReasoningBuffer.trim();
+          activeReasoningBuffer = '';
+          activeReasoningMessageId = null;
+        }
+
+        if (pendingFinalReasoningBlock) {
+          setAssistantMessageContent(pendingFinalReasoningBlock);
+        }
+      };
+
       const pushAssistantMessage = (
         content: string,
         kind: ConversationMessage['kind'],
@@ -421,71 +522,10 @@ export function useAssistantStreaming({
         };
 
         const applyTextDelta = (
-          messageId: string | undefined,
+          _messageId: string | undefined,
           delta: string,
         ) => {
-          if (!delta) {
-            return;
-          }
-
-          const resolvedMessageId =
-            messageId ?? assistantMessageId ?? generateId();
-          if (assistantMessageId !== resolvedMessageId) {
-            assistantMessageId = resolvedMessageId;
-            accumulatedContent = '';
-          }
-
-          accumulatedContent += delta;
-          const contentSnapshot = accumulatedContent;
-          let createdAssistantMessage = false;
-
-          applyUpdate((conversation) => {
-            const messages = [...conversation.messages];
-            if (!assistantMessageId) {
-              assistantMessageId = generateId();
-              createdAssistantMessage = true;
-              messages.push({
-                id: assistantMessageId,
-                role: 'assistant',
-                content: contentSnapshot,
-                createdAt: new Date().toISOString(),
-                kind: 'text',
-                metadata: getAssistantMetadataSnapshot(),
-              });
-            } else {
-              const index = messages.findIndex(
-                (message) => message.id === assistantMessageId,
-              );
-              if (index >= 0) {
-                messages[index] = {
-                  ...messages[index],
-                  content: contentSnapshot,
-                  kind: 'text',
-                };
-              } else {
-                createdAssistantMessage = true;
-                messages.push({
-                  id: assistantMessageId,
-                  role: 'assistant',
-                  content: contentSnapshot,
-                  createdAt: new Date().toISOString(),
-                  kind: 'text',
-                  metadata: getAssistantMetadataSnapshot(),
-                });
-              }
-            }
-
-            return {
-              ...conversation,
-              updatedAt: new Date().toISOString(),
-              sessionId: resolvedSessionId ?? conversation.sessionId,
-              messages,
-            };
-          });
-
-          if (createdAssistantMessage) {
-            syncThinkingMetadata();
-          }
+          appendAssistantText(delta);
         };
 
         const processEvent = (event: {event: string; data: string}) => {
@@ -530,71 +570,56 @@ export function useAssistantStreaming({
             }
             case 'RUN_FINISHED': {
               updateSessionFromEvent(parsedEvent);
+              finalizeAssistantResponse();
               turnCompleted = true;
               syncThinkingMetadata();
               setIsStreaming(false);
               return;
             }
+            case 'REASONING_START': {
+              updateSessionFromEvent(parsedEvent);
+              return;
+            }
+            case 'REASONING_END': {
+              updateSessionFromEvent(parsedEvent);
+              return;
+            }
+            case 'REASONING_MESSAGE_START': {
+              updateSessionFromEvent(parsedEvent);
+              demotePendingReasoningBlock();
+              activeReasoningMessageId = parsedEvent.messageId;
+              activeReasoningBuffer = '';
+              return;
+            }
+            case 'REASONING_MESSAGE_CONTENT': {
+              updateSessionFromEvent(parsedEvent);
+              if (
+                !activeReasoningMessageId ||
+                activeReasoningMessageId !== parsedEvent.messageId
+              ) {
+                activeReasoningMessageId = parsedEvent.messageId;
+                activeReasoningBuffer = '';
+              }
+              activeReasoningBuffer += parsedEvent.delta;
+              return;
+            }
+            case 'REASONING_MESSAGE_END': {
+              updateSessionFromEvent(parsedEvent);
+              if (
+                activeReasoningMessageId &&
+                activeReasoningMessageId !== parsedEvent.messageId
+              ) {
+                return;
+              }
+              pendingFinalReasoningBlock = activeReasoningBuffer.trim() || null;
+              activeReasoningBuffer = '';
+              activeReasoningMessageId = null;
+              emitThinkingSnapshot();
+              return;
+            }
             case 'TEXT_MESSAGE_START': {
               updateSessionFromEvent(parsedEvent);
-              const previousSyntheticId =
-                assistantMessageId &&
-                assistantMessageId !== parsedEvent.messageId
-                  ? assistantMessageId
-                  : null;
-              if (previousSyntheticId) {
-                accumulatedContent = '';
-              }
-              assistantMessageId = parsedEvent.messageId;
-              // Pre-insert the assistant message with the known ID so that
-              // syncA2UISurfaces can attach skeleton surface metadata to it
-              // immediately. applyTextDelta will find this message by ID and
-              // update its content in-place rather than creating a new one.
-              // Without this, syncA2UISurfaces would error ("Message not found")
-              // because the message doesn't exist until the first text delta.
-              //
-              // If ACTIVITY_SNAPSHOT already created a synthetic placeholder with
-              // a locally-generated ID, rename that message to the backend ID
-              // instead of inserting a second assistant message — that would cause
-              // the double-render bug where both the skeleton surface and the real
-              // response appear as separate bubbles.
-              applyUpdate((conversation) => {
-                if (previousSyntheticId) {
-                  const idx = conversation.messages.findIndex(
-                    (m) => m.id === previousSyntheticId,
-                  );
-                  if (idx !== -1) {
-                    const messages = [...conversation.messages];
-                    messages[idx] = {
-                      ...messages[idx],
-                      id: parsedEvent.messageId,
-                    };
-                    return {...conversation, messages};
-                  }
-                }
-                const alreadyExists = conversation.messages.some(
-                  (m) => m.id === assistantMessageId,
-                );
-                if (alreadyExists) return conversation;
-                return {
-                  ...conversation,
-                  messages: [
-                    ...conversation.messages,
-                    {
-                      id: assistantMessageId!,
-                      role: 'assistant' as const,
-                      content: '',
-                      createdAt: new Date().toISOString(),
-                      kind: 'text' as const,
-                      ephemeral: false,
-                      metadata: getAssistantMetadataSnapshot(),
-                    },
-                  ],
-                };
-              });
-              // Now flush any skeleton/surface snapshots that arrived before
-              // TEXT_MESSAGE_START — the message exists so syncA2UISurfaces
-              // will successfully write them into metadata.
+              ensureAssistantMessage('');
               syncA2UISurfaces();
               return;
             }
@@ -649,38 +674,7 @@ export function useAssistantStreaming({
             case 'ACTIVITY_SNAPSHOT': {
               updateSessionFromEvent(parsedEvent);
               a2uiProcessor.processActivitySnapshot(parsedEvent);
-              // If no TEXT_MESSAGE_START has arrived yet (pure A2UI turn where
-              // the backend emits only ACTIVITY_SNAPSHOT events with no text),
-              // we still need a real assistant message in the conversation so
-              // that syncA2UISurfaces can attach surface metadata to it.
-              // Mirror what TEXT_MESSAGE_START does: synthesise an empty
-              // assistant message and store its ID so subsequent snapshots and
-              // any late-arriving TEXT_MESSAGE_START/CONTENT events all target
-              // the same message.
-              if (!assistantMessageId) {
-                assistantMessageId = generateId();
-                applyUpdate((conversation) => {
-                  const alreadyExists = conversation.messages.some(
-                    (m) => m.id === assistantMessageId,
-                  );
-                  if (alreadyExists) return conversation;
-                  return {
-                    ...conversation,
-                    messages: [
-                      ...conversation.messages,
-                      {
-                        id: assistantMessageId!,
-                        role: 'assistant' as const,
-                        content: '',
-                        createdAt: new Date().toISOString(),
-                        kind: 'text' as const,
-                        ephemeral: false,
-                        metadata: getAssistantMetadataSnapshot(),
-                      },
-                    ],
-                  };
-                });
-              }
+              ensureAssistantMessage(accumulatedContent);
               syncA2UISurfaces();
               a2uiSurfacesSynced = true;
               return;
@@ -744,6 +738,8 @@ export function useAssistantStreaming({
         });
 
         await processSSEStream(reader, bufferProcessor);
+
+        finalizeAssistantResponse();
 
         if (latestSnapshot) {
           const snapshot: ConversationRecord = latestSnapshot;

@@ -119,7 +119,11 @@ function ThinkingStatusPanelComponent({
           <ul className="space-y-3 break-words text-sm text-slate-600">
             {updates.map((update) => {
               const bulletClass =
-                update.kind === 'tool' ? 'bg-sky-400' : 'bg-indigo-400';
+                update.kind === 'tool'
+                  ? 'bg-sky-400'
+                  : update.kind === 'reasoning'
+                    ? 'bg-amber-400'
+                    : 'bg-indigo-400';
               return (
                 <li
                   key={update.id}
