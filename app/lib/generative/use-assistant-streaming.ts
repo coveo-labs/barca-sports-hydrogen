@@ -742,23 +742,26 @@ export function useAssistantStreaming({
         finalizeAssistantResponse();
 
         if (latestSnapshot) {
-          const snapshot: ConversationRecord = latestSnapshot;
-          const finalSnapshot: ConversationRecord = {
-            ...snapshot,
-            sessionId: resolvedSessionId ?? snapshot.sessionId,
-            updatedAt: new Date().toISOString(),
-            isPersisted:
-              snapshot.isPersisted ||
-              Boolean(resolvedSessionId ?? snapshot.sessionId),
-          };
+          const finalUpdatedAt = new Date().toISOString();
 
           setConversations((prev) =>
             sortConversations(
-              prev.map((conversation) =>
-                conversation.localId === finalSnapshot.localId
-                  ? finalSnapshot
-                  : conversation,
-              ),
+              prev.map((conversation) => {
+                if (conversation.localId !== conversationLocalId) {
+                  return conversation;
+                }
+
+                const nextSessionId =
+                  resolvedSessionId ?? conversation.sessionId;
+
+                return {
+                  ...conversation,
+                  sessionId: nextSessionId,
+                  updatedAt: finalUpdatedAt,
+                  isPersisted:
+                    conversation.isPersisted || Boolean(nextSessionId),
+                };
+              }),
             ),
           );
         }
