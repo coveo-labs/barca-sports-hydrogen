@@ -27,7 +27,7 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
     () => [
       'Build a beginner surfing kit with budget, mid-range, and premium options',
       'What should I pack for a snorkeling trip?',
-      'Suggest a paddleboarding kit for beginners',
+      'Suggest a kayaking kit for beginners',
       'I like cold-water surfing. Compare wetsuits for it'
     ],
     [],
