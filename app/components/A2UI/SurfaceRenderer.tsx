@@ -5,17 +5,12 @@ import {ComponentRenderer} from './ComponentRenderer';
 
 interface SurfaceRendererProps {
   surface: SurfaceState;
-  /** Full surface map for cross-surface lookups (e.g. BundleDisplay slot surfaces) */
   surfaceMap?: Map<string, SurfaceState>;
   onProductSelect?: (productId: string) => void;
   onSearchAction?: (query: string) => void;
   onFollowupAction?: (message: string) => void;
 }
 
-/**
- * Renders a complete A2UI surface with all its components
- * Recursively renders component tree starting from root
- */
 export function SurfaceRenderer({
   surface,
   surfaceMap,
@@ -24,7 +19,6 @@ export function SurfaceRenderer({
   onFollowupAction,
 }: SurfaceRendererProps): ReactNode {
   if (!surface.isRendered || !surface.root) {
-    // Surface not ready to render yet (waiting for beginRendering)
     return null;
   }
 
@@ -47,7 +41,6 @@ export function SurfaceRenderer({
     const componentProps =
       (component.component as any)[catalogComponentId] || {};
 
-    // Handle layout components that have children
     if (catalogComponentId === 'Column') {
       const childIds = (componentProps.children as any)?.explicitList || [];
       const renderedChildren = childIds
@@ -82,7 +75,6 @@ export function SurfaceRenderer({
         return null;
       }
 
-      // Get data for template
       const dataPath = template.dataBinding;
       const templateComponentId = template.componentId;
       const items = surface.dataModel.get(dataPath);
@@ -99,13 +91,11 @@ export function SurfaceRenderer({
       return (
         <div key={componentId} className={containerClass}>
           {items.map((_item, index) => {
-            // Render template component with item context
             const itemComponent = surface.components.get(templateComponentId);
             if (!itemComponent) {
               return null;
             }
 
-            // Create a scoped data path for this item
             const itemKey = `${templateComponentId}-${index}`;
 
             return (
@@ -137,7 +127,6 @@ export function SurfaceRenderer({
       );
     }
 
-    // Handle ConversationAnswer (custom catalog)
     if (catalogComponentId === 'ConversationAnswer') {
       const childIds = (componentProps.children as any)?.explicitList || [];
       const renderedChildren = childIds
@@ -151,7 +140,6 @@ export function SurfaceRenderer({
       );
     }
 
-    // Render leaf components (Text, Image, Button, ProductCard, etc.)
     return (
       <ComponentRenderer
         key={componentId}
@@ -167,16 +155,11 @@ export function SurfaceRenderer({
     );
   };
 
-  // Start rendering from root component
   const rootResult = renderComponent(surface.root);
 
-  // Collect the set of component IDs that are referenced as template sub-components
-  // (i.e. used as `componentId` in a dataBinding on another component's props).
-  // These should never be rendered as standalone surface-level components.
   const templateComponentIds = new Set<string>();
   surface.components.forEach((comp) => {
     const props = (comp.component as any)[comp.catalogComponentId] || {};
-    // Walk top-level prop values and collect any `componentId` references
     for (const val of Object.values(props)) {
       if (val && typeof val === 'object' && 'componentId' in (val as object)) {
         templateComponentIds.add((val as any).componentId as string);
@@ -184,9 +167,6 @@ export function SurfaceRenderer({
     }
   });
 
-  // Render surface-level sibling components that are not the root and not
-  // template sub-components, in the order they appear in the surface.
-  // NextActionsBar is rendered last regardless of declaration order.
   const siblingNodes: ReactNode[] = [];
   const actionsNodes: ReactNode[] = [];
 

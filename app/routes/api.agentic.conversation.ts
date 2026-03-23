@@ -1,4 +1,5 @@
 import type {ActionFunctionArgs} from 'react-router';
+import discoveryBasicPolicy from '../../reference/commerce-agent/discovery-basic.json';
 import {ServerSideNavigatorContextProvider} from '~/lib/coveo/navigator.provider';
 import {getCookieFromRequest} from '~/lib/shopify/session';
 import type {
@@ -7,12 +8,12 @@ import type {
 } from '~/types/conversation';
 import {CONVERSATIONS_SESSION_KEY} from '~/types/conversation';
 
-const AGENTIC_BASE_URL =
-  'https://platformdev.cloud.coveo.com/rest/organizations/barcasportsmcy01fvu/commerce/unstable/agentic';
-
 const MAX_CONVERSATIONS = 50;
 const MAX_CONTENT_LENGTH = 4000;
 const DEFAULT_TRACKING_ID = 'market_88728731922';
+const DEFAULT_LOCAL_AGENT_URL = 'http://localhost:8080/invocations';
+const DEFAULT_COVEO_PLATFORM_URL = 'https://platformdev.cloud.coveo.com';
+const DEFAULT_COVEO_ORGANIZATION_ID = 'barcasportsmcy01fvu';
 
 export async function action({request, context}: ActionFunctionArgs) {
   if (request.method === 'POST') {
@@ -65,34 +66,54 @@ async function handleStreamConversation(
     getCookieFromRequest(request, 'coveo_visitorId'),
   );
   const locale = body.locale ?? {};
+  const sessionId = body.sessionId || createConversationId();
+  const historyMessages = getInvocationMessages(
+    getStoredConversationById(context.session, body.sessionId),
+  );
+  const localeTag = formatLocaleTag(locale);
 
   const payload = {
-    trackingId: body.trackingId || DEFAULT_TRACKING_ID,
-    language: (locale.language || 'en').toLowerCase(),
-    country: (locale.country || 'US').toUpperCase(),
-    currency: locale.currency || 'USD',
-    clientId: navigatorContext.clientId,
-    message: body.message,
-    context: {
-      user: {
-        userAgent: navigatorContext.userAgent || '',
+    messages: [
+      ...historyMessages,
+      {
+        id: createConversationId(),
+        role: 'user',
+        content: body.message,
       },
-      view: {
-        url: body.view?.url || navigatorContext.location,
-        referrer: body.view?.referrer || navigatorContext.referrer || undefined,
+    ],
+    threadId: sessionId,
+    runId: createConversationId(),
+    state: {},
+    tools: [],
+    context: [],
+    forwardedProps: {
+      coveo: {
+        accessToken: resolveCoveoAccessToken(context),
+        organizationId: resolveCoveoOrganizationId(context),
+        platformUrl: resolveCoveoPlatformUrl(context),
+        trackingId: body.trackingId || DEFAULT_TRACKING_ID,
+        clientId: navigatorContext.clientId,
+        locale: localeTag,
+        currency: locale.currency || 'USD',
+        timezone: locale.timezone,
+        context: {
+          view: {
+            url: body.view?.url || navigatorContext.location,
+            referrer:
+              body.view?.referrer || navigatorContext.referrer || undefined,
+          },
+        },
       },
-      cart: Array.isArray(body.cart) ? body.cart : [],
+      policy: discoveryBasicPolicy,
     },
-    conversationSessionId: body.sessionId || undefined,
-    targetEngine: 'AGENT_CORE',
-  } satisfies Record<string, unknown>;
+  } satisfies LocalCommerceAgentPayload;
 
   const abortController = new AbortController();
   request.signal.addEventListener('abort', () => abortController.abort());
 
   const agenticResponse = await streamAgenticConversation(payload, {
     signal: abortController.signal,
-    accessToken: extractAgenticAccessToken(context),
+    agentUrl: resolveLocalAgentUrl(context),
   });
 
   console.info('[api.agentic.conversation] upstream response', {
@@ -295,19 +316,6 @@ function sanitizeMessage(message: ConversationMessage): ConversationMessage {
   };
 }
 
-function extractAgenticAccessToken(
-  context: ActionFunctionArgs['context'],
-): string | undefined {
-  const token = (context as {env?: {AGENTIC_ACCESS_TOKEN?: string}})?.env
-    ?.AGENTIC_ACCESS_TOKEN;
-
-  if (typeof token === 'string' && token.trim()) {
-    return token;
-  }
-
-  return undefined;
-}
-
 function upsertConversation(
   conversations: ConversationSummary[],
   conversation: ConversationSummary,
@@ -338,6 +346,21 @@ function getStoredConversations(
     .map((conversation) => sanitizeConversation(conversation));
 }
 
+function getStoredConversationById(
+  session: HydrogenSessionWithPending,
+  sessionId?: string,
+) {
+  if (!sessionId) {
+    return null;
+  }
+
+  return (
+    getStoredConversations(session).find(
+      (conversation) => conversation.id === sessionId,
+    ) ?? null
+  );
+}
+
 type HydrogenSessionWithPending = {
   get(key: string): unknown;
   set(key: string, value: unknown): void;
@@ -353,6 +376,7 @@ type ConversationStreamPayload = {
     language?: string;
     country?: string;
     currency?: string;
+    timezone?: string;
   };
   view?: {
     url?: string;
@@ -386,13 +410,9 @@ function isConversationSummary(value: unknown): value is ConversationSummary {
 }
 
 function createConversationId() {
-  const globalWithCrypto = globalThis as {
-    crypto?: {randomUUID?: () => string};
-  };
-
-  const randomUUID = globalWithCrypto.crypto?.randomUUID;
-  if (typeof randomUUID === 'function') {
-    return randomUUID();
+  const cryptoObject = globalThis.crypto;
+  if (cryptoObject && typeof cryptoObject.randomUUID === 'function') {
+    return cryptoObject.randomUUID();
   }
 
   return `conv_${Date.now().toString(36)}_${Math.random()
@@ -402,20 +422,19 @@ function createConversationId() {
 
 type StreamAgenticConversationOptions = {
   signal?: AbortSignal;
-  accessToken?: string | null;
+  agentUrl?: string | null;
 };
 
 async function streamAgenticConversation(
-  payload: unknown,
+  payload: LocalCommerceAgentPayload,
   options: StreamAgenticConversationOptions = {},
 ): Promise<Response> {
-  const accessToken = pickAccessToken(options.accessToken);
-  const url = new URL(`${AGENTIC_BASE_URL}/converse`);
+  const url = pickLocalAgentUrl(options.agentUrl);
 
   return fetch(url, {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${accessToken}`,
+      Accept: 'text/event-stream',
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(payload),
@@ -423,26 +442,155 @@ async function streamAgenticConversation(
   });
 }
 
-function pickAccessToken(candidate?: string | null) {
+function formatLocaleTag(locale: ConversationStreamPayload['locale']) {
+  const language = locale?.language?.trim().toLowerCase() || 'en';
+  const country = locale?.country?.trim().toUpperCase() || 'US';
+  return `${language}-${country}`;
+}
+
+function getInvocationMessages(
+  conversation: ConversationSummary | null,
+): LocalCommerceAgentMessage[] {
+  if (!conversation) {
+    return [];
+  }
+
+  return conversation.messages
+    .filter((message) => {
+      if (!message.content.trim()) {
+        return false;
+      }
+
+      if (message.role === 'user') {
+        return true;
+      }
+
+      if (message.role === 'assistant') {
+        return message.kind === 'text';
+      }
+
+      return message.role === 'system';
+    })
+    .map((message) => {
+      const role =
+        message.role === 'system'
+          ? 'system'
+          : message.role === 'assistant'
+            ? 'assistant'
+            : 'user';
+
+      return {
+        id: message.id,
+        role,
+        content: message.content,
+      };
+    });
+}
+
+function resolveLocalAgentUrl(context: ActionFunctionArgs['context']) {
+  const candidate = (context as {env?: {LOCAL_AGENT_URL?: string}})?.env
+    ?.LOCAL_AGENT_URL;
+
+  if (typeof candidate === 'string' && candidate.trim()) {
+    return candidate;
+  }
+
+  if (typeof process !== 'undefined' && process?.env?.LOCAL_AGENT_URL) {
+    return process.env.LOCAL_AGENT_URL;
+  }
+
+  return DEFAULT_LOCAL_AGENT_URL;
+}
+
+function pickLocalAgentUrl(candidate?: string | null) {
   const trimmedCandidate = candidate?.trim();
   if (trimmedCandidate) {
     return trimmedCandidate;
   }
 
-  const resolved = resolveAgenticAccessToken();
-  if (resolved) {
-    return resolved;
-  }
-
-  throw new Error(
-    'Missing AGENTIC_ACCESS_TOKEN environment variable for Agentic API access.',
-  );
+  return DEFAULT_LOCAL_AGENT_URL;
 }
 
-function resolveAgenticAccessToken() {
+function resolveCoveoAccessToken(context: ActionFunctionArgs['context']) {
+  const candidate = (context as {env?: {AGENTIC_ACCESS_TOKEN?: string}})?.env
+    ?.AGENTIC_ACCESS_TOKEN;
+
+  if (typeof candidate === 'string' && candidate.trim()) {
+    return candidate;
+  }
+
   if (typeof process !== 'undefined' && process?.env?.AGENTIC_ACCESS_TOKEN) {
     return process.env.AGENTIC_ACCESS_TOKEN;
   }
 
-  return undefined;
+  throw new Error(
+    'Missing AGENTIC_ACCESS_TOKEN environment variable for local commerce agent access.',
+  );
 }
+
+function resolveCoveoOrganizationId(context: ActionFunctionArgs['context']) {
+  const candidate = (context as {env?: {COVEO_ORGANIZATION_ID?: string}})?.env
+    ?.COVEO_ORGANIZATION_ID;
+
+  if (typeof candidate === 'string' && candidate.trim()) {
+    return candidate;
+  }
+
+  if (
+    typeof process !== 'undefined' &&
+    process?.env?.COVEO_ORGANIZATION_ID
+  ) {
+    return process.env.COVEO_ORGANIZATION_ID;
+  }
+
+  return DEFAULT_COVEO_ORGANIZATION_ID;
+}
+
+function resolveCoveoPlatformUrl(context: ActionFunctionArgs['context']) {
+  const candidate = (context as {env?: {COVEO_PLATFORM_URL?: string}})?.env
+    ?.COVEO_PLATFORM_URL;
+
+  if (typeof candidate === 'string' && candidate.trim()) {
+    return candidate;
+  }
+
+  if (typeof process !== 'undefined' && process?.env?.COVEO_PLATFORM_URL) {
+    return process.env.COVEO_PLATFORM_URL;
+  }
+
+  return DEFAULT_COVEO_PLATFORM_URL;
+}
+
+type LocalCommerceAgentMessage = {
+  id: string;
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+};
+
+type LocalCommerceAgentPayload = {
+  messages: LocalCommerceAgentMessage[];
+  threadId: string;
+  runId: string;
+  state: Record<string, unknown>;
+  tools: unknown[];
+  context: unknown[];
+  forwardedProps: {
+    coveo: {
+      accessToken: string;
+      organizationId: string;
+      platformUrl: string;
+      trackingId: string;
+      clientId: string;
+      locale: string;
+      currency: string;
+      timezone?: string;
+      context: {
+        view: {
+          url: string;
+          referrer?: string;
+        };
+      };
+    };
+    policy: typeof discoveryBasicPolicy;
+  };
+};

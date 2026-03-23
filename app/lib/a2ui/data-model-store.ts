@@ -1,8 +1,3 @@
-/**
- * Data Model Store
- * Manages application state for A2UI surfaces using JSON Pointer paths
- */
-
 type DataValue =
   | string
   | number
@@ -22,10 +17,6 @@ type DataModelEntry = {
 export class DataModelStore {
   private data: Record<string, DataValue> = {};
 
-  /**
-   * Get value at JSON Pointer path
-   * @param path - JSON Pointer path (e.g., "/user/name" or "/items/0")
-   */
   get(path?: string): DataValue {
     if (!path || path === '/') {
       return this.data;
@@ -57,40 +48,23 @@ export class DataModelStore {
     return current;
   }
 
-  /**
-   * Update data model with new contents structure
-   * @param contents - Array of data entries to merge into root model
-   */
   update(contents: Array<DataModelEntry>): void {
     const value = this.dataToValue(contents);
-    // Merge into existing data
     this.data = {...this.data, ...value};
   }
 
-  /**
-   * Clear all data
-   */
   clear(): void {
     this.data = {};
   }
 
-  /**
-   * Directly set all data (used for deserialization — bypasses entry parsing)
-   */
   setAll(data: Record<string, DataValue>): void {
     this.data = data;
   }
 
-  /**
-   * Get entire data model
-   */
   getAll(): Record<string, DataValue> {
     return this.data;
   }
 
-  /**
-   * Convert data entries to nested value structure
-   */
   private dataToValue(
     entries: Array<DataModelEntry>,
   ): Record<string, DataValue> {
@@ -98,8 +72,6 @@ export class DataModelStore {
 
     for (const entry of entries) {
       const {key} = entry;
-      // Skip anonymous entries (no key) — these are list items handled via
-      // the isList branch of the parent entry's valueMap processing.
       if (key === undefined) continue;
 
       if (entry.valueString !== undefined) {
@@ -172,10 +144,6 @@ export class DataModelStore {
     );
   }
 
-  /**
-   * Parse JSON Pointer path into segments
-   * @param path - JSON Pointer path (e.g., "/user/name")
-   */
   private parsePointer(path: string): string[] {
     if (path === '/') {
       return [];
@@ -183,7 +151,7 @@ export class DataModelStore {
 
     return path
       .split('/')
-      .slice(1) // Remove leading empty string
+      .slice(1)
       .map((segment) => segment.replace(/~1/g, '/').replace(/~0/g, '~'));
   }
 }

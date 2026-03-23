@@ -20,17 +20,12 @@ interface ComponentRendererProps {
   component: ComponentDefinition;
   dataModel: DataModelStore;
   isSkeletonSurface?: boolean;
-  /** Full surface map for cross-surface lookups (required for BundleDisplay) */
   surfaceMap?: Map<string, SurfaceState>;
   onProductSelect?: (productId: string) => void;
   onSearchAction?: (query: string) => void;
   onFollowupAction?: (message: string) => void;
 }
 
-/**
- * Renders A2UI component definitions as React components
- * Maps catalog component IDs to actual React component implementations
- */
 export function ComponentRenderer({
   componentId,
   component,
@@ -42,12 +37,7 @@ export function ComponentRenderer({
   onFollowupAction,
 }: ComponentRendererProps): ReactNode {
   const {catalogComponentId} = component;
-
-  // Extract component properties from nested structure
-  // Component format: {catalogComponentId: "Text", component: {"Text": {props...}}}
   const componentProps = (component.component as any)[catalogComponentId] || {};
-
-  // Resolve all data bindings in the component properties
   const resolved = resolveComponentBindings(
     {catalogComponentId, component: componentProps} as any,
     dataModel,
@@ -55,7 +45,6 @@ export function ComponentRenderer({
 
   switch (catalogComponentId) {
     case 'ProductCard': {
-      // Map Coveo product fields to ProductCard props
       const productData = (resolved as any).component || resolved;
 
       return (
@@ -84,15 +73,11 @@ export function ComponentRenderer({
     }
 
     case 'ProductCarousel': {
-      // Resolve template data for products array
       const productsProperty = componentProps?.products;
       const productsData = productsProperty?.dataBinding
         ? resolveTemplateData(productsProperty.dataBinding, dataModel)
         : [];
 
-      // heading lives at resolved.component.heading because resolveComponentBindings
-      // is called with {catalogComponentId, component: componentProps}, so the
-      // resolved props are nested under "component".
       const resolvedProps = (resolved as any).component || resolved;
       const heading =
         (resolvedProps.heading as string | undefined) ??
@@ -111,12 +96,7 @@ export function ComponentRenderer({
     }
 
     case 'ComparisonTable': {
-      // resolved is keyed as { component: resolvedProps } due to how
-      // resolveComponentBindings is called with {catalogComponentId, component: componentProps}
       const resolvedProps = (resolved as any).component || resolved;
-
-      // The LLM writes products as { componentId: "...", dataBinding: "/items" }
-      // or { dataBinding: "/items" } — extract the dataBinding path either way.
       const productsProperty = componentProps?.products;
       const dataBindingPath: string | undefined = productsProperty?.dataBinding;
       const rawProducts: Record<string, unknown>[] = dataBindingPath
@@ -126,15 +106,10 @@ export function ComponentRenderer({
           >[])
         : [];
 
-      // Map Coveo ec_* fields to the shape ComparisonTable expects.
-      // Custom comparison attributes (standout, trade_off, best_for, etc.)
-      // are passed through via the spread so they resolve via product[attr].
       const mappedProducts = rawProducts.map((p) => {
         const regularPrice = Number(p.ec_price) || 0;
         const promoPrice =
           p.ec_promo_price != null ? Number(p.ec_promo_price) : null;
-        // Show promo price as the main price with original struck-through,
-        // only when promo is genuinely lower than regular price.
         const isOnSale = promoPrice !== null && promoPrice < regularPrice;
         return {
           productId: (p.ec_product_id as string) || '',
@@ -148,13 +123,10 @@ export function ComponentRenderer({
           description: (p.ec_description as string) || undefined,
           category: (p.ec_category as string) || undefined,
           url: (p.clickUri as string) || '#',
-          // Spread all remaining keys so custom attributes (standout, trade_off,
-          // best_for, etc.) are accessible as product[attr] in the table rows.
           ...p,
         };
       });
 
-      // Accept both "heading" (what the LLM writes) and "headline" (legacy)
       const headline =
         (resolvedProps.heading as string | undefined) ??
         (resolvedProps.headline as string | undefined);
@@ -183,11 +155,8 @@ export function ComponentRenderer({
     }
 
     case 'BundleDisplay': {
-      // bundles is an inline literal array in the component props —
-      // no data binding needed; slot product data lives in separate surfaces.
       const bundles = componentProps?.bundles;
       const titleProp = componentProps?.title;
-      // title may be a literalString binding or a plain string
       const title: string | undefined =
         typeof titleProp === 'string'
           ? titleProp
@@ -225,8 +194,6 @@ export function ComponentRenderer({
 
     case 'NextActionsBar': {
       const isLoading = Boolean(componentProps?.isLoading) || isSkeletonSurface;
-
-      // Resolve template data for actions array
       const actionsProperty = componentProps?.actions;
       const actionsData = actionsProperty?.dataBinding
         ? resolveTemplateData(actionsProperty.dataBinding, dataModel)
@@ -244,7 +211,6 @@ export function ComponentRenderer({
     }
 
     case 'Text': {
-      // Basic catalog Text component
       const resolvedProps = (resolved as any).component || resolved;
       const text =
         (resolvedProps.text as string) ||
@@ -316,7 +282,6 @@ export function ComponentRenderer({
     }
 
     case 'Button': {
-      // Basic catalog Button component
       const resolvedProps = (resolved as any).component || resolved;
       const text = (resolvedProps.text as string) || '';
       const variant = (resolvedProps.variant as string) || 'followup';

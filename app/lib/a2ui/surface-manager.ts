@@ -1,8 +1,3 @@
-/**
- * Surface Manager
- * Manages A2UI surfaces with their component buffers and data models
- */
-
 import {DataModelStore} from './data-model-store';
 import type {A2UIOperation} from '~/lib/generative/streaming';
 
@@ -22,9 +17,6 @@ export type SurfaceState = {
   isRendered: boolean;
 };
 
-/**
- * Serializable version of SurfaceState for React state storage
- */
 export type SerializableSurfaceState = {
   surfaceId: string;
   root: string | null;
@@ -34,9 +26,6 @@ export type SerializableSurfaceState = {
   isRendered: boolean;
 };
 
-/**
- * Convert SurfaceState to serializable format
- */
 export function serializeSurface(
   surface: SurfaceState,
 ): SerializableSurfaceState {
@@ -51,15 +40,10 @@ export function serializeSurface(
   return serialized;
 }
 
-/**
- * Convert serializable format back to SurfaceState
- */
 export function deserializeSurface(
   serialized: SerializableSurfaceState,
 ): SurfaceState {
   const dataModel = new DataModelStore();
-  // Reconstruct data model from serialized data — use setAll to restore the
-  // already-resolved JS values directly without re-parsing as DataModelEntry.
   if (
     serialized.dataModelData &&
     typeof serialized.dataModelData === 'object'
@@ -67,7 +51,6 @@ export function deserializeSurface(
     try {
       dataModel.setAll(serialized.dataModelData as Record<string, any>);
     } catch (error) {
-      // dataModelData malformed — continue with empty model
     }
   }
 
@@ -95,9 +78,6 @@ export function deserializeSurface(
 export class SurfaceManager {
   private surfaces = new Map<string, SurfaceState>();
 
-  /**
-   * Get or create a surface
-   */
   getSurface(surfaceId: string): SurfaceState {
     if (!this.surfaces.has(surfaceId)) {
       this.surfaces.set(surfaceId, {
@@ -112,37 +92,22 @@ export class SurfaceManager {
     return this.surfaces.get(surfaceId)!;
   }
 
-  /**
-   * Check if surface exists
-   */
   hasSurface(surfaceId: string): boolean {
     return this.surfaces.has(surfaceId);
   }
 
-  /**
-   * Get all surfaces
-   */
   getAllSurfaces(): Map<string, SurfaceState> {
     return this.surfaces;
   }
 
-  /**
-   * Get all surface IDs
-   */
   getAllSurfaceIds(): string[] {
     return Array.from(this.surfaces.keys());
   }
 
-  /**
-   * Delete a surface
-   */
   deleteSurface(surfaceId: string): void {
     this.surfaces.delete(surfaceId);
   }
 
-  /**
-   * Process beginRendering operation
-   */
   beginRendering(operation: {
     surfaceId: string;
     root: string;
@@ -154,15 +119,10 @@ export class SurfaceManager {
     surface.isRendered = true;
   }
 
-  /**
-   * Process surfaceUpdate operation
-   */
   surfaceUpdate(operation: {surfaceId: string; components: Array<any>}): void {
     const surface = this.getSurface(operation.surfaceId);
 
     for (const component of operation.components) {
-      // Extract catalogComponentId from the component data
-      // Component structure: {id: "foo", component: {"ComponentName": {...props}}}
       let catalogComponentId = 'unknown';
       if (component.component && typeof component.component === 'object') {
         const keys = Object.keys(component.component);
@@ -181,9 +141,6 @@ export class SurfaceManager {
     }
   }
 
-  /**
-   * Process dataModelUpdate operation
-   */
   dataModelUpdate(operation: {
     surfaceId: string;
     contents: Array<{
@@ -198,9 +155,6 @@ export class SurfaceManager {
     surface.dataModel.update(operation.contents as any);
   }
 
-  /**
-   * Get component by ID from a surface
-   */
   getComponent(
     surfaceId: string,
     componentId: string,
@@ -209,17 +163,11 @@ export class SurfaceManager {
     return surface.components.get(componentId) || null;
   }
 
-  /**
-   * Get data model for a surface
-   */
   getDataModel(surfaceId: string): DataModelStore {
     const surface = this.getSurface(surfaceId);
     return surface.dataModel;
   }
 
-  /**
-   * Process any A2UI operation
-   */
   processOperation(operation: A2UIOperation): void {
     if ('beginRendering' in operation) {
       this.beginRendering(operation.beginRendering);

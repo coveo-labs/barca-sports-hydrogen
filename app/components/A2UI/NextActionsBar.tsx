@@ -15,16 +15,6 @@ interface NextActionsBarProps {
   onFollowupAction?: (message: string) => void;
 }
 
-/**
- * Action buttons bar for follow-up questions and navigation.
- * Displays at the end of agent responses to guide the user's next action.
- *
- * Data model (flat, spec-compliant):
- *   { text: string, type: 'search' | 'followup' }
- *
- * - type="search"   → navigates to a search results page; text is the query string
- * - type="followup" → sends a follow-up message to the agent; text is the message
- */
 export function NextActionsBar({
   actions,
   isLoading,
