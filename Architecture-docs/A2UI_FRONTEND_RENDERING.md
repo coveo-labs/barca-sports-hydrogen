@@ -1,661 +1,464 @@
-# A2UI Frontend Rendering Architecture
+# A2UI Frontend Rendering
 
-This document describes how the frontend receives, processes, and renders
-**Agent-to-UI (A2UI)** activity snapshots — the structured surface events that
-the backend agent emits to drive rich, progressive UI updates in the generative
-chat interface.
+This document explains how A2UI activity snapshots are processed and rendered
+in the conversational flow.
 
----
+Read
+[CONVERSATIONAL_FLOW.md](./CONVERSATIONAL_FLOW.md)
+first if you want the broader page, streaming, and state-management picture.
 
-## Table of Contents
+## 1. Scope
 
-1. [Overview](#1-overview)
-2. [File Map](#2-file-map)
-3. [SSE Stream → Hook → Processor](#3-sse-stream--hook--processor)
-4. [A2UIMessageProcessor — skeleton swap & surface tracking](#4-a2uimessageprocessor--skeleton-swap--surface-tracking)
-5. [SurfaceManager — operation dispatch](#5-surfacemanager--operation-dispatch)
-6. [DataModelStore — wire-format deserialization](#6-datamodelstore--wire-format-deserialization)
-7. [DataBindingResolver — prop resolution](#7-databindingresolver--prop-resolution)
-8. [SurfaceRenderer — component tree rendering](#8-surfacerenderer--component-tree-rendering)
-9. [ComponentRenderer — per-component prop mapping](#9-componentrenderer--per-component-prop-mapping)
-10. [Per-component prop tables](#10-per-component-prop-tables)
-11. [Three-phase timeline (skeleton → content → next-actions)](#11-three-phase-timeline-skeleton--content--next-actions)
-12. [React state persistence (`a2uiSurfaces`)](#12-react-state-persistence-a2uisurfaces)
+This doc is about the A2UI path only:
 
----
+- which A2UI events the frontend receives
+- how snapshot operations mutate surfaces and data models
+- how skeleton snapshots are replaced
+- how surfaces are stored on assistant messages
+- how those surfaces are finally rendered through `ResponseContent`
 
-## 1. Overview
+It is intentionally implementation-specific.
 
-```
-Backend SSE stream
-  │
-  ▼  text/event-stream
-useAssistantStreaming (use-assistant-streaming.ts)
-  │   parses each SSE event via parseAssistantStreamEvent
-  │   routes ACTIVITY_SNAPSHOT events to ↓
-  ▼
-A2UIMessageProcessor (message-processor.ts)
-  │   skeleton-swap logic (activitySurfaces Map)
-  │   delegates ops to ↓
-  ▼
-SurfaceManager (surface-manager.ts)
-  │   holds Map<surfaceId, SurfaceState>
-  │   dispatches each A2UIOperation to:
-  │     beginRendering  → sets surface.root / catalogId / isRendered
-  │     surfaceUpdate   → upserts ComponentDefinitions
-  │     dataModelUpdate → calls surface.dataModel.update(contents)
-  │     deleteSurface   → removes surface from Map
-  ▼
-DataModelStore (data-model-store.ts)
-  │   contents[] → typed JS values via dataToValue()
-  │   isList detection for anonymous { valueMap: [...] } entries
-  │   JSON Pointer get(path)
-  ▼
-(surfaces serialized into React state as SerializableSurfaceState)
-  ▼
-SurfaceRenderer (SurfaceRenderer.tsx)
-  │   reads SurfaceState, skips bundle-surface-* silently
-  │   renders root component + sibling components + NextActionsBar last
-  ▼
-ComponentRenderer (ComponentRenderer.tsx)
-  │   switch on catalogComponentId
-  │   calls resolveComponentBindings + resolveTemplateData
-  │   maps ec_* fields → React component props
-  ▼
-React components
-  ProductCarousel / ComparisonTable / BundleDisplay / NextActionsBar /
-  A2UIProductCard / ComparisonSummary / Text / Image / Button / …
+## 2. End-to-End Pipeline
+
+```text
+ACTIVITY_SNAPSHOT event
+  -> StreamA2UIAdapter
+  -> A2UIMessageProcessor
+  -> SurfaceManager
+  -> DataModelStore
+  -> serialized message.metadata.a2uiSurfaces
+  -> MessageBubble
+  -> SurfaceRenderer
+  -> ComponentRenderer
+  -> component-registry / component-renderers
+  -> ResponseContent/components/*
 ```
 
----
+## 3. File Map
 
-## 2. File Map
+### Stream boundary
 
-| File                                            | Role                                                                                                  |
-| ----------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| `app/lib/generative/streaming/types.ts`         | `ActivitySnapshotEvent`, `A2UIOperation` type definitions                                             |
-| `app/lib/generative/streaming/index.ts`         | Re-exports for streaming types and utilities                                                          |
-| `app/lib/generative/use-assistant-streaming.ts` | SSE stream consumer; routes events; owns `A2UIMessageProcessor`                                       |
-| `app/lib/a2ui/message-processor.ts`             | `A2UIMessageProcessor`; skeleton-swap logic; `activitySurfaces` Map                                   |
-| `app/lib/a2ui/surface-manager.ts`               | `SurfaceManager`; `SurfaceState`; `SerializableSurfaceState`; `serializeSurface`/`deserializeSurface` |
-| `app/lib/a2ui/data-model-store.ts`              | `DataModelStore`; wire-format deserialization; JSON Pointer traversal                                 |
-| `app/lib/a2ui/data-binding-resolver.ts`         | `resolveBoundValue`; `resolveComponentBindings`; `resolveTemplateData`                                |
-| `app/components/A2UI/SurfaceRenderer.tsx`       | Root render loop; bundle-surface-\* suppression; NextActionsBar last                                  |
-| `app/components/A2UI/ComponentRenderer.tsx`     | Switch on `catalogComponentId`; prop resolution per component                                         |
-| `app/components/A2UI/ProductCarousel.tsx`       | Horizontal snap-scroll carousel with skeleton shimmer                                                 |
-| `app/components/A2UI/ComparisonTable.tsx`       | Side-by-side product table with "Recommended" badge                                                   |
-| `app/components/A2UI/BundleDisplay.tsx`         | Tabbed multi-bundle card; pulls product data from slot surfaces                                       |
-| `app/components/A2UI/NextActionsBar.tsx`        | Pill buttons for follow-up / search actions                                                           |
-| `app/components/A2UI/A2UIProductCard.tsx`       | Single product card with star rating, promo price, Add-to-Cart                                        |
-| `app/components/A2UI/ConversationAnswer.tsx`    | Wrapper `<div>` for complete agent replies                                                            |
+- `app/lib/generative/adapters/a2ui/stream-a2ui-adapter.ts`
+- `app/lib/generative/adapters/a2ui/types.ts`
+- `app/lib/generative/streaming/types.ts`
 
----
+### A2UI processing and state
 
-## 3. SSE Stream → Hook → Processor
+- `app/lib/a2ui/message-processor.ts`
+- `app/lib/a2ui/surface-manager.ts`
+- `app/lib/a2ui/data-model-store.ts`
+- `app/lib/a2ui/data-binding-resolver.ts`
 
-**File:** `app/lib/generative/use-assistant-streaming.ts`
+### Response rendering
 
-The hook `useAssistantStreaming` owns the entire streaming lifecycle for one
-user turn:
+- `app/components/Generative/ResponseContent/MessageBubble.tsx`
+- `app/components/Generative/ResponseContent/rendering/SurfaceRenderer.tsx`
+- `app/components/Generative/ResponseContent/rendering/ComponentRenderer.tsx`
+- `app/components/Generative/ResponseContent/rendering/component-registry.ts`
+- `app/components/Generative/ResponseContent/rendering/component-renderers.tsx`
+- `app/components/Generative/ResponseContent/rendering/render-context.ts`
+- `app/components/Generative/ResponseContent/components/*`
 
-1. Opens a `fetch` POST to the configured `endpoint`.
-2. Reads the response body as a `ReadableStream` via
-   `processSSEStream(reader, bufferProcessor)`.
-3. Each parsed SSE frame is handed to `processEvent(event)`.
-4. For `ACTIVITY_SNAPSHOT` events specifically:
+## 4. Event Shape
+
+The conversational stream types are defined in:
+
+- `app/lib/generative/streaming/types.ts`
+
+The A2UI event used by the frontend is:
 
 ```ts
-case 'ACTIVITY_SNAPSHOT': {
-  a2uiProcessor.processActivitySnapshot(parsedEvent);   // ← A2UI path
-  // If no TEXT_MESSAGE_START yet, create a synthetic assistant message
-  if (!assistantMessageId) {
-    assistantMessageId = generateId();
-    // ...push empty assistant message with generated id...
-  }
-  syncA2UISurfaces();    // serialise all surfaces into React state
-  a2uiSurfacesSynced = true;
-  return;
-}
-```
-
-Key invariant: a conversation message (`assistantMessageId`) always exists
-before `syncA2UISurfaces()` runs. The hook ensures this in three ways:
-
-- `TEXT_MESSAGE_START` pre-inserts the message with the backend-assigned ID.
-- If `ACTIVITY_SNAPSHOT` arrives before `TEXT_MESSAGE_START`, the hook
-  creates a synthetic placeholder with a locally-generated ID.
-- When `TEXT_MESSAGE_START` later arrives with a different ID, it renames
-  the synthetic placeholder in-place to avoid a duplicate bubble.
-
-### `syncA2UISurfaces`
-
-```ts
-const syncA2UISurfaces = () => {
-  const surfaceManager = a2uiProcessor.getSurfaceManager();
-  const surfaceIds = surfaceManager.getAllSurfaceIds();
-  const surfaces: Record<string, SerializableSurfaceState> = {};
-  for (const surfaceId of surfaceIds) {
-    const surface = surfaceManager.getSurface(surfaceId);
-    if (surface) surfaces[surfaceId] = serializeSurface(surface);
-  }
-  // writes surfaces into conversation.messages[assistantMessageIdx].metadata.a2uiSurfaces
-  applyUpdate(...);
+type ActivitySnapshotEvent = {
+  type: 'ACTIVITY_SNAPSHOT';
+  messageId: string;
+  activityType: 'a2ui-surface';
+  content: {
+    operations: A2UIOperation[];
+  };
+  replace?: boolean;
 };
 ```
 
-This is called after every `ACTIVITY_SNAPSHOT`, causing a React state update
-that triggers a re-render with the latest surface set.
+The supported A2UI operations are:
 
----
+- `beginRendering`
+- `surfaceUpdate`
+- `dataModelUpdate`
+- `deleteSurface`
 
-## 4. A2UIMessageProcessor — skeleton swap & surface tracking
+These operations are applied in order for each snapshot.
 
-**File:** `app/lib/a2ui/message-processor.ts`
+## 5. Adapter Boundary
 
-### Constructor
+The stream session does not manipulate A2UI internals directly. It hands
+`ACTIVITY_SNAPSHOT` events to:
 
-```ts
-new A2UIMessageProcessor({
-  onSurfaceUpdate: (surfaceId) => syncA2UISurfaces(),
-  onSurfaceDelete: (surfaceId) => syncA2UISurfaces(),
-  onError:         (error)     => logError(…),
-})
-```
+- `app/lib/generative/adapters/a2ui/stream-a2ui-adapter.ts`
 
-### `activitySurfaces` Map
+`StreamA2UIAdapter` is responsible for:
 
-```ts
-private activitySurfaces = new Map<string, Set<string>>();
-//                                   ↑ messageId   ↑ surface IDs introduced by that snapshot
-```
+- accepting `ACTIVITY_SNAPSHOT` events
+- forwarding them to `A2UIMessageProcessor`
+- serializing current surfaces into `message.metadata.a2uiSurfaces`
+- exposing whether any A2UI content has been synced yet
 
-Tracks which surfaces each `messageId` introduced, enabling atomic skeleton
-replacement when the real content snapshot arrives.
+This is the boundary between:
 
-### Skeleton swap — `processActivitySnapshot`
+- generic stream/session logic
+- A2UI-specific structured response handling
 
-```ts
-processActivitySnapshot(event: ActivitySnapshotEvent): void {
-  // 1. If replace=true and messageId seen before → delete old surfaces
-  if (event.replace && this.activitySurfaces.has(event.messageId)) {
-    const previousSurfaces = this.activitySurfaces.get(event.messageId)!;
-    for (const surfaceId of previousSurfaces) {
-      this.surfaceManager.deleteSurface(surfaceId);
-      this.eventHandler.onSurfaceDelete?.(surfaceId);
-    }
-    this.activitySurfaces.delete(event.messageId);
-  }
+## 6. Snapshot Processing
 
-  // 2. Apply all operations in the new snapshot
-  for (const operation of operations) {
-    this.processOperation(operation);
-  }
+Snapshot processing is handled by:
 
-  // 3. Record which surfaces this messageId now owns
-  const updatedSurfaces = this.extractUpdatedSurfaceIds(operations);
-  this.activitySurfaces.set(event.messageId, updatedSurfaces);
+- `app/lib/a2ui/message-processor.ts`
 
-  // 4. Notify listeners
-  for (const surfaceId of updatedSurfaces) {
-    this.eventHandler.onSurfaceUpdate?.(surfaceId);
-  }
-}
-```
+`A2UIMessageProcessor` has two important responsibilities:
 
-The backend emits the skeleton and the real content snapshot with the **same
-`messageId`** and both with `replace: true`. When the real snapshot arrives,
-step 1 deletes the skeleton surface and step 2 creates the real surface fresh —
-the skeleton is replaced atomically.
+1. apply the operations inside a single snapshot
+2. track which surfaces belong to a given activity `messageId`
 
----
+The second responsibility is what makes snapshot replacement work.
 
-## 5. SurfaceManager — operation dispatch
+### Replacement behavior
 
-**File:** `app/lib/a2ui/surface-manager.ts`
+When a snapshot arrives with:
 
-### `SurfaceState`
+- the same `messageId` as an earlier snapshot
+- `replace: true`
+
+the processor deletes the surfaces previously associated with that activity
+message before applying the new operations.
+
+That is how the frontend handles the common sequence:
+
+- skeleton snapshot
+- final content snapshot
+
+for the same logical response fragment.
+
+## 7. SurfaceManager
+
+Surface operations are applied by:
+
+- `app/lib/a2ui/surface-manager.ts`
+
+Each surface is stored as a `SurfaceState`:
 
 ```ts
 type SurfaceState = {
   surfaceId: string;
-  root: string | null; // root component ID (set by beginRendering)
-  catalogId: string | null; // catalogId from beginRendering
+  root: string | null;
+  catalogId: string | null;
   components: Map<string, ComponentDefinition>;
   dataModel: DataModelStore;
-  isRendered: boolean; // true once beginRendering processed
+  isRendered: boolean;
 };
 ```
 
-### `ComponentDefinition`
+### Operation behavior
 
-```ts
-type ComponentDefinition = {
-  id: string;
-  catalogComponentId: string; // e.g. "ProductCarousel"
-  component: Record<string, unknown>; // raw component props object
-  children?: Record<string, unknown>;
-};
-```
+#### `beginRendering`
 
-`catalogComponentId` is extracted from the wire format by taking the first key
-of the `component` object:
+Sets the surface-level render metadata:
 
-```ts
-// Wire: { "id": "root", "component": { "ProductCarousel": { isLoading: true } } }
-const keys = Object.keys(component.component);
-catalogComponentId = keys[0]; // → "ProductCarousel"
-```
+- `surfaceId`
+- `root`
+- `catalogId`
+- `isRendered = true`
 
-### `processOperation` dispatch
+Without this, the surface is not considered renderable.
 
-| Operation key     | Handler                    | Effect                                                           |
-| ----------------- | -------------------------- | ---------------------------------------------------------------- |
-| `beginRendering`  | `beginRendering(op)`       | Sets `surface.root`, `catalogId`, `isRendered = true`            |
-| `surfaceUpdate`   | `surfaceUpdate(op)`        | Upserts `ComponentDefinition` per component in `op.components[]` |
-| `dataModelUpdate` | `dataModelUpdate(op)`      | Calls `surface.dataModel.update(op.contents)`                    |
-| `deleteSurface`   | `deleteSurface(surfaceId)` | Removes surface from `surfaces` Map                              |
+#### `surfaceUpdate`
 
-### Serialisation helpers
+Upserts component definitions into `surface.components`.
 
-`serializeSurface(surface)` converts a live `SurfaceState` (with `Map` and
-`DataModelStore` instances) to a plain-object `SerializableSurfaceState` safe
-for React state storage:
+The current implementation derives `catalogComponentId` from the first key in
+the wire-format `component` object.
 
-```ts
-{
-  surfaceId:     string,
-  root:          string | null,
-  catalogId:     string | null,
-  components:    ComponentDefinition[],   // Array.from(components.values())
-  dataModelData: Record<string, unknown>, // dataModel.getAll()
-  isRendered:    boolean,
-}
-```
-
-`deserializeSurface(serialized)` reconstructs the live `SurfaceState`
-using `dataModel.setAll(dataModelData)` to bypass re-parsing of already-resolved
-JS values.
-
----
-
-## 6. DataModelStore — wire-format deserialization
-
-**File:** `app/lib/a2ui/data-model-store.ts`
-
-### Wire format — `contents` array
-
-`dataModelUpdate.contents` is an array of `DataModelEntry`:
-
-```ts
-type DataModelEntry = {
-  key?: string;
-  valueString?: string;
-  valueNumber?: number;
-  valueBoolean?: boolean;
-  valueMap?: Array<DataModelEntry>;
-};
-```
-
-Scalar values use `valueString` / `valueNumber` / `valueBoolean` (never a
-plain `value` key).
-
-### `update(contents)` → `dataToValue`
-
-`dataToValue(entries)` iterates the entries and:
-
-- Skips anonymous entries (`key === undefined`) — they are list items handled
-  by the parent entry's `isList` branch.
-- Maps scalar variants directly to JS primitives.
-- For `valueMap`, detects whether it encodes a **list** or a **nested object**:
-
-```ts
-const firstEntry = entry.valueMap[0];
-const isList =
-  firstEntry !== undefined &&
-  firstEntry.key === undefined && // anonymous wrapper
-  firstEntry.valueMap !== undefined; // inner entry has its own valueMap
-
-if (isList) {
-  // Array of objects — each element is { valueMap: [...keyed entries...] }
-  result[key] = entry.valueMap.map((item) => this.dataToValue(item.valueMap!));
-} else {
-  // Nested object — all entries have keys
-  result[key] = this.dataToValue(entry.valueMap);
-}
-```
-
-**Wire example — list of products:**
+Example:
 
 ```json
 {
-  "key": "items",
-  "valueMap": [
-    {
-      "valueMap": [
-        {"key": "ec_product_id", "valueString": "SKU-001"},
-        {"key": "ec_name", "valueString": "Trail Shoes"},
-        {"key": "ec_price", "valueNumber": 149.99}
-      ]
+  "id": "root",
+  "component": {
+    "ProductCarousel": {
+      "heading": {"literalString": "Suggested canoes"}
     }
-  ]
+  }
 }
 ```
 
-Deserialised result: `{ items: [{ ec_product_id: "SKU-001", ec_name: "Trail Shoes", ec_price: 149.99 }] }`
+becomes a component definition whose `catalogComponentId` is
+`ProductCarousel`.
 
-### `get(path)` — JSON Pointer traversal
+#### `dataModelUpdate`
 
-```ts
-dataModel.get('/items/0/ec_name'); // → "Trail Shoes"
-dataModel.get('/items'); // → [{ ec_product_id: "SKU-001", ... }]
-```
+Passes `contents` into the surface's `DataModelStore`.
 
-Path segments use RFC 6901 escaping (`~1` → `/`, `~0` → `~`).  
-`get('/')` or `get(undefined)` returns the entire root object.
+This is where the actual bound data for products, comparison rows, next
+actions, and similar structures gets populated.
 
-### `setAll(data)` — deserialisation bypass
+#### `deleteSurface`
 
-Used by `deserializeSurface` to restore already-resolved JS values from
-`SerializableSurfaceState.dataModelData` without re-parsing the wire format.
+Removes the entire surface from the in-memory map.
 
----
+## 8. DataModelStore
 
-## 7. DataBindingResolver — prop resolution
+Data model updates are applied by:
 
-**File:** `app/lib/a2ui/data-binding-resolver.ts`
+- `app/lib/a2ui/data-model-store.ts`
 
-### `resolveBoundValue(boundValue, dataModel)`
+`DataModelStore` converts wire-format entries into plain JS values and exposes
+pointer-style lookup with `get(path)`.
 
-Resolves a single `BoundValue` shape to a JS value:
+### Supported primitive entries
 
-| Shape                                | Behaviour                                                          |
-| ------------------------------------ | ------------------------------------------------------------------ |
-| `{ path: "/x" }`                     | Returns `dataModel.get("/x")`                                      |
-| `{ path: "/x", literalString: "v" }` | Writes `"v"` into model at key, then returns `dataModel.get("/x")` |
-| `{ literalString: "v" }`             | Returns `"v"` directly (no path lookup)                            |
-| `{ literalNumber: 42 }`              | Returns `42`                                                       |
-| `{ literalBoolean: true }`           | Returns `true`                                                     |
-| Anything else                        | Returned as-is (not a BoundValue)                                  |
+An entry can become:
 
-### `resolveComponentBindings(component, dataModel)`
+- `valueString`
+- `valueNumber`
+- `valueBoolean`
+- `null`
 
-Recursively walks every key/value in `component`. If a value looks like a
-`BoundValue` (has `path`, `literalString`, `literalNumber`, or
-`literalBoolean`), it calls `resolveBoundValue`. Otherwise it recurses into
-nested objects or maps over arrays.
+### Nested object / list handling
 
-**Important call convention in `ComponentRenderer`:**
+`valueMap` entries are recursively converted.
 
-```ts
-const resolved = resolveComponentBindings(
-  {catalogComponentId, component: componentProps},
-  dataModel,
-);
-// resolved structure: { catalogComponentId: "...", component: { resolvedProp: value, ... } }
-// Therefore each case does:
-const resolvedProps = (resolved as any).component || resolved;
-```
+Important behavior in the current implementation:
 
-### `resolveTemplateData(path, dataModel)`
+- anonymous list entries become arrays
+- indexed string keys like `"0"`, `"1"`, `"2"` also become arrays
+- everything else becomes an object map
 
-Returns `dataModel.get(path)` cast as `unknown[]`, or `[]` if the value is
-not an array. Used to populate `products` and `actions` arrays from the data
-model.
+That indexed-list support is important for the current commerce agent payloads,
+because item collections can arrive as keyed map entries rather than anonymous
+lists.
 
----
+### Runtime lookup
 
-## 8. SurfaceRenderer — component tree rendering
+Renderers and binding resolution read data through:
 
-**File:** `app/components/A2UI/SurfaceRenderer.tsx`
+- `surface.dataModel.get(path)`
 
-### Guard conditions
+This is the main bridge between `dataModelUpdate` operations and component
+props.
 
-```ts
-if (!surface.isRendered || !surface.root) return null; // awaiting beginRendering
-if (surface.surfaceId.startsWith('bundle-surface-')) return null; // slot surface
-```
+## 9. Binding Resolution
 
-`bundle-surface-*` surfaces are silently suppressed because they exist only as
-data containers for `BundleDisplay` to pull product info from — they must not
-appear as standalone chat bubbles.
+Binding resolution happens in:
 
-### Layout components (handled inline by SurfaceRenderer)
+- `app/lib/a2ui/data-binding-resolver.ts`
 
-| `catalogComponentId` | Rendered as                                                                                         |
-| -------------------- | --------------------------------------------------------------------------------------------------- |
-| `Column`             | `<div className="flex flex-col gap-4">` with `childIds` from `componentProps.children.explicitList` |
-| `Row`                | `<div className="flex flex-row gap-2 flex-wrap">` with `childIds`                                   |
-| `List`               | Iterates `dataModel.get(template.dataBinding)` array, rendering `template.componentId` per item     |
-| `Card`               | `<div>` with border/shadow wrapping `componentProps.child`                                          |
-| `ConversationAnswer` | `<ConversationAnswer>` wrapping `childIds`                                                          |
+The key responsibilities there are:
 
-### Sibling render loop
+- resolve bound component props against the current `DataModelStore`
+- resolve templated list items
+- support the A2UI-style data binding references used by catalog components
 
-After rendering the root, `SurfaceRenderer` walks `surface.components` for any
-non-root, non-template components:
+By the time a component reaches `ComponentRenderer`, its bound values are
+already normalized through this layer.
 
-- **`NextActionsBar`** components are collected separately and rendered **last**,
-  regardless of their declaration order in the surface.
-- All other sibling components are rendered in Map iteration order before
-  `NextActionsBar`.
+## 10. How Surfaces Reach the Assistant Message
 
-```
-<div className="flex flex-col gap-4 w-full">
-  {rootResult}
-  {siblingNodes}    ← ProductCarousel, ComparisonTable, BundleDisplay, …
-  {actionsNodes}    ← NextActionsBar (always last)
-</div>
-```
-
-If there are no siblings and no action nodes, the root result is returned
-unwrapped (no extra `<div>`).
-
----
-
-## 9. ComponentRenderer — per-component prop mapping
-
-**File:** `app/components/A2UI/ComponentRenderer.tsx`
-
-`ComponentRenderer` is responsible for **leaf** components (not layout
-containers). It receives a `ComponentDefinition` and a `DataModelStore`, calls
-`resolveComponentBindings`, and delegates to the correct React component.
-
-### `isLoading` wiring
-
-The skeleton snapshot sets `isLoading: true` directly in the component props:
-
-```json
-{"ProductCarousel": {"isLoading": true}}
-```
-
-`ComponentRenderer` reads `componentProps.isLoading` (before binding
-resolution) and passes it through to the component. When the real snapshot
-arrives it replaces the skeleton entirely (via the skeleton-swap mechanism),
-so `isLoading` will never be `true` in the real content snapshot.
-
-### `catalogComponentId` switch cases
-
-| Case                         | Component           | Product data source                                                                                             |
-| ---------------------------- | ------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `ProductCard`                | `A2UIProductCard`   | Resolved props directly (`ec_*` fields)                                                                         |
-| `ProductCarousel`            | `ProductCarousel`   | `resolveTemplateData(componentProps.products.dataBinding, dataModel)`                                           |
-| `ComparisonTable`            | `ComparisonTable`   | `resolveTemplateData(componentProps.products.dataBinding, dataModel)` with ec\_\* → `ComparisonProduct` mapping |
-| `ComparisonSummary`          | `ComparisonSummary` | `resolvedProps.text`                                                                                            |
-| `BundleDisplay`              | `BundleDisplay`     | `componentProps.bundles` (inline literal); slot product data from `surfaceMap`                                  |
-| `NextActionsBar`             | `NextActionsBar`    | `resolveTemplateData(componentProps.actions.dataBinding, dataModel)`                                            |
-| `Text`                       | `<h1/h2/h3/p>`      | `resolved.text` / `resolved.content`; `resolved.usageHint` controls tag                                         |
-| `Image`                      | `<img>`             | `resolved.url`, `resolved.alt`, `resolved.usageHint`                                                            |
-| `Button`                     | `<button>`          | `resolved.text`, `resolved.variant`, `resolved.action`                                                          |
-| `Column`/`Row`/`List`/`Card` | —                   | Handled by `SurfaceRenderer`; `ComponentRenderer` returns `null`                                                |
-
----
-
-## 10. Per-component prop tables
-
-### `ProductCarousel`
-
-| Prop              | Type                            | Source                                                                 |
-| ----------------- | ------------------------------- | ---------------------------------------------------------------------- |
-| `headline`        | `string \| undefined`           | `resolvedProps.heading` or `resolvedProps.headline`                    |
-| `products`        | `Array<Record<string,unknown>>` | `resolveTemplateData(products.dataBinding, dataModel)` — `ec_*` fields |
-| `isLoading`       | `boolean`                       | `componentProps.isLoading` (skeleton flag)                             |
-| `onProductSelect` | `(id: string) => void`          | Passed from `SurfaceRenderer`                                          |
-
-Skeleton: renders `SKELETON_CARD_COUNT` (4) `SkeletonCard` shimmer cards when
-`isLoading && products.length === 0`.
-
-### `ComparisonTable`
-
-| Prop              | Type                   | Source                                                                               |
-| ----------------- | ---------------------- | ------------------------------------------------------------------------------------ |
-| `headline`        | `string \| undefined`  | `resolvedProps.heading` or `resolvedProps.headline`                                  |
-| `products`        | `ComparisonProduct[]`  | `resolveTemplateData(products.dataBinding, dataModel)` mapped to `ComparisonProduct` |
-| `attributes`      | `string[]`             | `resolvedProps.attributes` — custom attribute keys to display as rows                |
-| `isLoading`       | `boolean`              | `componentProps.isLoading`                                                           |
-| `onProductSelect` | `(id: string) => void` | Passed through                                                                       |
-
-`ComparisonProduct` mapping (in `ComponentRenderer`):
-
-| `ec_*` field             | `ComparisonProduct` field                                                |
-| ------------------------ | ------------------------------------------------------------------------ |
-| `ec_product_id`          | `productId`                                                              |
-| `ec_name`                | `name`                                                                   |
-| `ec_image`               | `imageUrl`                                                               |
-| `ec_price`               | `price` (or `originalPrice` when on sale)                                |
-| `ec_promo_price`         | Becomes `price` when lower than `ec_price`; `originalPrice` = `ec_price` |
-| `ec_currency`            | `currency`                                                               |
-| `ec_rating`              | `rating`                                                                 |
-| `clickUri`                 | `url`                                                                    |
-| all remaining `p.*` keys | Spread onto `ComparisonProduct` for `attributes` row lookup              |
-
-Skeleton: renders `ComparisonTableSkeleton` (3 columns × 4 rows shimmer) when
-`isLoading && products.length === 0`.
-
-### `BundleDisplay`
-
-| Prop              | Type                        | Source                                                             |
-| ----------------- | --------------------------- | ------------------------------------------------------------------ |
-| `title`           | `string \| undefined`       | `componentProps.title` (string or `{literalString: "..."}`)        |
-| `bundles`         | `Bundle[]`                  | `componentProps.bundles` (inline literal array in component props) |
-| `surfaceMap`      | `Map<string, SurfaceState>` | Passed from `ComponentRenderer` via `SurfaceRenderer`              |
-| `isLoading`       | `boolean`                   | `componentProps.isLoading`                                         |
-| `onProductSelect` | `(id: string) => void`      | Passed through                                                     |
-
-`Bundle` shape (from component props literal):
-
-```ts
-{
-  bundleId:    string,
-  label:       string,
-  description: string,
-  slots: [{ categoryLabel: string, surfaceRef: string }],
-}
-```
-
-Each `slot.surfaceRef` names a `bundle-surface-*` surface. `BundleDisplay`
-calls `surfaceMap.get(surfaceRef)`, then `surface.dataModel.get('/items')`
-to extract the product for that slot. Slots whose surface has not yet loaded
-display an inline per-slot shimmer.
-
-Skeleton: `BundleDisplaySkeleton` (2 tabs + 3 slot cards shimmer) when
-`isLoading && bundles.length === 0`.
-
-### `NextActionsBar`
-
-| Prop               | Type                            | Source                                                |
-| ------------------ | ------------------------------- | ----------------------------------------------------- |
-| `actions`          | `Array<Record<string,unknown>>` | `resolveTemplateData(actions.dataBinding, dataModel)` |
-| `isLoading`        | `boolean`                       | `componentProps.isLoading`                            |
-| `onSearchAction`   | `(query: string) => void`       | Passed from `SurfaceRenderer`                         |
-| `onFollowupAction` | `(message: string) => void`     | Passed from `SurfaceRenderer`                         |
-
-Each action in the array is consumed as `{ text: string, type: 'search' | 'followup' }`.
-`type="search"` calls `onSearchAction(text)`; `type="followup"` calls
-`onFollowupAction(text)`.
-
-Skeleton: two `h-9 w-36 animate-pulse` pill placeholders when `isLoading`.
-
-### `A2UIProductCard`
-
-Rendered directly from `ec_*` fields resolved from the data model or from
-component props (for a standalone `ProductCard` surface component).
-
-| Prop            | Type                                        |
-| --------------- | ------------------------------------------- |
-| `productId`     | `string` — `ec_product_id`                  |
-| `name`          | `string` — `ec_name`                        |
-| `imageUrl`      | `string` — `ec_image`                       |
-| `price`         | `number` — `ec_price`                       |
-| `originalPrice` | `number \| undefined` — `ec_promo_price`    |
-| `currency`      | `string` — `ec_currency` (default `"USD"`)  |
-| `rating`        | `number \| undefined` — `ec_rating`         |
-| `url`           | `string` — `clickUri`                         |
-| `colors`        | `string[] \| undefined` — `ec_colors`       |
-| `selectedColor` | `string \| undefined` — `ec_selected_color` |
-
----
-
-## 11. Three-phase timeline (skeleton → content → next-actions)
-
-For every rendering tool call the backend emits up to three
-`ACTIVITY_SNAPSHOT` events. All three use `replace: true`.
-
-```
-TOOL_CALL_START  (render_product_carousel / render_comparison_table / render_bundle_display)
-  → Phase 0: ACTIVITY_SNAPSHOT (messageId=A, replace=true)
-      operations:
-        beginRendering { surfaceId: "skeleton-surface-<slug>", root: "skeleton-root-<slug>" }
-        surfaceUpdate  { components: [{ id: "skeleton-root-<slug>",
-                                        component: { "ProductCarousel": { isLoading: true } } }] }
-      Effect: SurfaceRenderer shows shimmer skeleton immediately.
-
-TOOL_CALL_RESULT (tool returns)
-  → Phase 1: ACTIVITY_SNAPSHOT (messageId=A, replace=true)
-      operations:
-        beginRendering  { surfaceId: "<real-surface-id>", root: "<root-id>" }
-        surfaceUpdate   { components: [{ id: "<root-id>",
-                                         component: { "ProductCarousel": { … real props … } } }] }
-        dataModelUpdate { surfaceId: "<real-surface-id>", contents: [ … product data … ] }
-      Effect: activitySurfaces[A] skeleton surfaces deleted; real surface created; shimmer replaced.
-
-  → Phase 2: ACTIVITY_SNAPSHOT (messageId=B, replace=true)  ← always a separate messageId
-      operations:
-        beginRendering  { surfaceId: "next-actions-surface", root: "next-actions-root" }
-        surfaceUpdate   { components: [{ id: "next-actions-root",
-                                         component: { "NextActionsBar": { … } } }] }
-        dataModelUpdate { surfaceId: "next-actions-surface", contents: [ … actions … ] }
-      Effect: NextActionsBar rendered after all product surfaces.
-```
-
-### Skeleton surface ID conventions
-
-| Tool                      | Skeleton surface ID               | Component                             |
-| ------------------------- | --------------------------------- | ------------------------------------- |
-| `render_product_carousel` | `skeleton-surface-<slug>`         | `ProductCarousel { isLoading: true }` |
-| `render_comparison_table` | `skeleton-surface-comparison`     | `ComparisonTable { isLoading: true }` |
-| `render_bundle_display`   | `skeleton-surface-bundle-display` | `BundleDisplay { isLoading: true }`   |
-| `render_next_actions`     | `skeleton-surface-next-actions`   | `NextActionsBar { isLoading: true }`  |
-
----
-
-## 12. React state persistence (`a2uiSurfaces`)
-
-Surfaces are persisted into `ConversationMessage.metadata.a2uiSurfaces` as a
-`Record<string, SerializableSurfaceState>` so that they survive React
-re-renders, page navigations (via `ConversationRecord` state), and SSR
-hydration.
-
-After each `ACTIVITY_SNAPSHOT` the hook calls `syncA2UISurfaces()`, which:
-
-1. Iterates `surfaceManager.getAllSurfaceIds()`.
-2. Calls `serializeSurface(surface)` for each.
-3. Writes the result into `message.metadata.a2uiSurfaces` via `applyUpdate`.
-
-At render time, the chat message component reads
-`message.metadata.a2uiSurfaces`, calls `deserializeSurface(serialized)` for
-each entry to reconstruct live `SurfaceState` objects, and passes them to
-`SurfaceRenderer`.
-
-The `deserializeSurface` path uses `dataModel.setAll(dataModelData)` to
-restore already-resolved JS values rather than re-parsing the wire format,
-avoiding any possibility of double-deserialization.
+After snapshot processing, `StreamA2UIAdapter` serializes all current surfaces
+into assistant message metadata:
+
+- `message.metadata.a2uiSurfaces`
+
+The surfaces are serialized because React conversation state stores plain data,
+not live `Map` instances and class objects.
+
+The serialization helpers live in:
+
+- `app/lib/a2ui/surface-manager.ts`
+
+This means the assistant message becomes the persistence boundary for A2UI
+content inside the conversational UI.
+
+## 11. MessageBubble as the Bridge
+
+Rendering starts in:
+
+- `app/components/Generative/ResponseContent/MessageBubble.tsx`
+
+For text assistant messages:
+
+- if `a2uiSurfaces` is empty, `MessageBubble` renders plain answer content
+- if `a2uiSurfaces` is present, `MessageBubble` deserializes each surface and
+  renders it through `SurfaceRenderer`
+
+So `MessageBubble` is the bridge between:
+
+- conversational message rendering
+- structured surface rendering
+
+## 12. SurfaceRenderer
+
+Surface tree rendering happens in:
+
+- `app/components/Generative/ResponseContent/rendering/SurfaceRenderer.tsx`
+
+This file handles surface-level render rules.
+
+### What it does
+
+- skips surfaces that are not ready:
+  - `!surface.isRendered`
+  - `!surface.root`
+- hides `bundle-surface-*` because those surfaces are data-only support surfaces
+- marks `skeleton-surface-*` as skeleton surfaces
+- walks container/layout nodes like:
+  - `Column`
+  - `Row`
+  - `List`
+  - `Card`
+  - `ConversationAnswer`
+- dispatches leaf components to `ComponentRenderer`
+- renders `NextActionsBar` after other sibling nodes
+
+### Why bundle surfaces are hidden
+
+Bundle slot surfaces are kept in the surface map so components like
+`BundleDisplay` can resolve product data out of them, but they are not supposed
+to appear as standalone assistant UI.
+
+## 13. ComponentRenderer and Registry
+
+Files:
+
+- `app/components/Generative/ResponseContent/rendering/ComponentRenderer.tsx`
+- `app/components/Generative/ResponseContent/rendering/component-registry.ts`
+- `app/components/Generative/ResponseContent/rendering/component-renderers.tsx`
+- `app/components/Generative/ResponseContent/rendering/render-context.ts`
+
+### `ComponentRenderer`
+
+Responsibilities:
+
+- resolve bound props via `resolveComponentBindings`
+- create `ResponseRenderContext`
+- create `ResponseInteractionHandlers`
+- dispatch by `catalogComponentId` through the registry
+
+### `component-registry`
+
+Maps `catalogComponentId` values to renderer functions.
+
+### `component-renderers`
+
+Contains the adapter functions that translate A2UI component definitions into
+the props expected by the actual React UI components.
+
+This is the main seam between:
+
+- A2UI catalog components
+- local React presentation components
+
+## 14. UI Components
+
+The actual presentational components live in:
+
+- `app/components/Generative/ResponseContent/components/`
+
+Important examples:
+
+- `ProductCarousel.tsx`
+- `ComparisonTable.tsx`
+- `ComparisonSummary.tsx`
+- `BundleDisplay.tsx`
+- `NextActionsBar.tsx`
+- `A2UIProductCard.tsx`
+- `ProductDrawer.tsx`
+- `ConversationAnswer.tsx`
+- `Skeletons.tsx`
+
+These files should stay presentation-focused. They render the UI for already
+processed and already-bound data.
+
+## 15. Skeleton Lifecycle
+
+The frontend no longer relies on backend `isLoading` props to decide whether a
+surface is a skeleton.
+
+Current rule:
+
+- if `surfaceId` starts with `skeleton-surface-`, the surface is treated as a
+  skeleton surface
+
+That flag is created in `SurfaceRenderer` and passed down through
+`ComponentRenderer` into the relevant UI components.
+
+The component type still determines the skeleton shape:
+
+- `ProductCarousel` -> carousel skeleton
+- `ComparisonTable` -> comparison skeleton
+- `BundleDisplay` -> bundle skeleton
+- `NextActionsBar` -> next-actions skeleton
+
+So:
+
+- `surfaceId` answers "is this skeleton content?"
+- `catalogComponentId` answers "which skeleton UI should render?"
+
+## 16. Typical Snapshot Timeline
+
+The common lifecycle for structured commerce content looks like:
+
+1. A skeleton `ACTIVITY_SNAPSHOT` arrives with `replace: true`.
+2. `A2UIMessageProcessor` creates skeleton surfaces and associates them with the
+   snapshot `messageId`.
+3. The adapter serializes those surfaces into `message.metadata.a2uiSurfaces`.
+4. `MessageBubble` renders the skeleton surface through `SurfaceRenderer`.
+5. A later `ACTIVITY_SNAPSHOT` arrives with the same activity `messageId` and
+   `replace: true`.
+6. `A2UIMessageProcessor` deletes the earlier skeleton surfaces.
+7. The new operations build the final surfaces and data models.
+8. The adapter serializes the new surfaces.
+9. `MessageBubble` re-renders with the final content.
+
+That is the core skeleton-to-content replacement contract.
+
+## 17. Where To Make Changes
+
+### Change event processing or replacement behavior
+
+- `app/lib/a2ui/message-processor.ts`
+- `app/lib/a2ui/surface-manager.ts`
+
+### Change data-model interpretation
+
+- `app/lib/a2ui/data-model-store.ts`
+- `app/lib/a2ui/data-binding-resolver.ts`
+
+### Change how A2UI content is attached to assistant messages
+
+- `app/lib/generative/adapters/a2ui/stream-a2ui-adapter.ts`
+
+### Change surface-level rendering rules
+
+- `app/components/Generative/ResponseContent/rendering/SurfaceRenderer.tsx`
+
+### Change component dispatch or A2UI-to-React mapping
+
+- `app/components/Generative/ResponseContent/rendering/ComponentRenderer.tsx`
+- `app/components/Generative/ResponseContent/rendering/component-registry.ts`
+- `app/components/Generative/ResponseContent/rendering/component-renderers.tsx`
+
+### Change specific UI components
+
+- `app/components/Generative/ResponseContent/components/*`
+
+## 18. Summary
+
+The A2UI path in this repo is:
+
+- event-driven at the stream boundary
+- surface-based in memory
+- data-model-backed for bindings
+- serialized onto assistant message metadata
+- rendered through the `ResponseContent` stack
+
+That is the mental model to keep in mind when working on structured
+conversational responses.
