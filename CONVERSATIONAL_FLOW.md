@@ -11,7 +11,7 @@ Use this doc when you need to understand:
 - where to make changes if you need to extend or instrument the flow
 
 For the A2UI-specific rendering pipeline, see
-[A2UI_FRONTEND_RENDERING.md](./A2UI_FRONTEND_RENDERING.md).
+[CONVERSATIONAL_A2UI_RENDERING.md](./CONVERSATIONAL_A2UI_RENDERING.md).
 
 ## 1. Scope
 
@@ -312,7 +312,7 @@ This is the key architectural boundary:
 
 For the detailed A2UI render path, read:
 
-- [A2UI_FRONTEND_RENDERING.md](./A2UI_FRONTEND_RENDERING.md)
+- [CONVERSATIONAL_A2UI_RENDERING.md](./CONVERSATIONAL_A2UI_RENDERING.md)
 
 ## 12. Where To Make Changes
 
@@ -358,4 +358,4 @@ If you are new to this code, read in this order:
 4. `app/lib/generative/adapters/a2ui/stream-a2ui-adapter.ts`
 5. `app/components/Generative/ConversationTranscript.tsx`
 6. `app/components/Generative/ResponseContent/`
-7. `Architecture-docs/A2UI_FRONTEND_RENDERING.md`
+7. `CONVERSATIONAL_A2UI_RENDERING.md`
