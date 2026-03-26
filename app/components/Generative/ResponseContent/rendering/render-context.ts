@@ -1,8 +1,8 @@
 import type {
   ComponentDefinition,
   SurfaceState,
-} from '~/lib/a2ui/surface-manager';
-import type {DataModelStore} from '~/lib/a2ui/data-model-store';
+} from '~/lib/generative/a2ui/surface-manager';
+import type {DataModelStore} from '~/lib/generative/a2ui/data-model-store';
 
 export type ResponseRenderContext = {
   surfaceId: string;

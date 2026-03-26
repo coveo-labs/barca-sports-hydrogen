@@ -1,5 +1,5 @@
-import {A2UIMessageProcessor} from '~/lib/a2ui';
-import {serializeSurface} from '~/lib/a2ui/surface-manager';
+import {A2UIMessageProcessor} from '~/lib/generative/a2ui';
+import {serializeSurface} from '~/lib/generative/a2ui/surface-manager';
 import type {ConversationMessage} from '~/types/conversation';
 import type {ActivitySnapshotEvent, AssistantStreamEvent} from '~/lib/generative/streaming';
 import type {StructuredResponseAdapter} from './types';

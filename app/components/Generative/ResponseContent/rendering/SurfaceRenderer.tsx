@@ -1,5 +1,5 @@
 import type {ReactNode} from 'react';
-import type {SurfaceState} from '~/lib/a2ui/surface-manager';
+import type {SurfaceState} from '~/lib/generative/a2ui/surface-manager';
 import {ConversationAnswer} from '../components/ConversationAnswer';
 import {ComponentRenderer} from './ComponentRenderer';
 import type {ResponseInteractionHandlers} from './render-context';

@@ -5,7 +5,7 @@ import {ComparisonTable} from '../components/ComparisonTable';
 import {ComparisonSummary} from '../components/ComparisonSummary';
 import {BundleDisplay} from '../components/BundleDisplay';
 import {NextActionsBar} from '../components/NextActionsBar';
-import {resolveTemplateData} from '~/lib/a2ui/data-binding-resolver';
+import {resolveTemplateData} from '~/lib/generative/a2ui/data-binding-resolver';
 import type {ResponseComponentRendererProps} from './render-context';
 
 export function renderProductCard({

@@ -2,9 +2,9 @@ import type {ReactNode} from 'react';
 import type {
   ComponentDefinition,
   SurfaceState,
-} from '~/lib/a2ui/surface-manager';
-import {resolveComponentBindings} from '~/lib/a2ui/data-binding-resolver';
-import type {DataModelStore} from '~/lib/a2ui/data-model-store';
+} from '~/lib/generative/a2ui/surface-manager';
+import {resolveComponentBindings} from '~/lib/generative/a2ui/data-binding-resolver';
+import type {DataModelStore} from '~/lib/generative/a2ui/data-model-store';
 import {responseComponentRegistry} from './component-registry';
 import type {
   ResponseInteractionHandlers,

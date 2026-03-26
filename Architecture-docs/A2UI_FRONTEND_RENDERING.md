@@ -45,10 +45,10 @@ ACTIVITY_SNAPSHOT event
 
 ### A2UI processing and state
 
-- `app/lib/a2ui/message-processor.ts`
-- `app/lib/a2ui/surface-manager.ts`
-- `app/lib/a2ui/data-model-store.ts`
-- `app/lib/a2ui/data-binding-resolver.ts`
+- `app/lib/generative/a2ui/message-processor.ts`
+- `app/lib/generative/a2ui/surface-manager.ts`
+- `app/lib/generative/a2ui/data-model-store.ts`
+- `app/lib/generative/a2ui/data-binding-resolver.ts`
 
 ### Response rendering
 
@@ -112,7 +112,7 @@ This is the boundary between:
 
 Snapshot processing is handled by:
 
-- `app/lib/a2ui/message-processor.ts`
+- `app/lib/generative/a2ui/message-processor.ts`
 
 `A2UIMessageProcessor` has two important responsibilities:
 
@@ -142,7 +142,7 @@ for the same logical response fragment.
 
 Surface operations are applied by:
 
-- `app/lib/a2ui/surface-manager.ts`
+- `app/lib/generative/a2ui/surface-manager.ts`
 
 Each surface is stored as a `SurfaceState`:
 
@@ -208,7 +208,7 @@ Removes the entire surface from the in-memory map.
 
 Data model updates are applied by:
 
-- `app/lib/a2ui/data-model-store.ts`
+- `app/lib/generative/a2ui/data-model-store.ts`
 
 `DataModelStore` converts wire-format entries into plain JS values and exposes
 pointer-style lookup with `get(path)`.
@@ -249,7 +249,7 @@ props.
 
 Binding resolution happens in:
 
-- `app/lib/a2ui/data-binding-resolver.ts`
+- `app/lib/generative/a2ui/data-binding-resolver.ts`
 
 The key responsibilities there are:
 
@@ -272,7 +272,7 @@ not live `Map` instances and class objects.
 
 The serialization helpers live in:
 
-- `app/lib/a2ui/surface-manager.ts`
+- `app/lib/generative/a2ui/surface-manager.ts`
 
 This means the assistant message becomes the persistence boundary for A2UI
 content inside the conversational UI.
@@ -424,13 +424,13 @@ That is the core skeleton-to-content replacement contract.
 
 ### Change event processing or replacement behavior
 
-- `app/lib/a2ui/message-processor.ts`
-- `app/lib/a2ui/surface-manager.ts`
+- `app/lib/generative/a2ui/message-processor.ts`
+- `app/lib/generative/a2ui/surface-manager.ts`
 
 ### Change data-model interpretation
 
-- `app/lib/a2ui/data-model-store.ts`
-- `app/lib/a2ui/data-binding-resolver.ts`
+- `app/lib/generative/a2ui/data-model-store.ts`
+- `app/lib/generative/a2ui/data-binding-resolver.ts`
 
 ### Change how A2UI content is attached to assistant messages
 

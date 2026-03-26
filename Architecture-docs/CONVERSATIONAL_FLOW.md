@@ -82,10 +82,10 @@ User submits a message
 
 ### A2UI data layer
 
-- `app/lib/a2ui/message-processor.ts`
-- `app/lib/a2ui/surface-manager.ts`
-- `app/lib/a2ui/data-model-store.ts`
-- `app/lib/a2ui/data-binding-resolver.ts`
+- `app/lib/generative/a2ui/message-processor.ts`
+- `app/lib/generative/a2ui/surface-manager.ts`
+- `app/lib/generative/a2ui/data-model-store.ts`
+- `app/lib/generative/a2ui/data-binding-resolver.ts`
 
 ## 4. Client Entry Point
 
@@ -346,7 +346,7 @@ For the detailed A2UI render path, read:
 ### Change A2UI data processing
 
 - `app/lib/generative/adapters/a2ui/stream-a2ui-adapter.ts`
-- `app/lib/a2ui/`
+- `app/lib/generative/a2ui/`
 
 ## 13. Recommended Reading Order
 

@@ -7,8 +7,8 @@ import {SurfaceRenderer} from './rendering/SurfaceRenderer';
 import type {
   SerializableSurfaceState,
   SurfaceState,
-} from '~/lib/a2ui/surface-manager';
-import {deserializeSurface} from '~/lib/a2ui/surface-manager';
+} from '~/lib/generative/a2ui/surface-manager';
+import {deserializeSurface} from '~/lib/generative/a2ui/surface-manager';
 
 function resolveStringProp(value: unknown): string | null {
   if (typeof value === 'string') return value || null;

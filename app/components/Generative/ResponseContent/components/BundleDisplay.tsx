@@ -1,7 +1,7 @@
 import {useState} from 'react';
 import {Money} from '@shopify/hydrogen';
 import {NavLink} from 'react-router';
-import type {SurfaceState} from '~/lib/a2ui/surface-manager';
+import type {SurfaceState} from '~/lib/generative/a2ui/surface-manager';
 import {A2UIAddToCartButton} from './A2UIAddToCartButton';
 import {ProductDrawer} from './ProductDrawer';
 
