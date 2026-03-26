@@ -1,8 +1,7 @@
 import type {Product} from '@coveo/headless-react/ssr-commerce';
-import {extractAllProductIds} from '~/lib/generative/product-identifier';
+import {extractAllProductIds} from './product-identifier';
 
-// Re-export for backwards compatibility
-export {normalizeProductId as normalizeProductIdentifier} from '~/lib/generative/product-identifier';
+export {normalizeProductId as normalizeProductIdentifier} from './product-identifier';
 
 export function registerProducts(
   target: Map<string, Product>,

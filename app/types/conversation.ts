@@ -33,7 +33,7 @@ export interface ConversationMessage {
 
 /**
  * Serialized conversation format used for localStorage persistence.
- * Use `mapSummaryToRecord` and `recordToSummary` in generative-chat.ts
+ * Use `mapSummaryToRecord` and `recordToSummary` in `lib/generative/conversation`
  * to convert between this and `ConversationRecord`.
  */
 export interface ConversationSummary {

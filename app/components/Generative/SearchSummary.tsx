@@ -7,19 +7,21 @@ import type {RootLoader} from '~/root';
 import {
   createEmptyConversation,
   type ConversationRecord,
-} from '~/lib/generative/chat';
+} from '~/lib/generative/conversation';
 import {useAssistantStreaming} from '~/lib/generative/use-assistant-streaming';
-import {useMessageDerivation} from '~/lib/generative/use-message-derivation';
-import {useThinkingState} from '~/lib/generative/use-thinking-state';
-import {useConversationScroll} from '~/lib/generative/use-conversation-scroll';
+import {useMessageDerivation} from '~/lib/generative/conversation/use-message-derivation';
+import {
+  PENDING_THINKING_KEY,
+  useThinkingState,
+} from '~/lib/generative/view/use-thinking-state';
+import {useConversationScroll} from '~/lib/generative/view/use-conversation-scroll';
 import {ProductChip} from '~/components/Products/ProductChip';
 import {
   CarouselSkeleton,
   MessageBubble,
 } from '~/components/Generative/ResponseContent';
 import {ThinkingStatusPanel} from '~/components/Generative/ThinkingStatusPanel';
-import {registerProducts} from '~/lib/generative/product-index';
-import {PENDING_THINKING_KEY} from '~/lib/generative/thinking-constants';
+import {registerProducts} from '~/lib/generative/product';
 import type {Product} from '@coveo/headless-react/ssr-commerce';
 
 interface SearchSummaryProps {

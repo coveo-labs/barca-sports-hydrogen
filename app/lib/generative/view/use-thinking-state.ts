@@ -1,7 +1,8 @@
 import {useCallback, useEffect, useMemo, useState} from 'react';
 import type {ThinkingUpdateSnapshot} from '~/lib/generative/use-assistant-streaming';
-import {PENDING_THINKING_KEY} from '~/lib/generative/thinking-constants';
 import type {ConversationMessage} from '~/types/conversation';
+
+export const PENDING_THINKING_KEY = '__pending_thinking__';
 
 interface UseThinkingStateArgs {
   visibleMessages: ConversationMessage[];

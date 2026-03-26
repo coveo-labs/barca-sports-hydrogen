@@ -1,6 +1,6 @@
 import type {Dispatch, SetStateAction} from 'react';
-import type {ConversationRecord} from '~/lib/generative/chat';
-import {sortConversations} from '~/lib/generative/chat';
+import type {ConversationRecord} from '~/lib/generative/conversation';
+import {sortConversations} from '~/lib/generative/conversation';
 import type {ConversationMessage} from '~/types/conversation';
 
 type ConversationStateUpdaterOptions = {

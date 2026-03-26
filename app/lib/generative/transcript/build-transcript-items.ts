@@ -1,4 +1,4 @@
-import {PENDING_THINKING_KEY} from '~/lib/generative/thinking-constants';
+import {PENDING_THINKING_KEY} from '~/lib/generative/view/use-thinking-state';
 import type {ThinkingUpdateSnapshot} from '~/lib/generative/use-assistant-streaming';
 import type {ConversationMessage} from '~/types/conversation';
 import type {TranscriptItem} from './types';

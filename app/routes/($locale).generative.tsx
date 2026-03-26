@@ -14,21 +14,21 @@ import {
   MAX_CONVERSATIONS,
   type ConversationRecord,
   createEmptyConversation,
-} from '~/lib/generative/chat';
+} from '~/lib/generative/conversation';
 import {useAssistantStreaming} from '~/lib/generative/use-assistant-streaming';
-import {useConversationState} from '~/lib/generative/use-conversation-state';
-import {useConversationUrlSync} from '~/lib/generative/use-conversation-url-sync';
+import {useConversationState} from '~/lib/generative/conversation/use-conversation-state';
+import {useConversationUrlSync} from '~/lib/generative/view/use-conversation-url-sync';
 import {useAutoRetry} from '~/lib/generative/use-auto-retry';
-import {useMessageDerivation} from '~/lib/generative/use-message-derivation';
-import {useSendMessage} from '~/lib/generative/use-send-message';
+import {useMessageDerivation} from '~/lib/generative/conversation/use-message-derivation';
+import {useSendMessage} from '~/lib/generative/conversation/use-send-message';
 import {AssistantHeader} from '~/components/Generative/AssistantHeader';
 import {ChatInputFooter} from '~/components/Generative/ChatInputFooter';
 import {ConversationSidebar} from '~/components/Generative/ConversationSidebar';
 import {ConversationTranscript} from '~/components/Generative/ConversationTranscript';
 import {EmptyState} from '~/components/Generative/EmptyState';
 import {MessageListContainer} from '~/components/Generative/MessageListContainer';
-import {useConversationScroll} from '~/lib/generative/use-conversation-scroll';
-import {useThinkingState} from '~/lib/generative/use-thinking-state';
+import {useConversationScroll} from '~/lib/generative/view/use-conversation-scroll';
+import {useThinkingState} from '~/lib/generative/view/use-thinking-state';
 import {GenerativeProvider} from '~/lib/generative/context';
 
 const STREAM_ENDPOINT = '/api/agentic/conversation';

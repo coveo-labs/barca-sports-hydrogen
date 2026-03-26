@@ -1,5 +1,6 @@
 import {openDB, type IDBPDatabase, type DBSchema} from 'idb';
-import type {ConversationRecord} from './chat';
+import type {ConversationRecord} from './record';
+import {sortConversations} from './merge';
 
 const DB_NAME = 'agentic-conversations';
 const DB_VERSION = 1;
@@ -34,9 +35,7 @@ export async function loadConversations(): Promise<ConversationRecord[]> {
   try {
     const db = await getDB();
     const all = await db.getAll(STORE_NAME);
-    return all.sort((a, b) =>
-      b.updatedAt.localeCompare(a.updatedAt, undefined, {numeric: true}),
-    );
+    return sortConversations(all);
   } catch (error) {
     console.error('[storage] Failed to load conversations', error);
     return [];

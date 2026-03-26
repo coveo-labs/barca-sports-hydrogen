@@ -5,7 +5,7 @@ import {
   type ConversationRecord,
   createEmptyConversation,
   generateId,
-} from '~/lib/generative/chat';
+} from '~/lib/generative/conversation';
 import {logDebug} from '~/lib/logger';
 
 type UseSendMessageOptions = {

@@ -1,6 +1,6 @@
 import {useMemo} from 'react';
 import type {ConversationMessage} from '~/types/conversation';
-import type {ConversationRecord} from '~/lib/generative/chat';
+import type {ConversationRecord} from '~/lib/generative/conversation';
 
 const EMPTY_MESSAGES: ConversationMessage[] = [];
 

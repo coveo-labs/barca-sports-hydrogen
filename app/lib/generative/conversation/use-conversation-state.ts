@@ -11,11 +11,11 @@ import {
   type ConversationRecord,
   mapSummaryToRecord,
   mergeConversations,
-} from '~/lib/generative/chat';
+} from '~/lib/generative/conversation';
 import {
   loadConversations,
   saveAllConversations,
-} from '~/lib/generative/storage';
+} from '~/lib/generative/conversation/storage';
 
 type UseConversationStateOptions = {
   initialSummaries: ConversationSummary[];

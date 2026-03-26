@@ -1,6 +1,6 @@
 import {useCallback, useRef} from 'react';
 import type {Dispatch, SetStateAction} from 'react';
-import type {ConversationRecord} from '~/lib/generative/chat';
+import type {ConversationRecord} from '~/lib/generative/conversation';
 import {logDebug, logError, logInfo, logWarn} from '~/lib/logger';
 import {
   createBufferProcessor,

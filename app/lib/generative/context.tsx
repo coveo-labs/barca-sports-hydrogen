@@ -1,5 +1,5 @@
 import {createContext, useContext, useMemo, type ReactNode} from 'react';
-import type {ConversationRecord} from '~/lib/generative/chat';
+import type {ConversationRecord} from '~/lib/generative/conversation';
 import type {ThinkingUpdateSnapshot} from '~/lib/generative/use-assistant-streaming';
 import type {ConversationMessage} from '~/types/conversation';
 

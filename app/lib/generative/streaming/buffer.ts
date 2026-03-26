@@ -1,11 +1,21 @@
-import {findEventBoundary, getBoundaryLength} from '~/lib/generative/chat';
-
 export type RawSSEEvent = {
   event: string;
   data: string;
 };
 
 export type EventProcessor = (event: RawSSEEvent) => void;
+
+function findEventBoundary(buffer: string) {
+  const lfIndex = buffer.indexOf('\n\n');
+  const crlfIndex = buffer.indexOf('\r\n\r\n');
+  if (lfIndex === -1) return crlfIndex;
+  if (crlfIndex === -1) return lfIndex;
+  return Math.min(lfIndex, crlfIndex);
+}
+
+function getBoundaryLength(buffer: string, index: number) {
+  return buffer.startsWith('\r\n\r\n', index) ? 4 : 2;
+}
 
 export function createBufferProcessor(onEvent: EventProcessor) {
   let buffer = '';

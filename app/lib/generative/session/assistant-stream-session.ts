@@ -10,7 +10,10 @@ import {
   INTERRUPTED_ERROR_MESSAGE,
   TOOL_RESULT_FALLBACK_MESSAGE,
 } from '~/lib/generative/streaming';
-import {generateId, parseToolResultPayload} from '~/lib/generative/chat';
+import {
+  generateId,
+  parseToolResultPayload,
+} from '~/lib/generative/conversation';
 import type {
   ConversationMessage,
   ConversationThinkingUpdate,

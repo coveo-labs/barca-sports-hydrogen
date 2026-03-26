@@ -1,6 +1,6 @@
 import {useCallback, useEffect, useRef} from 'react';
 import type {Dispatch, MutableRefObject, SetStateAction} from 'react';
-import type {ConversationRecord} from '~/lib/generative/chat';
+import type {ConversationRecord} from '~/lib/generative/conversation';
 import {logDebug} from '~/lib/logger';
 
 const MAX_AUTO_RETRIES = 2;
