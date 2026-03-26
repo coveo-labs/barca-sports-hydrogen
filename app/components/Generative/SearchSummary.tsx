@@ -13,8 +13,10 @@ import {useMessageDerivation} from '~/lib/generative/use-message-derivation';
 import {useThinkingState} from '~/lib/generative/use-thinking-state';
 import {useConversationScroll} from '~/lib/generative/use-conversation-scroll';
 import {ProductChip} from '~/components/Products/ProductChip';
-import {CarouselSkeleton} from '~/components/Generative/Skeletons';
-import {MessageBubble} from '~/components/Generative/MessageBubble';
+import {
+  CarouselSkeleton,
+  MessageBubble,
+} from '~/components/Generative/ResponseContent';
 import {ThinkingStatusPanel} from '~/components/Generative/ThinkingStatusPanel';
 import {registerProducts} from '~/lib/generative/product-index';
 import {PENDING_THINKING_KEY} from '~/lib/generative/thinking-constants';

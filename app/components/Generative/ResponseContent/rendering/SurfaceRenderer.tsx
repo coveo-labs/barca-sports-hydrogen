@@ -1,7 +1,8 @@
 import type {ReactNode} from 'react';
 import type {SurfaceState} from '~/lib/a2ui/surface-manager';
-import {ConversationAnswer} from './ConversationAnswer';
+import {ConversationAnswer} from '../components/ConversationAnswer';
 import {ComponentRenderer} from './ComponentRenderer';
+import type {ResponseInteractionHandlers} from './render-context';
 
 interface SurfaceRendererProps {
   surface: SurfaceState;
@@ -29,13 +30,18 @@ export function SurfaceRenderer({
     return null;
   }
 
+  const interactionHandlers: ResponseInteractionHandlers = {
+    onProductSelect,
+    onSearchAction,
+    onFollowupAction,
+  };
+  const isSkeletonSurface = surface.surfaceId.startsWith('skeleton-surface-');
+
   const renderComponent = (componentId: string): ReactNode => {
     const component = surface.components.get(componentId);
     if (!component) {
       return null;
     }
-
-    const isSkeletonSurface = surface.surfaceId.startsWith('skeleton-surface-');
 
     const {catalogComponentId} = component;
     const componentProps =
@@ -143,14 +149,15 @@ export function SurfaceRenderer({
     return (
       <ComponentRenderer
         key={componentId}
+        surfaceId={surface.surfaceId}
         componentId={componentId}
         component={component}
         dataModel={surface.dataModel}
         isSkeletonSurface={isSkeletonSurface}
         surfaceMap={surfaceMap}
-        onProductSelect={onProductSelect}
-        onSearchAction={onSearchAction}
-        onFollowupAction={onFollowupAction}
+        onProductSelect={interactionHandlers.onProductSelect}
+        onSearchAction={interactionHandlers.onSearchAction}
+        onFollowupAction={interactionHandlers.onFollowupAction}
       />
     );
   };
@@ -174,19 +181,18 @@ export function SurfaceRenderer({
     if (componentId === surface.root) return;
     if (templateComponentIds.has(componentId)) return;
 
-    const isSkeletonSurface = surface.surfaceId.startsWith('skeleton-surface-');
-
     const node = (
       <ComponentRenderer
         key={componentId}
+        surfaceId={surface.surfaceId}
         componentId={componentId}
         component={component}
         dataModel={surface.dataModel}
         isSkeletonSurface={isSkeletonSurface}
         surfaceMap={surfaceMap}
-        onProductSelect={onProductSelect}
-        onSearchAction={onSearchAction}
-        onFollowupAction={onFollowupAction}
+        onProductSelect={interactionHandlers.onProductSelect}
+        onSearchAction={interactionHandlers.onSearchAction}
+        onFollowupAction={interactionHandlers.onFollowupAction}
       />
     );
 

@@ -2,8 +2,8 @@ import {type ReactNode, memo} from 'react';
 import {useNavigate} from 'react-router';
 import cx from '~/lib/cx';
 import type {ConversationMessage} from '~/types/conversation';
-import {Answer} from '~/components/Generative/Answer';
-import {SurfaceRenderer} from '~/components/A2UI';
+import {Answer} from './components/Answer';
+import {SurfaceRenderer} from './rendering/SurfaceRenderer';
 import type {
   SerializableSurfaceState,
   SurfaceState,
