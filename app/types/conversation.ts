@@ -5,7 +5,7 @@ export type ConversationRole = 'user' | 'assistant' | 'system' | 'tool';
 
 export type ConversationMessageKind = 'text' | 'status' | 'tool' | 'error';
 
-export type ConversationThinkingUpdateKind = 'status' | 'tool';
+export type ConversationThinkingUpdateKind = 'status' | 'tool' | 'reasoning';
 
 export interface ConversationThinkingUpdate {
   id: string;

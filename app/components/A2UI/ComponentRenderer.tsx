@@ -19,6 +19,7 @@ interface ComponentRendererProps {
   componentId: string;
   component: ComponentDefinition;
   dataModel: DataModelStore;
+  isSkeletonSurface?: boolean;
   /** Full surface map for cross-surface lookups (required for BundleDisplay) */
   surfaceMap?: Map<string, SurfaceState>;
   onProductSelect?: (productId: string) => void;
@@ -34,6 +35,7 @@ export function ComponentRenderer({
   componentId,
   component,
   dataModel,
+  isSkeletonSurface = false,
   surfaceMap,
   onProductSelect,
   onSearchAction,
@@ -95,7 +97,7 @@ export function ComponentRenderer({
       const heading =
         (resolvedProps.heading as string | undefined) ??
         (resolvedProps.headline as string | undefined);
-      const isLoading = Boolean(componentProps?.isLoading);
+      const isLoading = Boolean(componentProps?.isLoading) || isSkeletonSurface;
 
       return (
         <ProductCarousel
@@ -157,7 +159,7 @@ export function ComponentRenderer({
         (resolvedProps.heading as string | undefined) ??
         (resolvedProps.headline as string | undefined);
 
-      const isLoading = Boolean(componentProps?.isLoading);
+      const isLoading = Boolean(componentProps?.isLoading) || isSkeletonSurface;
 
       return (
         <ComparisonTable
@@ -192,7 +194,8 @@ export function ComponentRenderer({
           : ((titleProp as any)?.literalString ?? undefined);
 
       if (!Array.isArray(bundles) || bundles.length === 0) {
-        const isLoading = Boolean(componentProps?.isLoading);
+        const isLoading =
+          Boolean(componentProps?.isLoading) || isSkeletonSurface;
         if (isLoading) {
           return (
             <BundleDisplay
@@ -214,14 +217,14 @@ export function ComponentRenderer({
           title={title}
           bundles={bundles as any}
           surfaceMap={surfaceMap ?? new Map()}
-          isLoading={Boolean(componentProps?.isLoading)}
+          isLoading={Boolean(componentProps?.isLoading) || isSkeletonSurface}
           onProductSelect={onProductSelect}
         />
       );
     }
 
     case 'NextActionsBar': {
-      const isLoading = Boolean(componentProps?.isLoading);
+      const isLoading = Boolean(componentProps?.isLoading) || isSkeletonSurface;
 
       // Resolve template data for actions array
       const actionsProperty = componentProps?.actions;
@@ -244,7 +247,9 @@ export function ComponentRenderer({
       // Basic catalog Text component
       const resolvedProps = (resolved as any).component || resolved;
       const text =
-        (resolvedProps.text as string) || (resolvedProps.content as string) || '';
+        (resolvedProps.text as string) ||
+        (resolvedProps.content as string) ||
+        '';
       const usageHint = (resolvedProps.usageHint as string) || 'body';
 
       switch (usageHint) {

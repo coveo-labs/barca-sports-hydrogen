@@ -41,6 +41,8 @@ export function SurfaceRenderer({
       return null;
     }
 
+    const isSkeletonSurface = surface.surfaceId.startsWith('skeleton-surface-');
+
     const {catalogComponentId} = component;
     const componentProps =
       (component.component as any)[catalogComponentId] || {};
@@ -156,6 +158,7 @@ export function SurfaceRenderer({
         componentId={componentId}
         component={component}
         dataModel={surface.dataModel}
+        isSkeletonSurface={isSkeletonSurface}
         surfaceMap={surfaceMap}
         onProductSelect={onProductSelect}
         onSearchAction={onSearchAction}
@@ -191,12 +194,15 @@ export function SurfaceRenderer({
     if (componentId === surface.root) return;
     if (templateComponentIds.has(componentId)) return;
 
+    const isSkeletonSurface = surface.surfaceId.startsWith('skeleton-surface-');
+
     const node = (
       <ComponentRenderer
         key={componentId}
         componentId={componentId}
         component={component}
         dataModel={surface.dataModel}
+        isSkeletonSurface={isSkeletonSurface}
         surfaceMap={surfaceMap}
         onProductSelect={onProductSelect}
         onSearchAction={onSearchAction}
