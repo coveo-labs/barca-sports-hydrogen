@@ -6,6 +6,7 @@ import {ComparisonSummary} from '../components/ComparisonSummary';
 import {BundleDisplay} from '../components/BundleDisplay';
 import {NextActionsBar} from '../components/NextActionsBar';
 import {resolveTemplateData} from '~/lib/generative/a2ui/data-binding-resolver';
+import {resolveProductId} from '~/lib/generative/product/product-identifier';
 import type {ResponseComponentRendererProps} from './render-context';
 
 export function renderProductCard({
@@ -86,14 +87,19 @@ export function renderComparisonTable({
       >[])
     : [];
 
-  const mappedProducts = rawProducts.map((product) => {
+  const mappedProducts = rawProducts.flatMap((product) => {
+    const productId = resolveProductId(product);
+    if (!productId) {
+      return [];
+    }
+
     const regularPrice = Number(product.ec_price) || 0;
     const promoPrice =
       product.ec_promo_price != null ? Number(product.ec_promo_price) : null;
     const isOnSale = promoPrice !== null && promoPrice < regularPrice;
 
-    return {
-      productId: (product.ec_product_id as string) || '',
+    return [{
+      productId,
       name: (product.ec_name as string) || '',
       brand: (product.ec_brand as string) || undefined,
       imageUrl: (product.ec_image as string) || '',
@@ -105,7 +111,7 @@ export function renderComparisonTable({
       category: (product.ec_category as string) || undefined,
       url: (product.clickUri as string) || '#',
       ...product,
-    };
+    }];
   });
 
   const headline =
@@ -284,7 +290,7 @@ export function renderButton({
   const resolvedProps = (resolved as any).component || resolved;
   const text = (resolvedProps.text as string) || '';
   const variant = (resolvedProps.variant as string) || 'followup';
-  const action = componentProps.action as
+  const action = (resolvedProps.action ?? componentProps.action) as
     | {type?: string; query?: string; message?: string}
     | undefined;
 
