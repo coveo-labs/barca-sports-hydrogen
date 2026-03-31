@@ -1,4 +1,5 @@
 import type {ReactNode} from 'react';
+import type {Product} from '@coveo/headless-react/ssr-commerce';
 import {A2UIProductCard} from '../components/A2UIProductCard';
 import {ProductCarousel} from '../components/ProductCarousel';
 import {ComparisonTable} from '../components/ComparisonTable';
@@ -9,34 +10,48 @@ import {resolveTemplateData} from '~/lib/generative/a2ui/data-binding-resolver';
 import {resolveProductId} from '~/lib/generative/product/product-identifier';
 import type {ResponseComponentRendererProps} from './render-context';
 
+type ComparisonSourceProduct = Product &
+  Record<string, unknown> & {
+    ec_image?: string | null;
+    recommended?: boolean;
+  };
+
+type ProductCardSource = Product &
+  Record<string, unknown> & {
+    ec_image?: string | null;
+    ec_colors?: string[] | null;
+    ec_selected_color?: string | null;
+  };
+
 export function renderProductCard({
   resolved,
   renderContext,
   interactionHandlers,
 }: ResponseComponentRendererProps): ReactNode {
-  const productData = (resolved as any).component || resolved;
+  const productData = ((resolved as any).component || resolved) as ProductCardSource;
+  const productId = productData.ec_product_id || renderContext.componentId;
+  const currency =
+    typeof productData.ec_currency === 'string' && productData.ec_currency
+      ? productData.ec_currency
+      : 'USD';
 
   return (
     <A2UIProductCard
       key={renderContext.componentId}
-      productId={(productData.ec_product_id as string) || renderContext.componentId}
-      name={(productData.ec_name as string) || ''}
-      brand={productData.ec_brand as string | undefined}
-      imageUrl={(productData.ec_image as string) || ''}
-      price={(productData.ec_price as number) || 0}
-      originalPrice={productData.ec_promo_price as number | undefined}
-      currency={(productData.ec_currency as string) || 'USD'}
-      rating={productData.ec_rating as number | undefined}
-      description={productData.ec_description as string | undefined}
-      category={productData.ec_category as string | undefined}
-      url={(productData.clickUri as string) || '#'}
-      colors={productData.ec_colors as string[] | undefined}
-      selectedColor={productData.ec_selected_color as string | undefined}
-      onSelect={() =>
-        interactionHandlers.onProductSelect?.(
-          (productData.ec_product_id as string) || renderContext.componentId,
-        )
-      }
+      productId={productId}
+      name={productData.ec_name || ''}
+      brand={productData.ec_brand || undefined}
+      imageUrl={productData.ec_image || ''}
+      price={productData.ec_price || 0}
+      originalPrice={productData.ec_promo_price || undefined}
+      currency={currency}
+      rating={productData.ec_rating || undefined}
+      description={productData.ec_description || undefined}
+      category={productData.ec_category[0] || undefined}
+      url={productData.clickUri || '#'}
+      colors={productData.ec_colors || undefined}
+      selectedColor={productData.ec_selected_color || undefined}
+      onSelect={() => interactionHandlers.onProductSelect?.(productId)}
     />
   );
 }
@@ -80,11 +95,11 @@ export function renderComparisonTable({
     | {dataBinding?: string}
     | undefined;
   const dataBindingPath = productsProperty?.dataBinding;
-  const rawProducts: Record<string, unknown>[] = dataBindingPath
-    ? (resolveTemplateData(dataBindingPath, renderContext.dataModel) as Record<
-        string,
-        unknown
-      >[])
+  const rawProducts: ComparisonSourceProduct[] = dataBindingPath
+    ? (resolveTemplateData(
+        dataBindingPath,
+        renderContext.dataModel,
+      ) as ComparisonSourceProduct[])
     : [];
 
   const mappedProducts = rawProducts.flatMap((product) => {
@@ -97,19 +112,23 @@ export function renderComparisonTable({
     const promoPrice =
       product.ec_promo_price != null ? Number(product.ec_promo_price) : null;
     const isOnSale = promoPrice !== null && promoPrice < regularPrice;
+    const currency =
+      typeof product.ec_currency === 'string' && product.ec_currency
+        ? product.ec_currency
+        : 'USD';
 
     return [{
       productId,
-      name: (product.ec_name as string) || '',
-      brand: (product.ec_brand as string) || undefined,
-      imageUrl: (product.ec_image as string) || '',
+      name: product.ec_name || '',
+      brand: product.ec_brand || undefined,
+      imageUrl: product.ec_image || '',
       price: isOnSale ? promoPrice! : regularPrice,
       originalPrice: isOnSale ? regularPrice : undefined,
-      currency: (product.ec_currency as string) || 'USD',
+      currency,
       rating: product.ec_rating != null ? Number(product.ec_rating) : undefined,
-      description: (product.ec_description as string) || undefined,
-      category: (product.ec_category as string) || undefined,
-      url: (product.clickUri as string) || '#',
+      description: product.ec_description || undefined,
+      category: product.ec_category[0] || undefined,
+      url: product.clickUri || '#',
       ...product,
     }];
   });
