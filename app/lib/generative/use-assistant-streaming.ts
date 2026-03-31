@@ -90,7 +90,7 @@ export function useAssistantStreaming({
         abort?: boolean;
         complete?: boolean;
         error?: string;
-      }) => {
+      } = {}) => {
         if (error) {
           setStreamError(error);
         }

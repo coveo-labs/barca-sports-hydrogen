@@ -177,6 +177,8 @@ export class AssistantStreamSession {
         return {};
       }
     }
+
+    return {};
   }
 
   handleResponseError(message: string): StreamHandlingResult {
