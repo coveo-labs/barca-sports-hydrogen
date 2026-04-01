@@ -10,18 +10,36 @@ import {resolveTemplateData} from '~/lib/generative/a2ui/data-binding-resolver';
 import {resolveProductId} from '~/lib/generative/product/product-identifier';
 import type {ResponseComponentRendererProps} from './render-context';
 
-type ComparisonSourceProduct = Product &
+type RenderableProductSource = {
+  clickUri?: Product['clickUri'];
+  ec_name?: Product['ec_name'];
+  ec_description?: Product['ec_description'];
+  ec_brand?: Product['ec_brand'];
+  ec_category?: Product['ec_category'] | null;
+  ec_price?: Product['ec_price'];
+  ec_promo_price?: Product['ec_promo_price'];
+  ec_rating?: Product['ec_rating'];
+  ec_product_id?: Product['ec_product_id'];
+};
+
+type ComparisonSourceProduct = RenderableProductSource &
   Record<string, unknown> & {
     ec_image?: string | null;
     recommended?: boolean;
   };
 
-type ProductCardSource = Product &
+type ProductCardSource = RenderableProductSource &
   Record<string, unknown> & {
     ec_image?: string | null;
     ec_colors?: string[] | null;
     ec_selected_color?: string | null;
   };
+
+function getPrimaryCategory(product: {ec_category?: string[] | null}) {
+  return Array.isArray(product.ec_category) && product.ec_category.length > 0
+    ? product.ec_category[0]
+    : undefined;
+}
 
 export function renderProductCard({
   resolved,
@@ -47,7 +65,7 @@ export function renderProductCard({
       currency={currency}
       rating={productData.ec_rating || undefined}
       description={productData.ec_description || undefined}
-      category={productData.ec_category[0] || undefined}
+      category={getPrimaryCategory(productData)}
       url={productData.clickUri || '#'}
       colors={productData.ec_colors || undefined}
       selectedColor={productData.ec_selected_color || undefined}
@@ -127,7 +145,7 @@ export function renderComparisonTable({
       currency,
       rating: product.ec_rating != null ? Number(product.ec_rating) : undefined,
       description: product.ec_description || undefined,
-      category: product.ec_category[0] || undefined,
+      category: getPrimaryCategory(product),
       url: product.clickUri || '#',
       ...product,
     }];
