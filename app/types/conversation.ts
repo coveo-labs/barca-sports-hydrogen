@@ -1,5 +1,5 @@
 import type {Product} from '@coveo/headless-react/ssr-commerce';
-import type {SerializableSurfaceState} from '~/lib/a2ui/surface-manager';
+import type {SerializableSurfaceState} from '~/lib/generative/a2ui/surface-manager';
 
 export type ConversationRole = 'user' | 'assistant' | 'system' | 'tool';
 
@@ -33,7 +33,7 @@ export interface ConversationMessage {
 
 /**
  * Serialized conversation format used for localStorage persistence.
- * Use `mapSummaryToRecord` and `recordToSummary` in generative-chat.ts
+ * Use `mapSummaryToRecord` and `recordToSummary` in `lib/generative/conversation`
  * to convert between this and `ConversationRecord`.
  */
 export interface ConversationSummary {

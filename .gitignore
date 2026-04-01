@@ -8,3 +8,6 @@ node_modules
 .env
 .shopify
 *.tsbuildinfo
+# /reference/old files
+# /reference/new files
+# /reference/commerce-agent

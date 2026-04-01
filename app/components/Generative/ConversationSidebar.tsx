@@ -1,6 +1,6 @@
 import {useState} from 'react';
 import cx from '~/lib/cx';
-import {formatRelativeTime} from '~/lib/generative/chat';
+import {formatRelativeTime} from '~/lib/generative/conversation';
 import {
   useConversationActions,
   useConversationsState,
