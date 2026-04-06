@@ -7,6 +7,10 @@ import {
   TransitionChild,
 } from '@headlessui/react';
 import {XMarkIcon, Cog6ToothIcon} from '@heroicons/react/24/outline';
+import {
+  type AgentRuntimeSelection,
+  isAgentRuntimeSelection,
+} from '~/lib/generative/agent-runtime';
 
 const FEATURE_SETTINGS_KEY = 'barca_feature_settings';
 const FEATURE_SETTINGS_SESSION_KEY = 'barca_feature_settings_session';
@@ -14,6 +18,50 @@ let initializingFromURL = false;
 
 interface FeatureSettings {
   showAISummary: boolean;
+  agentRuntime: AgentRuntimeSelection;
+}
+
+const DEFAULT_FEATURE_SETTINGS: FeatureSettings = {
+  showAISummary: false,
+  agentRuntime: 'default',
+};
+
+const AGENT_RUNTIME_CHOICES: Array<{
+  value: AgentRuntimeSelection;
+  label: string;
+  description: string;
+}> = [
+  {
+    value: 'default',
+    label: 'Org Default - no override',
+    description: 'Use the org default with no per-request override.',
+  },
+  {
+    value: 'nrf-demo-agent',
+    label: 'Demo Agent',
+    description: 'Routes requests to demo-agent built for NRF.',
+  },
+  {
+    value: 'agent-smith-commerce-agent',
+    label: 'Agent Smith Commerce Agent',
+    description:
+      'Routes requests to agent-smith commerce-agent.',
+  },
+];
+
+function normalizeFeatureSettings(value: unknown): FeatureSettings {
+  if (!value || typeof value !== 'object') {
+    return DEFAULT_FEATURE_SETTINGS;
+  }
+
+  const candidate = value as Partial<FeatureSettings>;
+
+  return {
+    showAISummary: candidate.showAISummary === true,
+    agentRuntime: isAgentRuntimeSelection(candidate.agentRuntime)
+      ? candidate.agentRuntime
+      : DEFAULT_FEATURE_SETTINGS.agentRuntime,
+  };
 }
 
 /**
@@ -21,6 +69,9 @@ interface FeatureSettings {
  * Supports: ?features=ai-summary or ?features=conversational
  * - ai-summary: enables AI Summary box
  * - conversational: disables AI Summary, shows conversational mode
+ * Also supports:
+ * - ?agentRuntime=nrf-demo-agent
+ * - ?agentRuntime=agent-smith-commerce-agent
  */
 function getFeatureSettingsFromURL(): Partial<FeatureSettings> | null {
   if (typeof window === 'undefined') return null;
@@ -28,20 +79,26 @@ function getFeatureSettingsFromURL(): Partial<FeatureSettings> | null {
   try {
     const params = new URLSearchParams(window.location.search);
     const featuresParam = params.get('features') ?? params.get('feature');
+    const agentRuntimeParam = params.get('agentRuntime');
 
-    if (!featuresParam) return null;
-
-    const features = featuresParam
-      .split(',')
-      .map((feature) => feature.trim().toLowerCase());
     const settings: Partial<FeatureSettings> = {};
 
-    if (features.includes('ai-summary')) {
-      settings.showAISummary = true;
+    if (featuresParam) {
+      const features = featuresParam
+        .split(',')
+        .map((feature) => feature.trim().toLowerCase());
+
+      if (features.includes('ai-summary')) {
+        settings.showAISummary = true;
+      }
+
+      if (features.includes('conversational')) {
+        settings.showAISummary = false;
+      }
     }
 
-    if (features.includes('conversational')) {
-      settings.showAISummary = false;
+    if (isAgentRuntimeSelection(agentRuntimeParam)) {
+      settings.agentRuntime = agentRuntimeParam;
     }
 
     return Object.keys(settings).length > 0 ? settings : null;
@@ -54,30 +111,28 @@ function getFeatureSettingsFromURL(): Partial<FeatureSettings> | null {
 /**
  * Load feature settings with priority: sessionStorage → localStorage
  */
-function getFeatureSettings(): FeatureSettings {
-  const defaults: FeatureSettings = {showAISummary: false};
-  
+export function getFeatureSettingsSnapshot(): FeatureSettings {
   if (typeof window === 'undefined') {
-    return defaults;
+    return DEFAULT_FEATURE_SETTINGS;
   }
-  
+
   try {
     // Check sessionStorage first (takes precedence for URL-based overrides)
     const sessionStored = sessionStorage.getItem(FEATURE_SETTINGS_SESSION_KEY);
     if (sessionStored) {
-      return JSON.parse(sessionStored) as FeatureSettings;
+      return normalizeFeatureSettings(JSON.parse(sessionStored));
     }
-    
+
     // Fall back to localStorage for persistent user preferences
     const stored = localStorage.getItem(FEATURE_SETTINGS_KEY);
     if (stored) {
-      return JSON.parse(stored) as FeatureSettings;
+      return normalizeFeatureSettings(JSON.parse(stored));
     }
   } catch (e) {
     console.error('Failed to load feature settings:', e);
   }
-  
-  return defaults;
+
+  return DEFAULT_FEATURE_SETTINGS;
 }
 
 /**
@@ -87,7 +142,7 @@ function getFeatureSettings(): FeatureSettings {
  */
 function saveFeatureSettings(settings: FeatureSettings) {
   if (typeof window === 'undefined') return;
-  
+
   try {
     // Save to both storages so manual preference persists
     sessionStorage.setItem(FEATURE_SETTINGS_SESSION_KEY, JSON.stringify(settings));
@@ -115,13 +170,19 @@ function initializeFeatureSettingsFromURL() {
   }
 
   try {
-    const currentSettings = getFeatureSettings();
-    const mergedSettings = {...currentSettings, ...urlSettings};
+    const currentSettings = getFeatureSettingsSnapshot();
+    const mergedSettings = normalizeFeatureSettings({
+      ...currentSettings,
+      ...urlSettings,
+    });
     const existing = sessionStorage.getItem(FEATURE_SETTINGS_SESSION_KEY);
-    const existingParsed = existing ? (JSON.parse(existing) as FeatureSettings) : null;
+    const existingParsed = existing
+      ? normalizeFeatureSettings(JSON.parse(existing))
+      : null;
     const hasChanged =
       !existingParsed ||
-      existingParsed.showAISummary !== mergedSettings.showAISummary;
+      existingParsed.showAISummary !== mergedSettings.showAISummary ||
+      existingParsed.agentRuntime !== mergedSettings.agentRuntime;
 
     if (hasChanged) {
       sessionStorage.setItem(
@@ -142,20 +203,23 @@ function initializeFeatureSettingsFromURL() {
 
 export function FeaturePanel() {
   const [isOpen, setIsOpen] = useState(false);
-  const [settings, setSettings] = useState<FeatureSettings>({
-    showAISummary: false,
-  });
+  const [settings, setSettings] = useState<FeatureSettings>(
+    DEFAULT_FEATURE_SETTINGS,
+  );
 
   useEffect(() => {
     initializeFeatureSettingsFromURL();
-    setSettings(getFeatureSettings());
+    setSettings(getFeatureSettingsSnapshot());
   }, []);
 
-  const handleToggle = (key: keyof FeatureSettings, value: boolean) => {
+  const handleSettingChange = <K extends keyof FeatureSettings>(
+    key: K,
+    value: FeatureSettings[K],
+  ) => {
     const newSettings = {...settings, [key]: value};
     setSettings(newSettings);
     saveFeatureSettings(newSettings);
-    
+
     // Dispatch custom event to notify other components
     if (typeof window !== 'undefined') {
       window.dispatchEvent(
@@ -234,7 +298,10 @@ export function FeaturePanel() {
                             <button
                               type="button"
                               onClick={() =>
-                                handleToggle('showAISummary', !settings.showAISummary)
+                                handleSettingChange(
+                                  'showAISummary',
+                                  !settings.showAISummary,
+                                )
                               }
                               className={`${
                                 settings.showAISummary
@@ -253,8 +320,65 @@ export function FeaturePanel() {
                           </div>
 
                           <div className="border-t border-gray-200 pt-6">
+                            <div className="mb-3">
+                              <h3 className="text-sm font-medium text-gray-900">
+                                Conversational Agent
+                              </h3>
+                              <p className="mt-1 text-xs text-gray-500">
+                                Applies to conversational requests only. Uses a
+                                per-request override on the dev org for the Coveo agentic
+                                endpoint.
+                              </p>
+                            </div>
+                            <div className="space-y-3">
+                              {AGENT_RUNTIME_CHOICES.map((choice) => {
+                                const isSelected =
+                                  settings.agentRuntime === choice.value;
+
+                                return (
+                                  <button
+                                    key={choice.value}
+                                    type="button"
+                                    onClick={() =>
+                                      handleSettingChange(
+                                        'agentRuntime',
+                                        choice.value,
+                                      )
+                                    }
+                                    className={`w-full rounded-lg border px-3 py-3 text-left transition-colors ${
+                                      isSelected
+                                        ? 'border-indigo-500 bg-indigo-50'
+                                        : 'border-gray-200 bg-white hover:border-gray-300'
+                                    }`}
+                                    aria-pressed={isSelected}
+                                  >
+                                    <div className="flex items-center justify-between gap-3">
+                                      <div>
+                                        <div className="text-sm font-medium text-gray-900">
+                                          {choice.label}
+                                        </div>
+                                        <div className="mt-1 text-xs text-gray-500">
+                                          {choice.description}
+                                        </div>
+                                      </div>
+                                      <span
+                                        className={`h-3 w-3 rounded-full ${
+                                          isSelected
+                                            ? 'bg-indigo-600'
+                                            : 'bg-gray-300'
+                                        }`}
+                                      />
+                                    </div>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                          <div className="border-t border-gray-200 pt-6">
                             <p className="text-xs text-gray-500">
-                              Settings are saved locally and persist across sessions.
+                              Settings are saved locally. Agent selection is only
+                              intended for local and dev-style testing.
                             </p>
                           </div>
                         </div>
@@ -272,9 +396,9 @@ export function FeaturePanel() {
 }
 
 export function useFeatureSettings() {
-  const [settings, setSettings] = useState<FeatureSettings>({
-    showAISummary: false,
-  });
+  const [settings, setSettings] = useState<FeatureSettings>(
+    DEFAULT_FEATURE_SETTINGS,
+  );
 
   useEffect(() => {
     // Guard against SSR
@@ -282,9 +406,9 @@ export function useFeatureSettings() {
 
     // Initialize from URL params if present
     initializeFeatureSettingsFromURL();
-    
+
     // Load current settings (includes URL-based overrides from sessionStorage)
-    setSettings(getFeatureSettings());
+    setSettings(getFeatureSettingsSnapshot());
 
     const handleSettingsChange = (event: CustomEvent<FeatureSettings>) => {
       setSettings(event.detail);
