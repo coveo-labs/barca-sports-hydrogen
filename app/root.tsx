@@ -9,7 +9,6 @@ import {
   ScrollRestoration,
   useRouteError,
   useRouteLoaderData,
-  useLocation,
   type LoaderFunctionArgs,
   type ShouldRevalidateFunction,
 } from 'react-router';
@@ -248,10 +247,7 @@ export function Layout({children}: {children?: React.ReactNode}) {
 export default function App() {
   const nonce = useNonce();
   const data = useRouteLoaderData<RootLoader>('root');
-  const location = useLocation();
 
-  // Don't show feature panel on generative page
-  const showFeaturePanel = !location.pathname.includes('/generative');
 
   if (!data) {
     return <Outlet />;
@@ -279,7 +275,7 @@ export default function App() {
         </StandaloneProvider>
       </Analytics.Provider>
       <GlobalLoading />
-      {showFeaturePanel && <FeaturePanel />}
+      <FeaturePanel />
       <ScrollRestoration nonce={nonce} />
       <Scripts nonce={nonce} />
     </>

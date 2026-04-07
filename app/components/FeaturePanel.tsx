@@ -7,161 +7,58 @@ import {
   TransitionChild,
 } from '@headlessui/react';
 import {XMarkIcon, Cog6ToothIcon} from '@heroicons/react/24/outline';
+import {
+  type AgentRuntimeSelection,
+} from '~/lib/generative/agent-runtime';
+import {
+  DEFAULT_FEATURE_SETTINGS,
+  FEATURE_SETTINGS_CHANGED_EVENT,
+  type FeatureSettings,
+  dispatchFeatureSettingsChanged,
+  getFeatureSettingsSnapshot,
+  saveFeatureSettings,
+} from '~/lib/feature-settings';
 
-const FEATURE_SETTINGS_KEY = 'barca_feature_settings';
-const FEATURE_SETTINGS_SESSION_KEY = 'barca_feature_settings_session';
-let initializingFromURL = false;
-
-interface FeatureSettings {
-  showAISummary: boolean;
-}
-
-/**
- * Parse URL query parameters for feature flags
- * Supports: ?features=ai-summary or ?features=conversational
- * - ai-summary: enables AI Summary box
- * - conversational: disables AI Summary, shows conversational mode
- */
-function getFeatureSettingsFromURL(): Partial<FeatureSettings> | null {
-  if (typeof window === 'undefined') return null;
-
-  try {
-    const params = new URLSearchParams(window.location.search);
-    const featuresParam = params.get('features') ?? params.get('feature');
-
-    if (!featuresParam) return null;
-
-    const features = featuresParam
-      .split(',')
-      .map((feature) => feature.trim().toLowerCase());
-    const settings: Partial<FeatureSettings> = {};
-
-    if (features.includes('ai-summary')) {
-      settings.showAISummary = true;
-    }
-
-    if (features.includes('conversational')) {
-      settings.showAISummary = false;
-    }
-
-    return Object.keys(settings).length > 0 ? settings : null;
-  } catch (e) {
-    console.error('Failed to parse URL feature flags:', e);
-    return null;
-  }
-}
-
-/**
- * Load feature settings with priority: sessionStorage → localStorage
- */
-function getFeatureSettings(): FeatureSettings {
-  const defaults: FeatureSettings = {showAISummary: false};
-  
-  if (typeof window === 'undefined') {
-    return defaults;
-  }
-  
-  try {
-    // Check sessionStorage first (takes precedence for URL-based overrides)
-    const sessionStored = sessionStorage.getItem(FEATURE_SETTINGS_SESSION_KEY);
-    if (sessionStored) {
-      return JSON.parse(sessionStored) as FeatureSettings;
-    }
-    
-    // Fall back to localStorage for persistent user preferences
-    const stored = localStorage.getItem(FEATURE_SETTINGS_KEY);
-    if (stored) {
-      return JSON.parse(stored) as FeatureSettings;
-    }
-  } catch (e) {
-    console.error('Failed to load feature settings:', e);
-  }
-  
-  return defaults;
-}
-
-/**
- * Save feature settings to both sessionStorage and localStorage
- * Manual toggles win for the current session; URL params can still
- * override localStorage when a new session starts.
- */
-function saveFeatureSettings(settings: FeatureSettings) {
-  if (typeof window === 'undefined') return;
-  
-  try {
-    // Save to both storages so manual preference persists
-    sessionStorage.setItem(FEATURE_SETTINGS_SESSION_KEY, JSON.stringify(settings));
-    localStorage.setItem(FEATURE_SETTINGS_KEY, JSON.stringify(settings));
-  } catch (e) {
-    console.error('Failed to save feature settings:', e);
-  }
-}
-
-/**
- * Initialize feature settings from URL params if present
- * Only writes to sessionStorage (not localStorage) and dispatches an event
- * to sync other components.
- */
-function initializeFeatureSettingsFromURL() {
-  if (typeof window === 'undefined') return;
-  if (initializingFromURL) return;
-
-  initializingFromURL = true;
-
-  const urlSettings = getFeatureSettingsFromURL();
-  if (!urlSettings) {
-    initializingFromURL = false;
-    return;
-  }
-
-  try {
-    const currentSettings = getFeatureSettings();
-    const mergedSettings = {...currentSettings, ...urlSettings};
-    const existing = sessionStorage.getItem(FEATURE_SETTINGS_SESSION_KEY);
-    const existingParsed = existing ? (JSON.parse(existing) as FeatureSettings) : null;
-    const hasChanged =
-      !existingParsed ||
-      existingParsed.showAISummary !== mergedSettings.showAISummary;
-
-    if (hasChanged) {
-      sessionStorage.setItem(
-        FEATURE_SETTINGS_SESSION_KEY,
-        JSON.stringify(mergedSettings),
-      );
-
-      window.dispatchEvent(
-        new CustomEvent('featureSettingsChanged', {detail: mergedSettings}),
-      );
-    }
-  } catch (e) {
-    console.error('Failed to initialize feature settings from URL:', e);
-  } finally {
-    initializingFromURL = false;
-  }
-}
+const AGENT_RUNTIME_CHOICES: Array<{
+  value: AgentRuntimeSelection;
+  label: string;
+  description: string;
+}> = [
+  {
+    value: 'default',
+    label: 'Org Default - no override',
+    description: 'Use the org default with no per-request override.',
+  },
+  {
+    value: 'nrf-demo-agent',
+    label: 'Demo Agent',
+    description: 'Routes requests to demo-agent built for NRF.',
+  },
+  {
+    value: 'agent-smith-commerce-agent',
+    label: 'Agent Smith Commerce Agent',
+    description: 'Routes requests to agent-smith commerce-agent.',
+  },
+];
 
 export function FeaturePanel() {
   const [isOpen, setIsOpen] = useState(false);
-  const [settings, setSettings] = useState<FeatureSettings>({
-    showAISummary: false,
-  });
+  const [settings, setSettings] = useState<FeatureSettings>(
+    DEFAULT_FEATURE_SETTINGS,
+  );
 
   useEffect(() => {
-    initializeFeatureSettingsFromURL();
-    setSettings(getFeatureSettings());
+    setSettings(getFeatureSettingsSnapshot());
   }, []);
 
-  const handleToggle = (key: keyof FeatureSettings, value: boolean) => {
+  const handleSettingChange = <K extends keyof FeatureSettings>(
+    key: K,
+    value: FeatureSettings[K],
+  ) => {
     const newSettings = {...settings, [key]: value};
     setSettings(newSettings);
     saveFeatureSettings(newSettings);
-    
-    // Dispatch custom event to notify other components
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(
-        new CustomEvent('featureSettingsChanged', {detail: newSettings}),
-      );
-    }
+    dispatchFeatureSettingsChanged(newSettings);
   };
 
   return (
@@ -222,39 +119,67 @@ export function FeaturePanel() {
                       {/* Content */}
                       <div className="relative flex-1 px-4 py-6 sm:px-6">
                         <div className="space-y-6">
-                          <div className="flex items-center justify-between">
-                            <div className="flex-1">
+                          <div>
+                            <div className="mb-3">
                               <h3 className="text-sm font-medium text-gray-900">
-                                AI Summary Box
+                                Conversational Agent
                               </h3>
-                              <p className="text-xs text-gray-500 mt-1">
-                                Show intent recommendations on search pages
+                              <p className="mt-1 text-xs text-gray-500">
+                                Applies to conversational requests only. Uses a
+                                per-request override on the dev org for the Coveo agentic
+                                endpoint.
                               </p>
                             </div>
-                            <button
-                              type="button"
-                              onClick={() =>
-                                handleToggle('showAISummary', !settings.showAISummary)
-                              }
-                              className={`${
-                                settings.showAISummary
-                                  ? 'bg-indigo-600'
-                                  : 'bg-gray-200'
-                              } relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2`}
-                            >
-                              <span
-                                className={`${
-                                  settings.showAISummary
-                                    ? 'translate-x-5'
-                                    : 'translate-x-0'
-                                } pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out`}
-                              />
-                            </button>
+                            <div className="space-y-3">
+                              {AGENT_RUNTIME_CHOICES.map((choice) => {
+                                const isSelected =
+                                  settings.agentRuntime === choice.value;
+
+                                return (
+                                  <button
+                                    key={choice.value}
+                                    type="button"
+                                    onClick={() =>
+                                      handleSettingChange(
+                                        'agentRuntime',
+                                        choice.value,
+                                      )
+                                    }
+                                    className={`w-full rounded-lg border px-3 py-3 text-left transition-colors ${
+                                      isSelected
+                                        ? 'border-indigo-500 bg-indigo-50'
+                                        : 'border-gray-200 bg-white hover:border-gray-300'
+                                    }`}
+                                    aria-pressed={isSelected}
+                                  >
+                                    <div className="flex items-center justify-between gap-3">
+                                      <div>
+                                        <div className="text-sm font-medium text-gray-900">
+                                          {choice.label}
+                                        </div>
+                                        <div className="mt-1 text-xs text-gray-500">
+                                          {choice.description}
+                                        </div>
+                                      </div>
+                                      <span
+                                        className={`h-3 w-3 rounded-full ${
+                                          isSelected
+                                            ? 'bg-indigo-600'
+                                            : 'bg-gray-300'
+                                        }`}
+                                      />
+                                    </div>
+                                  </button>
+                                );
+                              })}
+                            </div>
                           </div>
 
                           <div className="border-t border-gray-200 pt-6">
                             <p className="text-xs text-gray-500">
-                              Settings are saved locally and persist across sessions.
+                              Agent selection is saved for the current browser
+                              session only and is intended for local and dev-style
+                              testing.
                             </p>
                           </div>
                         </div>
@@ -272,32 +197,29 @@ export function FeaturePanel() {
 }
 
 export function useFeatureSettings() {
-  const [settings, setSettings] = useState<FeatureSettings>({
-    showAISummary: false,
-  });
+  const [settings, setSettings] = useState<FeatureSettings>(
+    DEFAULT_FEATURE_SETTINGS,
+  );
 
   useEffect(() => {
     // Guard against SSR
     if (typeof window === 'undefined') return;
 
-    // Initialize from URL params if present
-    initializeFeatureSettingsFromURL();
-    
-    // Load current settings (includes URL-based overrides from sessionStorage)
-    setSettings(getFeatureSettings());
+    // Load current settings from storage
+    setSettings(getFeatureSettingsSnapshot());
 
     const handleSettingsChange = (event: CustomEvent<FeatureSettings>) => {
       setSettings(event.detail);
     };
 
     window.addEventListener(
-      'featureSettingsChanged',
+      FEATURE_SETTINGS_CHANGED_EVENT,
       handleSettingsChange as EventListener,
     );
 
     return () => {
       window.removeEventListener(
-        'featureSettingsChanged',
+        FEATURE_SETTINGS_CHANGED_EVENT,
         handleSettingsChange as EventListener,
       );
     };

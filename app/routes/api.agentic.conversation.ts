@@ -1,6 +1,13 @@
 import type {ActionFunctionArgs} from 'react-router';
 import {ServerSideNavigatorContextProvider} from '~/lib/coveo/navigator.provider';
 import {getCookieFromRequest} from '~/lib/shopify/session';
+import {
+  AGENT_SELECTION_HEADER,
+  COVEO_FEATURE_FLAG_OVERRIDE_HEADER,
+  getFeatureFlagOverridesForAgentRuntime,
+  normalizeAgentRuntimeSelection,
+  type AgentRuntimeSelection,
+} from '~/lib/generative/agent-runtime';
 import type {
   ConversationMessage,
   ConversationSummary,
@@ -56,8 +63,14 @@ async function handleStreamConversation(
     );
   }
 
+  const requestedAgentRuntime = resolveRequestedAgentRuntime(request);
+  const featureFlagOverrides =
+    getFeatureFlagOverridesForAgentRuntime(requestedAgentRuntime);
+
   console.info('[api.agentic.conversation] streaming conversation', {
     hasSessionId: Boolean(body.sessionId),
+    requestedAgentRuntime,
+    featureFlagOverrideApplied: Boolean(featureFlagOverrides),
   });
 
   const navigatorContext = new ServerSideNavigatorContextProvider(request);
@@ -93,6 +106,7 @@ async function handleStreamConversation(
   const agenticResponse = await streamAgenticConversation(payload, {
     signal: abortController.signal,
     accessToken: extractAgenticAccessToken(context),
+    featureFlagOverrides,
   });
 
   console.info('[api.agentic.conversation] upstream response', {
@@ -403,6 +417,7 @@ function createConversationId() {
 type StreamAgenticConversationOptions = {
   signal?: AbortSignal;
   accessToken?: string | null;
+  featureFlagOverrides?: Record<string, boolean> | null;
 };
 
 async function streamAgenticConversation(
@@ -411,16 +426,29 @@ async function streamAgenticConversation(
 ): Promise<Response> {
   const accessToken = pickAccessToken(options.accessToken);
   const url = new URL(`${AGENTIC_BASE_URL}/converse`);
+  const headers: Record<string, string> = {
+    Authorization: `Bearer ${accessToken}`,
+    'Content-Type': 'application/json',
+  };
+
+  if (options.featureFlagOverrides) {
+    headers[COVEO_FEATURE_FLAG_OVERRIDE_HEADER] = JSON.stringify(
+      options.featureFlagOverrides,
+    );
+  }
 
   return fetch(url, {
     method: 'POST',
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
-    },
+    headers,
     body: JSON.stringify(payload),
     signal: options.signal,
   });
+}
+
+function resolveRequestedAgentRuntime(request: Request): AgentRuntimeSelection {
+  return normalizeAgentRuntimeSelection(
+    request.headers.get(AGENT_SELECTION_HEADER),
+  );
 }
 
 function pickAccessToken(candidate?: string | null) {
