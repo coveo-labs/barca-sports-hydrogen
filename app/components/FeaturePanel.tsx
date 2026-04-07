@@ -234,8 +234,9 @@ export function FeaturePanel() {
 
                           <div className="border-t border-gray-200 pt-6">
                             <p className="text-xs text-gray-500">
-                              Agent selection is saved locally and is only intended
-                              for local and dev-style testing.
+                              Agent selection is saved for the current browser
+                              session only and is intended for local and dev-style
+                              testing.
                             </p>
                           </div>
                         </div>
