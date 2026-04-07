@@ -6,10 +6,8 @@ import {ProductList} from './ProductList';
 import {NoProductsFound} from './NoProductsFound';
 import {Sorts} from './Sorts';
 import {Breadcrumbs} from './Breadcrumbs';
-import {SearchSummary} from '~/components/Generative/SearchSummary';
 import {useEffect, useRef, useState} from 'react';
 import {useProductList} from '~/lib/coveo/engine';
-import {useFeatureSettings} from '~/components/FeaturePanel';
 import type {BadgePlacementContext} from '../Products/ProductBadges';
 
 interface SearchPageProps {
@@ -55,7 +53,6 @@ export function FullSearch({
   const facetsContainer = useRef<HTMLDivElement>(null);
   const numFacetsInline = useNumFacetsInline();
   const productList = useProductList();
-  const featureSettings = useFeatureSettings();
 
   const hasResults = productList.state.products.length > 0;
 
@@ -105,9 +102,6 @@ export function FullSearch({
 
         <Breadcrumbs />
       </section>
-
-      {searchQuery && featureSettings.showAISummary && <SearchSummary searchQuery={searchQuery} />}
-
       <section
         aria-labelledby="products-heading"
         className="mx-auto max-w-screen-xl px-4 pb-16 pt-12 sm:px-6 sm:pb-24 sm:pt-16 lg:px-8"

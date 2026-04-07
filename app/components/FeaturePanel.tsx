@@ -12,17 +12,13 @@ import {
   isAgentRuntimeSelection,
 } from '~/lib/generative/agent-runtime';
 
-const FEATURE_SETTINGS_KEY = 'barca_feature_settings';
 const FEATURE_SETTINGS_SESSION_KEY = 'barca_feature_settings_session';
-let initializingFromURL = false;
 
 interface FeatureSettings {
-  showAISummary: boolean;
   agentRuntime: AgentRuntimeSelection;
 }
 
 const DEFAULT_FEATURE_SETTINGS: FeatureSettings = {
-  showAISummary: false,
   agentRuntime: 'default',
 };
 
@@ -57,7 +53,6 @@ function normalizeFeatureSettings(value: unknown): FeatureSettings {
   const candidate = value as Partial<FeatureSettings>;
 
   return {
-    showAISummary: candidate.showAISummary === true,
     agentRuntime: isAgentRuntimeSelection(candidate.agentRuntime)
       ? candidate.agentRuntime
       : DEFAULT_FEATURE_SETTINGS.agentRuntime,
@@ -65,51 +60,7 @@ function normalizeFeatureSettings(value: unknown): FeatureSettings {
 }
 
 /**
- * Parse URL query parameters for feature flags
- * Supports: ?features=ai-summary or ?features=conversational
- * - ai-summary: enables AI Summary box
- * - conversational: disables AI Summary, shows conversational mode
- * Also supports:
- * - ?agentRuntime=nrf-demo-agent
- * - ?agentRuntime=agent-smith-commerce-agent
- */
-function getFeatureSettingsFromURL(): Partial<FeatureSettings> | null {
-  if (typeof window === 'undefined') return null;
-
-  try {
-    const params = new URLSearchParams(window.location.search);
-    const featuresParam = params.get('features') ?? params.get('feature');
-    const agentRuntimeParam = params.get('agentRuntime');
-
-    const settings: Partial<FeatureSettings> = {};
-
-    if (featuresParam) {
-      const features = featuresParam
-        .split(',')
-        .map((feature) => feature.trim().toLowerCase());
-
-      if (features.includes('ai-summary')) {
-        settings.showAISummary = true;
-      }
-
-      if (features.includes('conversational')) {
-        settings.showAISummary = false;
-      }
-    }
-
-    if (isAgentRuntimeSelection(agentRuntimeParam)) {
-      settings.agentRuntime = agentRuntimeParam;
-    }
-
-    return Object.keys(settings).length > 0 ? settings : null;
-  } catch (e) {
-    console.error('Failed to parse URL feature flags:', e);
-    return null;
-  }
-}
-
-/**
- * Load feature settings with priority: sessionStorage → localStorage
+ * Load feature settings from sessionStorage.
  */
 export function getFeatureSettingsSnapshot(): FeatureSettings {
   if (typeof window === 'undefined') {
@@ -117,16 +68,9 @@ export function getFeatureSettingsSnapshot(): FeatureSettings {
   }
 
   try {
-    // Check sessionStorage first (takes precedence for URL-based overrides)
     const sessionStored = sessionStorage.getItem(FEATURE_SETTINGS_SESSION_KEY);
     if (sessionStored) {
       return normalizeFeatureSettings(JSON.parse(sessionStored));
-    }
-
-    // Fall back to localStorage for persistent user preferences
-    const stored = localStorage.getItem(FEATURE_SETTINGS_KEY);
-    if (stored) {
-      return normalizeFeatureSettings(JSON.parse(stored));
     }
   } catch (e) {
     console.error('Failed to load feature settings:', e);
@@ -136,68 +80,15 @@ export function getFeatureSettingsSnapshot(): FeatureSettings {
 }
 
 /**
- * Save feature settings to both sessionStorage and localStorage
- * Manual toggles win for the current session; URL params can still
- * override localStorage when a new session starts.
+ * Save feature settings for the current browser session only.
  */
 function saveFeatureSettings(settings: FeatureSettings) {
   if (typeof window === 'undefined') return;
 
   try {
-    // Save to both storages so manual preference persists
     sessionStorage.setItem(FEATURE_SETTINGS_SESSION_KEY, JSON.stringify(settings));
-    localStorage.setItem(FEATURE_SETTINGS_KEY, JSON.stringify(settings));
   } catch (e) {
     console.error('Failed to save feature settings:', e);
-  }
-}
-
-/**
- * Initialize feature settings from URL params if present
- * Only writes to sessionStorage (not localStorage) and dispatches an event
- * to sync other components.
- */
-function initializeFeatureSettingsFromURL() {
-  if (typeof window === 'undefined') return;
-  if (initializingFromURL) return;
-
-  initializingFromURL = true;
-
-  const urlSettings = getFeatureSettingsFromURL();
-  if (!urlSettings) {
-    initializingFromURL = false;
-    return;
-  }
-
-  try {
-    const currentSettings = getFeatureSettingsSnapshot();
-    const mergedSettings = normalizeFeatureSettings({
-      ...currentSettings,
-      ...urlSettings,
-    });
-    const existing = sessionStorage.getItem(FEATURE_SETTINGS_SESSION_KEY);
-    const existingParsed = existing
-      ? normalizeFeatureSettings(JSON.parse(existing))
-      : null;
-    const hasChanged =
-      !existingParsed ||
-      existingParsed.showAISummary !== mergedSettings.showAISummary ||
-      existingParsed.agentRuntime !== mergedSettings.agentRuntime;
-
-    if (hasChanged) {
-      sessionStorage.setItem(
-        FEATURE_SETTINGS_SESSION_KEY,
-        JSON.stringify(mergedSettings),
-      );
-
-      window.dispatchEvent(
-        new CustomEvent('featureSettingsChanged', {detail: mergedSettings}),
-      );
-    }
-  } catch (e) {
-    console.error('Failed to initialize feature settings from URL:', e);
-  } finally {
-    initializingFromURL = false;
   }
 }
 
@@ -208,7 +99,6 @@ export function FeaturePanel() {
   );
 
   useEffect(() => {
-    initializeFeatureSettingsFromURL();
     setSettings(getFeatureSettingsSnapshot());
   }, []);
 
@@ -286,40 +176,7 @@ export function FeaturePanel() {
                       {/* Content */}
                       <div className="relative flex-1 px-4 py-6 sm:px-6">
                         <div className="space-y-6">
-                          <div className="flex items-center justify-between">
-                            <div className="flex-1">
-                              <h3 className="text-sm font-medium text-gray-900">
-                                AI Summary Box
-                              </h3>
-                              <p className="text-xs text-gray-500 mt-1">
-                                Show intent recommendations on search pages
-                              </p>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() =>
-                                handleSettingChange(
-                                  'showAISummary',
-                                  !settings.showAISummary,
-                                )
-                              }
-                              className={`${
-                                settings.showAISummary
-                                  ? 'bg-indigo-600'
-                                  : 'bg-gray-200'
-                              } relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2`}
-                            >
-                              <span
-                                className={`${
-                                  settings.showAISummary
-                                    ? 'translate-x-5'
-                                    : 'translate-x-0'
-                                } pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out`}
-                              />
-                            </button>
-                          </div>
-
-                          <div className="border-t border-gray-200 pt-6">
+                          <div>
                             <div className="mb-3">
                               <h3 className="text-sm font-medium text-gray-900">
                                 Conversational Agent
@@ -377,8 +234,8 @@ export function FeaturePanel() {
 
                           <div className="border-t border-gray-200 pt-6">
                             <p className="text-xs text-gray-500">
-                              Settings are saved locally. Agent selection is only
-                              intended for local and dev-style testing.
+                              Agent selection is saved locally and is only intended
+                              for local and dev-style testing.
                             </p>
                           </div>
                         </div>
@@ -404,10 +261,7 @@ export function useFeatureSettings() {
     // Guard against SSR
     if (typeof window === 'undefined') return;
 
-    // Initialize from URL params if present
-    initializeFeatureSettingsFromURL();
-
-    // Load current settings (includes URL-based overrides from sessionStorage)
+    // Load current settings from storage
     setSettings(getFeatureSettingsSnapshot());
 
     const handleSettingsChange = (event: CustomEvent<FeatureSettings>) => {
