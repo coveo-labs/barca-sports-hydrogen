@@ -2,7 +2,7 @@ import {useCallback, useRef} from 'react';
 import type {Dispatch, SetStateAction} from 'react';
 import type {ConversationRecord} from '~/lib/generative/conversation';
 import {logDebug, logError, logInfo, logWarn} from '~/lib/logger';
-import {getFeatureSettingsSnapshot} from '~/components/FeaturePanel';
+import {getFeatureSettingsSnapshot} from '~/lib/feature-settings';
 import {AGENT_SELECTION_HEADER} from '~/lib/generative/agent-runtime';
 import {
   createBufferProcessor,

@@ -9,18 +9,15 @@ import {
 import {XMarkIcon, Cog6ToothIcon} from '@heroicons/react/24/outline';
 import {
   type AgentRuntimeSelection,
-  isAgentRuntimeSelection,
 } from '~/lib/generative/agent-runtime';
-
-const FEATURE_SETTINGS_SESSION_KEY = 'barca_feature_settings_session';
-
-interface FeatureSettings {
-  agentRuntime: AgentRuntimeSelection;
-}
-
-const DEFAULT_FEATURE_SETTINGS: FeatureSettings = {
-  agentRuntime: 'default',
-};
+import {
+  DEFAULT_FEATURE_SETTINGS,
+  FEATURE_SETTINGS_CHANGED_EVENT,
+  type FeatureSettings,
+  dispatchFeatureSettingsChanged,
+  getFeatureSettingsSnapshot,
+  saveFeatureSettings,
+} from '~/lib/feature-settings';
 
 const AGENT_RUNTIME_CHOICES: Array<{
   value: AgentRuntimeSelection;
@@ -40,57 +37,9 @@ const AGENT_RUNTIME_CHOICES: Array<{
   {
     value: 'agent-smith-commerce-agent',
     label: 'Agent Smith Commerce Agent',
-    description:
-      'Routes requests to agent-smith commerce-agent.',
+    description: 'Routes requests to agent-smith commerce-agent.',
   },
 ];
-
-function normalizeFeatureSettings(value: unknown): FeatureSettings {
-  if (!value || typeof value !== 'object') {
-    return DEFAULT_FEATURE_SETTINGS;
-  }
-
-  const candidate = value as Partial<FeatureSettings>;
-
-  return {
-    agentRuntime: isAgentRuntimeSelection(candidate.agentRuntime)
-      ? candidate.agentRuntime
-      : DEFAULT_FEATURE_SETTINGS.agentRuntime,
-  };
-}
-
-/**
- * Load feature settings from sessionStorage.
- */
-export function getFeatureSettingsSnapshot(): FeatureSettings {
-  if (typeof window === 'undefined') {
-    return DEFAULT_FEATURE_SETTINGS;
-  }
-
-  try {
-    const sessionStored = sessionStorage.getItem(FEATURE_SETTINGS_SESSION_KEY);
-    if (sessionStored) {
-      return normalizeFeatureSettings(JSON.parse(sessionStored));
-    }
-  } catch (e) {
-    console.error('Failed to load feature settings:', e);
-  }
-
-  return DEFAULT_FEATURE_SETTINGS;
-}
-
-/**
- * Save feature settings for the current browser session only.
- */
-function saveFeatureSettings(settings: FeatureSettings) {
-  if (typeof window === 'undefined') return;
-
-  try {
-    sessionStorage.setItem(FEATURE_SETTINGS_SESSION_KEY, JSON.stringify(settings));
-  } catch (e) {
-    console.error('Failed to save feature settings:', e);
-  }
-}
 
 export function FeaturePanel() {
   const [isOpen, setIsOpen] = useState(false);
@@ -109,13 +58,7 @@ export function FeaturePanel() {
     const newSettings = {...settings, [key]: value};
     setSettings(newSettings);
     saveFeatureSettings(newSettings);
-
-    // Dispatch custom event to notify other components
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(
-        new CustomEvent('featureSettingsChanged', {detail: newSettings}),
-      );
-    }
+    dispatchFeatureSettingsChanged(newSettings);
   };
 
   return (
@@ -270,13 +213,13 @@ export function useFeatureSettings() {
     };
 
     window.addEventListener(
-      'featureSettingsChanged',
+      FEATURE_SETTINGS_CHANGED_EVENT,
       handleSettingsChange as EventListener,
     );
 
     return () => {
       window.removeEventListener(
-        'featureSettingsChanged',
+        FEATURE_SETTINGS_CHANGED_EVENT,
         handleSettingsChange as EventListener,
       );
     };
