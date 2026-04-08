@@ -85,11 +85,13 @@
         },
         "summary": {
           "type": "string",
-          "description": "Short AI-generated product research summary"
+          "description": "Short AI-generated product research summary",
+          "optional": true
         },
         "bullets": {
           "type": "array",
           "description": "Supporting product research bullets",
+          "optional": true,
           "items": {
             "type": "string"
           }

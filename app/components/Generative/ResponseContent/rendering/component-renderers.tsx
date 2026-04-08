@@ -8,7 +8,10 @@ import {BundleDisplay} from '../components/BundleDisplay';
 import {NextActionsBar} from '../components/NextActionsBar';
 import {ProductResearchCard} from '../components/ProductResearchCard';
 import {resolveTemplateData} from '~/lib/generative/a2ui/data-binding-resolver';
-import {resolveProductId} from '~/lib/generative/product/product-identifier';
+import {
+  normalizeProductId,
+  resolveProductId,
+} from '~/lib/generative/product/product-identifier';
 import type {ResponseComponentRendererProps} from './render-context';
 
 type RenderableProductSource = {
@@ -192,12 +195,9 @@ export function renderProductResearchCard({
   const items = resolveTemplateData('/items', renderContext.dataModel) as
     | ProductResearchSource[]
     | undefined;
-  const productId =
-    typeof resolvedProps.ec_product_id === 'string'
-      ? resolvedProps.ec_product_id
-      : '';
+  const productId = normalizeProductId(resolvedProps.ec_product_id) ?? '';
   const product =
-    items?.find((item) => item.ec_product_id === productId) ??
+    items?.find((item) => resolveProductId(item) === productId) ??
     items?.[0] ??
     null;
   const summary =
