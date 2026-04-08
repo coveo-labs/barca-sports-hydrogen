@@ -157,13 +157,13 @@ export function ProductResearchCard({
             <h4 className="text-[16px] font-semibold tracking-tight text-slate-900">
               Key Features
             </h4>
-            <ul className="mt-4 space-y-4">
+            <ul className="mt-4 space-y-3">
               {featureBullets.map((bullet, index) => (
                 <li
                   key={`${index}-${bullet}`}
-                  className="flex items-start gap-3 text-[14px] leading-3 text-slate-700"
+                  className="flex items-start gap-3 text-[14px] leading-6 text-slate-700"
                 >
-                  <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-indigo-500" />
+                  <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-indigo-500" />
                   <span>{bullet}</span>
                 </li>
               ))}
