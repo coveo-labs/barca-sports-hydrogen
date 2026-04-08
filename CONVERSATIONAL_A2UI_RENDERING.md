@@ -59,6 +59,7 @@ ACTIVITY_SNAPSHOT event
 - `app/components/Generative/ResponseContent/rendering/component-renderers.tsx`
 - `app/components/Generative/ResponseContent/rendering/render-context.ts`
 - `app/components/Generative/ResponseContent/components/*`
+- `app/lib/generative/product/product-identifier.ts`
 
 ## 4. Event Shape
 
@@ -365,6 +366,7 @@ The actual presentational components live in:
 Important examples:
 
 - `ProductCarousel.tsx`
+- `ProductResearchCard.tsx`
 - `ComparisonTable.tsx`
 - `ComparisonSummary.tsx`
 - `BundleDisplay.tsx`
@@ -393,6 +395,7 @@ That flag is created in `SurfaceRenderer` and passed down through
 The component type still determines the skeleton shape:
 
 - `ProductCarousel` -> carousel skeleton
+- `ProductResearchCard` -> two-column research skeleton
 - `ComparisonTable` -> comparison skeleton
 - `BundleDisplay` -> bundle skeleton
 - `NextActionsBar` -> next-actions skeleton

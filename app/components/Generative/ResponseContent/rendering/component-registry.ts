@@ -8,6 +8,7 @@ import {
   renderNextActionsBar,
   renderProductCard,
   renderProductCarousel,
+  renderProductResearchCard,
   renderText,
 } from './component-renderers';
 import type {ResponseComponentRendererProps} from './render-context';
@@ -20,6 +21,7 @@ export type ResponseComponentRegistry = Record<
 export const responseComponentRegistry: ResponseComponentRegistry = {
   ProductCard: renderProductCard,
   ProductCarousel: renderProductCarousel,
+  ProductResearchCard: renderProductResearchCard,
   ComparisonTable: renderComparisonTable,
   ComparisonSummary: renderComparisonSummary,
   BundleDisplay: renderBundleDisplay,

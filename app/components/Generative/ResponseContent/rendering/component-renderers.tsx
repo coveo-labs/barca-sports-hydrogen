@@ -6,8 +6,12 @@ import {ComparisonTable} from '../components/ComparisonTable';
 import {ComparisonSummary} from '../components/ComparisonSummary';
 import {BundleDisplay} from '../components/BundleDisplay';
 import {NextActionsBar} from '../components/NextActionsBar';
+import {ProductResearchCard} from '../components/ProductResearchCard';
 import {resolveTemplateData} from '~/lib/generative/a2ui/data-binding-resolver';
-import {resolveProductId} from '~/lib/generative/product/product-identifier';
+import {
+  normalizeProductId,
+  resolveProductId,
+} from '~/lib/generative/product/product-identifier';
 import type {ResponseComponentRendererProps} from './render-context';
 
 type RenderableProductSource = {
@@ -34,6 +38,8 @@ type ProductCardSource = RenderableProductSource &
     ec_colors?: string[] | null;
     ec_selected_color?: string | null;
   };
+
+type ProductResearchSource = ProductCardSource;
 
 function getPrimaryCategory(product: {ec_category?: string[] | null}) {
   return Array.isArray(product.ec_category) && product.ec_category.length > 0
@@ -177,6 +183,42 @@ export function renderComparisonSummary({
       ? resolvedProps.text
       : ((resolvedProps.text as any)?.literalString ?? '');
   return <ComparisonSummary key={renderContext.componentId} text={text} />;
+}
+
+export function renderProductResearchCard({
+  componentProps,
+  resolved,
+  renderContext,
+  interactionHandlers,
+}: ResponseComponentRendererProps): ReactNode {
+  const resolvedProps = (resolved as any).component || resolved;
+  const items = resolveTemplateData('/items', renderContext.dataModel) as
+    | ProductResearchSource[]
+    | undefined;
+  const productId = normalizeProductId(resolvedProps.ec_product_id) ?? '';
+  const product =
+    items?.find((item) => resolveProductId(item) === productId) ??
+    items?.[0] ??
+    null;
+  const summary =
+    typeof resolvedProps.summary === 'string' ? resolvedProps.summary : '';
+  const bullets = Array.isArray(resolvedProps.bullets)
+    ? resolvedProps.bullets.filter(
+        (bullet: unknown): bullet is string =>
+          typeof bullet === 'string' && bullet.trim().length > 0,
+      )
+    : [];
+
+  return (
+    <ProductResearchCard
+      key={renderContext.componentId}
+      product={product}
+      summary={summary}
+      bullets={bullets}
+      isLoading={Boolean(componentProps.isLoading) || renderContext.isSkeletonSurface}
+      onProductSelect={interactionHandlers.onProductSelect}
+    />
+  );
 }
 
 export function renderBundleDisplay({
