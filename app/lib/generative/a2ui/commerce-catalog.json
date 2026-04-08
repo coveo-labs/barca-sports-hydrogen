@@ -76,6 +76,27 @@
       }
     },
     {
+      "id": "ProductResearchCard",
+      "description": "Display a product deep-dive with one bound product plus AI-generated summary and feature bullets. Use this for research intent responses.",
+      "properties": {
+        "ec_product_id": {
+          "type": "string",
+          "description": "Product identifier used to match the bound item from /items"
+        },
+        "summary": {
+          "type": "string",
+          "description": "Short AI-generated product research summary"
+        },
+        "bullets": {
+          "type": "array",
+          "description": "Supporting product research bullets",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    {
       "id": "ComparisonTable",
       "description": "Side-by-side product comparison table with key attributes. Use this when the user requests to compare multiple products.",
       "properties": {
