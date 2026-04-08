@@ -140,7 +140,7 @@ export function ProductResearchCard({
                 <SparklesIcon className="h-5 w-5" />
               </div>
               <div className="min-w-0">
-                <h3 className="text-[18px] font-semibold tracking-tight text-slate-900">
+                <h3 className="text-[16px] font-semibold tracking-tight text-slate-900">
                   Product Summary
                 </h3>
                 <p className="text-[12px] text-slate-500">
@@ -154,7 +154,7 @@ export function ProductResearchCard({
 
         {featureBullets.length > 0 ? (
           <section className="px-1 pt-2">
-            <h4 className="text-[18px] font-semibold tracking-tight text-slate-900">
+            <h4 className="text-[16px] font-semibold tracking-tight text-slate-900">
               Key Features
             </h4>
             <ul className="mt-4 space-y-4">
