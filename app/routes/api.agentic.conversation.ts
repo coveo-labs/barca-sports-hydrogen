@@ -76,6 +76,7 @@ async function handleStreamConversation(
 
   console.info('[api.agentic.conversation] streaming conversation', {
     hasSessionId: Boolean(body.sessionId),
+    hasConversationToken: Boolean(body.conversationToken),
     requestedAgentRuntime,
     targetEnvironment: runtimeConfig.targetEnvironment,
     featureFlagOverrideApplied: Boolean(runtimeConfig.featureFlagOverrides),
@@ -105,6 +106,7 @@ async function handleStreamConversation(
       cart: Array.isArray(body.cart) ? body.cart : [],
     },
     conversationSessionId: body.sessionId || undefined,
+    conversationToken: body.conversationToken || undefined,
     targetEngine: 'AGENT_CORE',
   } satisfies Record<string, unknown>;
 
@@ -275,6 +277,10 @@ function sanitizeConversation(
 
   return {
     id: conversation.id,
+    conversationToken:
+      typeof conversation.conversationToken === 'string'
+        ? conversation.conversationToken
+        : null,
     title,
     createdAt,
     updatedAt,
@@ -372,6 +378,7 @@ type ConversationStreamPayload = {
   message?: string;
   trackingId?: string;
   sessionId?: string;
+  conversationToken?: string;
   locale?: {
     language?: string;
     country?: string;

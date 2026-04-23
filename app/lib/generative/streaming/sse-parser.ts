@@ -30,6 +30,16 @@ function normalizeEvent(fallbackName: string, payload: unknown): unknown {
   }
 
   if (fallbackName && fallbackName !== 'message') {
+    if (payload && typeof payload === 'object' && !Array.isArray(payload)) {
+      // Named SSE lifecycle events such as `turn_started` and `turn_complete`
+      // carry structured objects without an embedded `type`. Flatten them here
+      // so downstream code can treat them like first-class typed events.
+      return {
+        type: fallbackName,
+        ...(payload as Record<string, unknown>),
+      };
+    }
+
     return {
       type: fallbackName,
       payload,

@@ -52,6 +52,7 @@ export function useAssistantStreaming({
     async ({
       conversationLocalId,
       sessionId,
+      conversationToken,
       userMessage,
       showInitialStatus,
       onThinkingUpdate: streamCallback,
@@ -79,6 +80,7 @@ export function useAssistantStreaming({
       });
       const session = new AssistantStreamSession({
         initialSessionId: sessionId,
+        initialConversationToken: conversationToken,
         updater,
         structuredResponseAdapter,
         onThinkingUpdate: updateCallback,
@@ -110,6 +112,7 @@ export function useAssistantStreaming({
         logInfo('streaming request start', {
           conversationLocalId,
           sessionId,
+          hasConversationToken: Boolean(conversationToken),
           endpoint,
           requestedAgentRuntime,
         });
@@ -127,6 +130,7 @@ export function useAssistantStreaming({
           body: JSON.stringify({
             message: userMessage,
             sessionId: sessionId ?? undefined,
+            conversationToken: conversationToken ?? undefined,
             locale,
             view,
           }),

@@ -11,6 +11,7 @@ type UseAutoRetryOptions = {
   streamError: string | null;
   isStreaming: boolean;
   sessionId: string | null;
+  conversationToken: string | null;
   conversationId: string | null;
   setConversations: Dispatch<SetStateAction<ConversationRecord[]>>;
   setStreamError: Dispatch<SetStateAction<string | null>>;
@@ -28,6 +29,7 @@ export function useAutoRetry({
   streamError,
   isStreaming,
   sessionId,
+  conversationToken,
   conversationId,
   setConversations,
   setStreamError,
@@ -74,6 +76,11 @@ export function useAutoRetry({
       return;
     }
 
+    if (!conversationToken) {
+      logDebug('cannot auto-retry: no conversation token');
+      return;
+    }
+
     retryCountRef.current += 1;
     isRetryingRef.current = true;
 
@@ -109,6 +116,7 @@ export function useAutoRetry({
     streamError,
     isStreaming,
     sessionId,
+    conversationToken,
     conversationId,
     sendMessageRef,
     setStreamError,

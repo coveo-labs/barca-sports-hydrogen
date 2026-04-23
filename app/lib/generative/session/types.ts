@@ -5,6 +5,7 @@ import type {ConversationStateUpdater} from './conversation-state-updater';
 
 export type AssistantStreamSessionOptions = {
   initialSessionId: string | null;
+  initialConversationToken: string | null;
   updater: ConversationStateUpdater;
   structuredResponseAdapter?: StructuredResponseAdapter;
   onThinkingUpdate?: (snapshot: ThinkingUpdateSnapshot) => void;

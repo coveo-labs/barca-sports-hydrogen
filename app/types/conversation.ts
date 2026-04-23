@@ -38,6 +38,7 @@ export interface ConversationMessage {
  */
 export interface ConversationSummary {
   id: string;
+  conversationToken?: string | null;
   title: string;
   createdAt: string;
   updatedAt: string;

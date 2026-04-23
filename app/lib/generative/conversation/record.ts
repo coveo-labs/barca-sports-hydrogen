@@ -7,6 +7,7 @@ import {generateId} from './id';
 export type ConversationRecord = {
   localId: string;
   sessionId: string | null;
+  conversationToken: string | null;
   title: string;
   createdAt: string;
   updatedAt: string;
@@ -25,6 +26,7 @@ export function mapSummaryToRecord(
   return {
     localId: generateId(),
     sessionId: summary.id,
+    conversationToken: summary.conversationToken ?? null,
     title: summary.title,
     createdAt: summary.createdAt,
     updatedAt: summary.updatedAt,
@@ -38,6 +40,7 @@ export function recordToSummary(
 ): ConversationSummary {
   return {
     id: record.sessionId ?? record.localId,
+    conversationToken: record.conversationToken,
     title: record.title,
     createdAt: record.createdAt,
     updatedAt: record.updatedAt,
@@ -53,6 +56,7 @@ export function createEmptyConversation(
   return {
     localId: generateId(),
     sessionId: null,
+    conversationToken: null,
     title: label,
     createdAt: timestamp,
     updatedAt: timestamp,

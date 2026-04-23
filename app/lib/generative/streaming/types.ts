@@ -3,6 +3,7 @@ import type {ConversationThinkingUpdate} from '~/types/conversation';
 
 export type SessionIdentifier = {
   sessionId: string | null;
+  conversationToken: string | null;
 };
 
 export type RunStartedEvent = {
@@ -111,6 +112,14 @@ export type CustomEvent = {
 
 export type TurnStartedEvent = {
   type: 'turn_started';
+  conversationSessionId?: string;
+  conversationToken?: string;
+};
+
+export type TurnCompleteEvent = {
+  type: 'turn_complete';
+  conversationSessionId?: string;
+  conversationToken?: string;
 };
 
 export type UnknownEvent = {
@@ -168,6 +177,7 @@ export type ActivitySnapshotEvent = {
 
 export type AssistantStreamEvent =
   | TurnStartedEvent
+  | TurnCompleteEvent
   | RunStartedEvent
   | RunFinishedEvent
   | RunErrorEvent
@@ -198,6 +208,7 @@ export type ThinkingUpdateSnapshot = {
 export type StreamArgs = {
   conversationLocalId: string;
   sessionId: string | null;
+  conversationToken: string | null;
   userMessage: string;
   showInitialStatus?: boolean;
   onThinkingUpdate?: (snapshot: ThinkingUpdateSnapshot) => void;

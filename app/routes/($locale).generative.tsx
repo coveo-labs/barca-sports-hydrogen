@@ -144,6 +144,7 @@ export default function GenerativeShoppingAssistant() {
     streamError,
     isStreaming,
     sessionId: activeConversation?.sessionId ?? null,
+    conversationToken: activeConversation?.conversationToken ?? null,
     conversationId: activeConversationId,
     setConversations,
     setStreamError,

@@ -29,6 +29,7 @@ export class AssistantStreamSession {
   private structuredResponseAdapter;
   private onThinkingUpdate;
   private resolvedSessionId: string | null;
+  private resolvedConversationToken: string | null;
   private assistantMessageId: string | null = null;
   private accumulatedContent = '';
   private activeReasoningMessageId: string | null = null;
@@ -41,11 +42,13 @@ export class AssistantStreamSession {
 
   constructor({
     initialSessionId,
+    initialConversationToken,
     updater,
     structuredResponseAdapter,
     onThinkingUpdate,
   }: AssistantStreamSessionOptions) {
     this.resolvedSessionId = initialSessionId;
+    this.resolvedConversationToken = initialConversationToken;
     this.updater = updater;
     this.structuredResponseAdapter = structuredResponseAdapter;
     this.onThinkingUpdate = onThinkingUpdate;
@@ -96,6 +99,7 @@ export class AssistantStreamSession {
         this.syncAssistantMetadata();
         return {complete: true};
       }
+      case 'turn_complete':
       case 'REASONING_START':
       case 'REASONING_END':
       case 'TEXT_MESSAGE_END':
@@ -187,7 +191,10 @@ export class AssistantStreamSession {
 
   finalizeAfterStream(): StreamHandlingResult {
     this.finalizeAssistantResponse();
-    this.updater.finalizeConversation(this.resolvedSessionId);
+    this.updater.finalizeConversation(
+      this.resolvedSessionId,
+      this.resolvedConversationToken,
+    );
 
     if (!this.turnCompleted && !this.capturedErrorMessage) {
       if (this.structuredResponseAdapter?.hasSyncedContent()) {
@@ -204,6 +211,10 @@ export class AssistantStreamSession {
 
   getResolvedSessionId() {
     return this.resolvedSessionId;
+  }
+
+  getResolvedConversationToken() {
+    return this.resolvedConversationToken;
   }
 
   hasCapturedError() {
@@ -422,50 +433,102 @@ export class AssistantStreamSession {
     this.pushAssistantMessage(text, 'error');
   }
 
-  private updateResolvedSession(sessionId: string | null) {
-    if (!sessionId || sessionId === this.resolvedSessionId) {
+  private updateResolvedContinuation(
+    sessionId: string | null,
+    conversationToken: string | null,
+  ) {
+    const nextUpdate: {
+      sessionId?: string | null;
+      conversationToken?: string | null;
+    } = {};
+
+    if (sessionId && sessionId !== this.resolvedSessionId) {
+      this.resolvedSessionId = sessionId;
+      nextUpdate.sessionId = sessionId;
+    }
+
+    if (
+      conversationToken &&
+      conversationToken !== this.resolvedConversationToken
+    ) {
+      this.resolvedConversationToken = conversationToken;
+      nextUpdate.conversationToken = conversationToken;
+    }
+
+    if (
+      nextUpdate.sessionId === undefined &&
+      nextUpdate.conversationToken === undefined
+    ) {
       return;
     }
 
-    this.resolvedSessionId = sessionId;
-    this.updater.updateConversationSession(sessionId);
+    this.updater.updateConversationContinuation(nextUpdate);
   }
 
-  private readSessionId(value: unknown): string | null {
+  private readContinuation(value: unknown): {
+    sessionId: string | null;
+    conversationToken: string | null;
+  } {
     if (!value || typeof value !== 'object') {
-      return null;
+      return {
+        sessionId: null,
+        conversationToken: null,
+      };
     }
 
     const record = value as Record<string, unknown>;
+    const payload =
+      record.payload && typeof record.payload === 'object'
+        ? (record.payload as Record<string, unknown>)
+        : null;
     const candidates = [
       record.threadId,
       record.sessionId,
       record.conversationSessionId,
+      payload?.threadId,
+      payload?.sessionId,
+      payload?.conversationSessionId,
     ];
+    let sessionId: string | null = null;
 
     for (const candidate of candidates) {
       if (typeof candidate === 'string' && candidate.trim()) {
-        return candidate.trim();
+        sessionId = candidate.trim();
+        break;
       }
     }
 
-    return null;
+    const tokenCandidates = [
+      record.conversationToken,
+      payload?.conversationToken,
+    ];
+    let conversationToken: string | null = null;
+
+    for (const candidate of tokenCandidates) {
+      if (typeof candidate === 'string' && candidate.trim()) {
+        conversationToken = candidate.trim();
+        break;
+      }
+    }
+
+    return {
+      sessionId,
+      conversationToken,
+    };
   }
 
-  private resolveSessionIdFromEvent(event: AssistantStreamEvent): string | null {
-    if ('threadId' in event && typeof event.threadId === 'string') {
-      return event.threadId;
-    }
-
+  private resolveContinuationFromEvent(event: AssistantStreamEvent) {
     if (event.type === 'CUSTOM') {
-      return this.readSessionId(event.value);
+      return this.readContinuation(event.value);
     }
 
-    return null;
+    return this.readContinuation(event);
   }
 
   private updateSessionFromEvent(event: AssistantStreamEvent) {
-    this.updateResolvedSession(this.resolveSessionIdFromEvent(event));
+    const {sessionId, conversationToken} =
+      this.resolveContinuationFromEvent(event);
+    this.updateResolvedContinuation(sessionId, conversationToken);
   }
 
   private resolveDisplayText(value: unknown, fallback: string): string {
