@@ -186,7 +186,7 @@ export function ComparisonTable({
                         alt={product.name}
                         className="h-[200px] w-[200px] mx-auto object-cover bg-gray-50 group-hover:opacity-90 transition-opacity"
                       />
-                      <p className="mt-3 text-sm font-semibold text-gray-900 leading-snug truncate">
+                      <p className="mt-3 text-sm font-semibold text-gray-900 leading-snug truncate text-center">
                         {product.name}
                       </p>
                     </button>
