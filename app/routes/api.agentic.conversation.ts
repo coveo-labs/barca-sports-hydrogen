@@ -334,7 +334,12 @@ function resolveContextAgenticAccessToken(
     }
   )?.env?.[envVarName];
 
-  return typeof token === 'string' && token.trim() ? token : undefined;
+  if (typeof token !== 'string') {
+    return undefined;
+  }
+
+  const trimmedToken = token.trim();
+  return trimmedToken || undefined;
 }
 
 function upsertConversation(
@@ -515,7 +520,13 @@ function getRequiredAgenticAccessToken(
 }
 
 function resolveAgenticAccessToken(envVarName: AgenticAccessTokenEnvVar) {
-  return typeof process !== 'undefined'
-    ? process?.env?.[envVarName]
-    : undefined;
+  const token =
+    typeof process !== 'undefined' ? process?.env?.[envVarName] : undefined;
+
+  if (typeof token !== 'string') {
+    return undefined;
+  }
+
+  const trimmedToken = token.trim();
+  return trimmedToken || undefined;
 }

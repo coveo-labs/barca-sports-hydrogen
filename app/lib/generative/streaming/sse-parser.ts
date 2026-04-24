@@ -35,8 +35,8 @@ function normalizeEvent(fallbackName: string, payload: unknown): unknown {
       // carry structured objects without an embedded `type`. Flatten them here
       // so downstream code can treat them like first-class typed events.
       return {
-        type: fallbackName,
         ...(payload as Record<string, unknown>),
+        type: fallbackName,
       };
     }
 
