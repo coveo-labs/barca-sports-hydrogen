@@ -256,10 +256,23 @@ The key responsibilities there are:
 
 - resolve bound component props against the current `DataModelStore`
 - resolve templated list items
+- resolve bound values nested inside arrays
 - support the A2UI-style data binding references used by catalog components
 
 By the time a component reaches `ComponentRenderer`, its bound values are
 already normalized through this layer.
+
+That array handling matters for commerce payloads where props like
+`ProductResearchCard.bullets` can arrive as:
+
+```json
+[
+  {"literalString": "Best when you want stretch and comfort."},
+  {"literalString": "A snug fit improves warmth retention."}
+]
+```
+
+rather than plain `string[]`.
 
 ## 10. How Surfaces Reach the Assistant Message
 
@@ -351,6 +364,11 @@ Maps `catalogComponentId` values to renderer functions.
 
 Contains the adapter functions that translate A2UI component definitions into
 the props expected by the actual React UI components.
+
+Current compatibility behavior worth knowing:
+
+- `ProductCarousel` accepts both `heading` and legacy `headline`
+- `ComparisonTable` accepts both `heading` and legacy `headline`
 
 This is the main seam between:
 

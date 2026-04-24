@@ -117,6 +117,7 @@ Current behavior:
 - accepts a frontend payload with:
   - `message`
   - `sessionId`
+  - `conversationToken`
   - `locale`
   - `view`
 - looks up existing stored conversation history for the session
@@ -132,6 +133,21 @@ The route is responsible for shaping the upstream request, including:
 - conversation/session identifiers
 - locale/view context
 - any backend-specific forwarded properties required by the active agent
+
+### Conversation continuity
+
+Conversation continuation uses a pair of values:
+
+- `sessionId`
+- `conversationToken`
+
+Current client behavior is:
+
+- first turn sends no `conversationToken`
+- follow-up turns send both `sessionId` and `conversationToken`
+- the token is treated as opaque server continuation state
+- the latest token is captured from SSE lifecycle events and written back to the
+  active conversation record
 
 If you need to change how the agent is invoked, start in:
 
@@ -170,6 +186,14 @@ This class is responsible for:
 - reacting to tool/status/custom events
 - asking the structured-response adapter to patch metadata for A2UI content
 
+It also owns streamed conversation continuity updates from lifecycle events:
+
+- `turn_started`
+- `turn_complete`
+
+Those events are where the latest `conversationToken` is captured for the next
+turn.
+
 ### React state mutation boundary
 
 The only layer that mutates `ConversationRecord[]` during streaming is:
@@ -202,6 +226,13 @@ Conversation-specific hooks live beside them:
 
 This is the main place to look if you want to change message storage, local
 conversation lifecycle, or how active/visible messages are derived.
+
+`ConversationRecord` persists both:
+
+- `sessionId`
+- `conversationToken`
+
+so the frontend can continue the same upstream conversation across turns.
 
 ## 8. Thinking and View State
 
@@ -320,6 +351,9 @@ For the detailed A2UI render path, read:
 
 - `app/lib/generative/use-assistant-streaming.ts`
 
+This layer is also where follow-up turns include the stored
+`conversationToken`.
+
 ### Change how the server calls the backend agent
 
 - `app/routes/api.agentic.conversation.ts`
@@ -327,6 +361,11 @@ For the detailed A2UI render path, read:
 ### Change conversation creation, storage, or active conversation logic
 
 - `app/lib/generative/conversation/`
+
+This includes persistence of the conversation continuity pair:
+
+- `sessionId`
+- `conversationToken`
 
 ### Change transcript ordering or message row composition
 
