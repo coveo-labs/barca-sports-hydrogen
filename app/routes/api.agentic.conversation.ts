@@ -14,12 +14,17 @@ import type {
 } from '~/types/conversation';
 import {CONVERSATIONS_SESSION_KEY} from '~/types/conversation';
 
-const AGENTIC_BASE_URL =
+const AGENTIC_DEV_BASE_URL =
   'https://platformdev.cloud.coveo.com/rest/organizations/barcasportsmcy01fvu/commerce/unstable/agentic';
+const AGENTIC_PROD_BASE_URL =
+  'https://platform.cloud.coveo.com/rest/organizations/barcagroupproductionkwvdy6lp/commerce/unstable/agentic';
 
 const MAX_CONVERSATIONS = 50;
 const MAX_CONTENT_LENGTH = 4000;
 const DEFAULT_TRACKING_ID = 'market_88728731922';
+type AgenticAccessTokenEnvVar =
+  | 'AGENTIC_ACCESS_TOKEN_DEV'
+  | 'AGENTIC_ACCESS_TOKEN_PROD';
 
 export async function action({request, context}: ActionFunctionArgs) {
   if (request.method === 'POST') {
@@ -64,13 +69,17 @@ async function handleStreamConversation(
   }
 
   const requestedAgentRuntime = resolveRequestedAgentRuntime(request);
-  const featureFlagOverrides =
-    getFeatureFlagOverridesForAgentRuntime(requestedAgentRuntime);
+  const runtimeConfig = resolveAgenticRuntimeConfig(
+    requestedAgentRuntime,
+    context,
+  );
 
   console.info('[api.agentic.conversation] streaming conversation', {
     hasSessionId: Boolean(body.sessionId),
+    hasConversationToken: Boolean(body.conversationToken),
     requestedAgentRuntime,
-    featureFlagOverrideApplied: Boolean(featureFlagOverrides),
+    targetEnvironment: runtimeConfig.targetEnvironment,
+    featureFlagOverrideApplied: Boolean(runtimeConfig.featureFlagOverrides),
   });
 
   const navigatorContext = new ServerSideNavigatorContextProvider(request);
@@ -97,6 +106,7 @@ async function handleStreamConversation(
       cart: Array.isArray(body.cart) ? body.cart : [],
     },
     conversationSessionId: body.sessionId || undefined,
+    conversationToken: body.conversationToken || undefined,
     targetEngine: 'AGENT_CORE',
   } satisfies Record<string, unknown>;
 
@@ -105,8 +115,9 @@ async function handleStreamConversation(
 
   const agenticResponse = await streamAgenticConversation(payload, {
     signal: abortController.signal,
-    accessToken: extractAgenticAccessToken(context),
-    featureFlagOverrides,
+    baseUrl: runtimeConfig.baseUrl,
+    accessToken: runtimeConfig.accessToken,
+    featureFlagOverrides: runtimeConfig.featureFlagOverrides,
   });
 
   console.info('[api.agentic.conversation] upstream response', {
@@ -266,6 +277,10 @@ function sanitizeConversation(
 
   return {
     id: conversation.id,
+    conversationToken:
+      typeof conversation.conversationToken === 'string'
+        ? conversation.conversationToken
+        : null,
     title,
     createdAt,
     updatedAt,
@@ -309,17 +324,22 @@ function sanitizeMessage(message: ConversationMessage): ConversationMessage {
   };
 }
 
-function extractAgenticAccessToken(
+function resolveContextAgenticAccessToken(
   context: ActionFunctionArgs['context'],
+  envVarName: AgenticAccessTokenEnvVar,
 ): string | undefined {
-  const token = (context as {env?: {AGENTIC_ACCESS_TOKEN?: string}})?.env
-    ?.AGENTIC_ACCESS_TOKEN;
+  const token = (
+    context as {
+      env?: Partial<Record<AgenticAccessTokenEnvVar, string>>;
+    }
+  )?.env?.[envVarName];
 
-  if (typeof token === 'string' && token.trim()) {
-    return token;
+  if (typeof token !== 'string') {
+    return undefined;
   }
 
-  return undefined;
+  const trimmedToken = token.trim();
+  return trimmedToken || undefined;
 }
 
 function upsertConversation(
@@ -363,6 +383,7 @@ type ConversationStreamPayload = {
   message?: string;
   trackingId?: string;
   sessionId?: string;
+  conversationToken?: string;
   locale?: {
     language?: string;
     country?: string;
@@ -415,19 +436,19 @@ function createConversationId() {
 }
 
 type StreamAgenticConversationOptions = {
+  baseUrl: string;
   signal?: AbortSignal;
-  accessToken?: string | null;
+  accessToken: string;
   featureFlagOverrides?: Record<string, boolean> | null;
 };
 
 async function streamAgenticConversation(
   payload: unknown,
-  options: StreamAgenticConversationOptions = {},
+  options: StreamAgenticConversationOptions,
 ): Promise<Response> {
-  const accessToken = pickAccessToken(options.accessToken);
-  const url = new URL(`${AGENTIC_BASE_URL}/converse`);
+  const url = new URL(`${options.baseUrl}/converse`);
   const headers: Record<string, string> = {
-    Authorization: `Bearer ${accessToken}`,
+    Authorization: `Bearer ${options.accessToken}`,
     'Content-Type': 'application/json',
   };
 
@@ -451,26 +472,61 @@ function resolveRequestedAgentRuntime(request: Request): AgentRuntimeSelection {
   );
 }
 
-function pickAccessToken(candidate?: string | null) {
-  const trimmedCandidate = candidate?.trim();
-  if (trimmedCandidate) {
-    return trimmedCandidate;
+function resolveAgenticRuntimeConfig(
+  requestedAgentRuntime: AgentRuntimeSelection,
+  context: ActionFunctionArgs['context'],
+) {
+  if (requestedAgentRuntime === 'agent-smith-commerce-agent') {
+    return {
+      targetEnvironment: 'prod' as const,
+      baseUrl: AGENTIC_PROD_BASE_URL,
+      accessToken: getRequiredAgenticAccessToken(
+        context,
+        'AGENTIC_ACCESS_TOKEN_PROD',
+      ),
+      featureFlagOverrides: null,
+    };
   }
 
-  const resolved = resolveAgenticAccessToken();
+  return {
+    targetEnvironment: 'dev' as const,
+    baseUrl: AGENTIC_DEV_BASE_URL,
+    accessToken: getRequiredAgenticAccessToken(
+      context,
+      'AGENTIC_ACCESS_TOKEN_DEV',
+    ),
+    featureFlagOverrides:
+      getFeatureFlagOverridesForAgentRuntime(requestedAgentRuntime),
+  };
+}
+
+function getRequiredAgenticAccessToken(
+  context: ActionFunctionArgs['context'],
+  envVarName: AgenticAccessTokenEnvVar,
+) {
+  const contextToken = resolveContextAgenticAccessToken(context, envVarName);
+  if (contextToken) {
+    return contextToken;
+  }
+
+  const resolved = resolveAgenticAccessToken(envVarName);
   if (resolved) {
     return resolved;
   }
 
   throw new Error(
-    'Missing AGENTIC_ACCESS_TOKEN environment variable for Agentic API access.',
+    `Missing ${envVarName} environment variable for Agentic API access.`,
   );
 }
 
-function resolveAgenticAccessToken() {
-  if (typeof process !== 'undefined' && process?.env?.AGENTIC_ACCESS_TOKEN) {
-    return process.env.AGENTIC_ACCESS_TOKEN;
+function resolveAgenticAccessToken(envVarName: AgenticAccessTokenEnvVar) {
+  const token =
+    typeof process !== 'undefined' ? process?.env?.[envVarName] : undefined;
+
+  if (typeof token !== 'string') {
+    return undefined;
   }
 
-  return undefined;
+  const trimmedToken = token.trim();
+  return trimmedToken || undefined;
 }

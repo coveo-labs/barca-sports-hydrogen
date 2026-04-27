@@ -92,12 +92,7 @@ export function resolveComponentBindings(
     if (value && typeof value === 'object' && !Array.isArray(value)) {
       // Check if this is a BoundValue
       const obj = value as Record<string, unknown>;
-      if (
-        'path' in obj ||
-        'literalString' in obj ||
-        'literalNumber' in obj ||
-        'literalBoolean' in obj
-      ) {
+      if (isBoundValueObject(obj)) {
         resolved[key] = resolveBoundValue(value, dataModel);
       } else {
         // Recursively resolve nested objects
@@ -106,9 +101,7 @@ export function resolveComponentBindings(
     } else if (Array.isArray(value)) {
       // Resolve array items
       resolved[key] = value.map((item) =>
-        typeof item === 'object' && item !== null
-          ? resolveComponentBindings(item as Record<string, unknown>, dataModel)
-          : item,
+        resolveArrayItem(item, dataModel),
       );
     } else {
       resolved[key] = value;
@@ -135,4 +128,28 @@ export function resolveTemplateData(
   }
 
   return [];
+}
+
+function resolveArrayItem(item: unknown, dataModel: DataModelStore): unknown {
+  if (!item || typeof item !== 'object') {
+    return item;
+  }
+
+  if (Array.isArray(item)) {
+    return item.map((entry) => resolveArrayItem(entry, dataModel));
+  }
+
+  const record = item as Record<string, unknown>;
+  return isBoundValueObject(record)
+    ? resolveBoundValue(record, dataModel)
+    : resolveComponentBindings(record, dataModel);
+}
+
+function isBoundValueObject(value: Record<string, unknown>): value is BoundValue {
+  return (
+    'path' in value ||
+    'literalString' in value ||
+    'literalNumber' in value ||
+    'literalBoolean' in value
+  );
 }

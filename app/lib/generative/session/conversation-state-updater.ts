@@ -114,21 +114,46 @@ export class ConversationStateUpdater {
   }
 
   updateConversationSession(sessionId: string) {
-    this.applyUpdate((conversation) => ({
-      ...conversation,
-      sessionId,
-    }));
+    this.updateConversationContinuation({sessionId});
   }
 
-  finalizeConversation(sessionId: string | null) {
+  updateConversationContinuation({
+    sessionId,
+    conversationToken,
+  }: {
+    sessionId?: string | null;
+    conversationToken?: string | null;
+  }) {
+    this.applyUpdate((conversation) => {
+      const nextConversation = {...conversation};
+
+      if (sessionId !== undefined) {
+        nextConversation.sessionId = sessionId;
+      }
+
+      if (conversationToken !== undefined) {
+        nextConversation.conversationToken = conversationToken;
+      }
+
+      return nextConversation;
+    });
+  }
+
+  finalizeConversation(
+    sessionId: string | null,
+    conversationToken: string | null,
+  ) {
     const updatedAt = new Date().toISOString();
 
     this.applyUpdate((conversation) => {
       const nextSessionId = sessionId ?? conversation.sessionId;
+      const nextConversationToken =
+        conversationToken ?? conversation.conversationToken;
 
       return {
         ...conversation,
         sessionId: nextSessionId,
+        conversationToken: nextConversationToken,
         updatedAt,
         isPersisted: conversation.isPersisted || Boolean(nextSessionId),
       };

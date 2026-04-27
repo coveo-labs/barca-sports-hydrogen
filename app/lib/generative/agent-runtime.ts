@@ -37,9 +37,8 @@ export function getFeatureFlagOverridesForAgentRuntime(
   switch (selection) {
     case 'nrf-demo-agent':
       return {[DEMO_AGENT_CORE_RUNTIME_FLAG]: true};
-    case 'agent-smith-commerce-agent':
-      return {[DEMO_AGENT_CORE_RUNTIME_FLAG]: false};
     case 'default':
+    case 'agent-smith-commerce-agent':
     default:
       return null;
   }

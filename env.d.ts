@@ -19,7 +19,8 @@ declare global {
   const process: {
     env: {
       NODE_ENV: 'production' | 'development';
-      AGENTIC_ACCESS_TOKEN?: string;
+      AGENTIC_ACCESS_TOKEN_DEV?: string;
+      AGENTIC_ACCESS_TOKEN_PROD?: string;
     };
   };
 
@@ -28,7 +29,8 @@ declare global {
   }
 
   interface ImportMetaEnv {
-    readonly AGENTIC_ACCESS_TOKEN?: string;
+    readonly AGENTIC_ACCESS_TOKEN_DEV?: string;
+    readonly AGENTIC_ACCESS_TOKEN_PROD?: string;
   }
 
   interface ImportMeta {

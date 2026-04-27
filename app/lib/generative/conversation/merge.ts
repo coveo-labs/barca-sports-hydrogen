@@ -25,6 +25,8 @@ export function mergeConversations(
       ...newer,
       localId: preserveLocalId ?? current.localId,
       sessionId: newer.sessionId ?? older.sessionId ?? null,
+      conversationToken:
+        newer.conversationToken ?? older.conversationToken ?? null,
       title: newer.title || older.title,
       messages: newer.messages.length ? newer.messages : older.messages,
       isPersisted: newer.isPersisted ?? older.isPersisted,

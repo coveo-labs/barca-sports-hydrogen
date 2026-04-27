@@ -27,17 +27,17 @@ const AGENT_RUNTIME_CHOICES: Array<{
   {
     value: 'default',
     label: 'Org Default - no override',
-    description: 'Use the org default with no per-request override.',
+    description: 'Use the dev org default with no per-request override.',
   },
   {
     value: 'nrf-demo-agent',
     label: 'Demo Agent',
-    description: 'Routes requests to demo-agent built for NRF.',
+    description: 'Routes requests to demo-agent built for NRF (dev)',
   },
   {
     value: 'agent-smith-commerce-agent',
     label: 'Agent Smith Commerce Agent',
-    description: 'Routes requests to agent-smith commerce-agent.',
+    description: 'Routes requests to agent-smith commerce-agent (prod)',
   },
 ];
 
@@ -126,8 +126,8 @@ export function FeaturePanel() {
                               </h3>
                               <p className="mt-1 text-xs text-gray-500">
                                 Applies to conversational requests only. Uses a
-                                per-request override on the dev org for the Coveo agentic
-                                endpoint.
+                                per-request override on the dev org. Agent Smith uses
+                                the prod org with no feature-flag override.
                               </p>
                             </div>
                             <div className="space-y-3">

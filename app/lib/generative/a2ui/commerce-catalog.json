@@ -60,9 +60,14 @@
       "id": "ProductCarousel",
       "description": "Horizontal scrolling list of products. Use this for product recommendations, search results, or category browsing within a conversation.",
       "properties": {
+        "heading": {
+          "type": "string",
+          "description": "Preferred title/heading for the carousel",
+          "optional": true
+        },
         "headline": {
           "type": "string",
-          "description": "Title/heading for the carousel",
+          "description": "Legacy title/heading for the carousel. Prefer `heading` for new payloads.",
           "optional": true
         },
         "products": {
@@ -102,9 +107,14 @@
       "id": "ComparisonTable",
       "description": "Side-by-side product comparison table with key attributes. Use this when the user requests to compare multiple products.",
       "properties": {
+        "heading": {
+          "type": "string",
+          "description": "Preferred title for the comparison",
+          "optional": true
+        },
         "headline": {
           "type": "string",
-          "description": "Title for the comparison",
+          "description": "Legacy title for the comparison. Prefer `heading` for new payloads.",
           "optional": true
         },
         "products": {
@@ -120,6 +130,65 @@
           "description": "Attribute names to compare",
           "items": {
             "type": "string"
+          }
+        }
+      }
+    },
+    {
+      "id": "ComparisonSummary",
+      "description": "Short recommendation or trade-off summary shown after a comparison table.",
+      "properties": {
+        "text": {
+          "type": "string",
+          "description": "Comparison summary text"
+        }
+      }
+    },
+    {
+      "id": "BundleDisplay",
+      "description": "Config-driven bundle layout that resolves product slot surfaces via `surfaceRef`.",
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Optional bundle display title",
+          "optional": true
+        },
+        "bundles": {
+          "type": "array",
+          "description": "Bundle definitions to render",
+          "items": {
+            "type": "object",
+            "properties": {
+              "bundleId": {
+                "type": "string",
+                "description": "Stable bundle identifier"
+              },
+              "label": {
+                "type": "string",
+                "description": "Display label for the bundle"
+              },
+              "description": {
+                "type": "string",
+                "description": "Short bundle description"
+              },
+              "slots": {
+                "type": "array",
+                "description": "Slot definitions resolved from prior bundle slot surfaces",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "categoryLabel": {
+                      "type": "string",
+                      "description": "Display label for the slot category"
+                    },
+                    "surfaceRef": {
+                      "type": "string",
+                      "description": "Referenced `bundle-surface-*` surface containing the selected product"
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }

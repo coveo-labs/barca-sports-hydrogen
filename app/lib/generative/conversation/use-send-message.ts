@@ -23,6 +23,7 @@ type UseSendMessageOptions = {
   streamAssistantResponse: (args: {
     conversationLocalId: string;
     sessionId: string | null;
+    conversationToken: string | null;
     userMessage: string;
     showInitialStatus?: boolean;
   }) => Promise<void>;
@@ -113,6 +114,7 @@ export function useSendMessage({
       logDebug('sending message', {
         localId: updated.localId,
         sessionId: updated.sessionId,
+        hasConversationToken: Boolean(updated.conversationToken),
         text: trimmed,
       });
 
@@ -126,6 +128,7 @@ export function useSendMessage({
           nextState.map((conversation) => ({
             localId: conversation.localId,
             sessionId: conversation.sessionId,
+            hasConversationToken: Boolean(conversation.conversationToken),
             updatedAt: conversation.updatedAt,
             messageCount: conversation.messages.length,
           })),
@@ -139,11 +142,13 @@ export function useSendMessage({
       logDebug('invoking stream', {
         localId: updated.localId,
         sessionId: updated.sessionId,
+        hasConversationToken: Boolean(updated.conversationToken),
       });
 
       await streamAssistantResponse({
         conversationLocalId: updated.localId,
         sessionId: updated.sessionId,
+        conversationToken: updated.conversationToken,
         userMessage: trimmed,
         showInitialStatus: shouldShowInitialStatus,
       });
