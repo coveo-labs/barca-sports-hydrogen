@@ -8,6 +8,12 @@ type ToolProgressDefinition = {
   bulletLabel: string;
 };
 
+export const SKIPPED_PROGRESS_TOOL_NAMES = ['register_products'] as const;
+
+const SKIPPED_PROGRESS_TOOL_NAME_SET = new Set<string>(
+  SKIPPED_PROGRESS_TOOL_NAMES,
+);
+
 const TOOL_PROGRESS_BY_NAME: Record<string, ToolProgressDefinition> = {
   store_reference_context: {
     stepLabel: 'Reviewing previous conversation',
@@ -102,7 +108,26 @@ export function mapToolCallToProgress(
     return null;
   }
 
+  if (SKIPPED_PROGRESS_TOOL_NAME_SET.has(normalized)) {
+    return null;
+  }
+
   return TOOL_PROGRESS_BY_NAME[normalized] ?? null;
+}
+
+export function shouldSkipToolCallInProgress(
+  toolCallName: string | null | undefined,
+): boolean {
+  if (!toolCallName) {
+    return false;
+  }
+
+  const normalized = toolCallName.trim();
+  if (!normalized) {
+    return false;
+  }
+
+  return SKIPPED_PROGRESS_TOOL_NAME_SET.has(normalized);
 }
 
 export function buildThinkingProgressSteps(

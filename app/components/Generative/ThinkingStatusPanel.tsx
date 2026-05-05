@@ -1,6 +1,9 @@
 import {memo} from 'react';
 import cx from '~/lib/cx';
-import {buildThinkingProgressSteps} from '~/lib/generative/thinking/progress';
+import {
+  buildThinkingProgressSteps,
+  INITIAL_PROGRESS_STEP,
+} from '~/lib/generative/thinking/progress';
 import type {ConversationThinkingUpdate} from '~/types/conversation';
 
 type ThinkingStatusPanelProps = {
@@ -24,7 +27,9 @@ function ThinkingStatusPanelComponent({
 
   const latestStep = steps.at(-1);
   const isDone = !isStreaming;
-  const currentStepText = isDone ? 'All steps completed' : (latestStep?.label ?? '');
+  const currentStepText = isDone
+    ? 'All steps completed'
+    : (latestStep?.label ?? '');
   const stepCount = steps.length;
   const panelId = `thinking-updates-${steps[0]?.id ?? 'panel'}`;
 
@@ -63,12 +68,13 @@ function ThinkingStatusPanelComponent({
                   </span>
                 ) : null}
                 <span className="text-sm font-semibold text-slate-900">
-                  {currentStepText || 'Understanding your request'}
+                  {currentStepText || INITIAL_PROGRESS_STEP}
                 </span>
               </>
             ) : (
               <span className="text-sm font-semibold text-slate-900">
-                {currentStepText || 'Understanding your request'}...
+                {currentStepText || INITIAL_PROGRESS_STEP}
+                {!isDone ? '...' : ''}
               </span>
             )}
           </div>
@@ -124,12 +130,7 @@ function ThinkingStatusPanelComponent({
                     </span>
                   ) : (
                     <span
-                      className={cx(
-                        'mt-1 inline-flex h-3.5 w-3.5 shrink-0 rounded-full border-2',
-                        isDone || !step.isActive
-                          ? 'border-emerald-500 bg-white'
-                          : 'border-slate-300 bg-white',
-                      )}
+                      className="mt-1 inline-flex h-3.5 w-3.5 shrink-0 rounded-full border-2 border-emerald-500 bg-white"
                       aria-hidden="true"
                     >
                       <span className="m-auto h-1.5 w-1.5 rounded-full bg-emerald-500" />

@@ -17,6 +17,7 @@ import {
   INITIAL_PROGRESS_STEP,
   SUMMARY_PROGRESS_STEP,
   mapToolCallToProgress,
+  shouldSkipToolCallInProgress,
 } from '~/lib/generative/thinking/progress';
 import type {
   ConversationMessage,
@@ -545,6 +546,10 @@ export class AssistantStreamSession {
   }
 
   private handleToolCallStart(toolCallName: string | undefined) {
+    if (shouldSkipToolCallInProgress(toolCallName)) {
+      return;
+    }
+
     const mappedProgress = mapToolCallToProgress(toolCallName);
 
     if (mappedProgress) {
