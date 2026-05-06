@@ -4,7 +4,6 @@ import type {
 } from '~/lib/generative/streaming';
 import {
   CONNECTING_STATUS_MESSAGE,
-  DEFAULT_STATUS_MESSAGE,
   DEFAULT_TOOL_PROGRESS_MESSAGE,
   GENERIC_ERROR_MESSAGE,
   INTERRUPTED_ERROR_MESSAGE,
@@ -14,6 +13,12 @@ import {
   generateId,
   parseToolResultPayload,
 } from '~/lib/generative/conversation';
+import {
+  INITIAL_PROGRESS_STEP,
+  SUMMARY_PROGRESS_STEP,
+  mapToolCallToProgress,
+  shouldSkipToolCallInProgress,
+} from '~/lib/generative/thinking/progress';
 import type {
   ConversationMessage,
   ConversationThinkingUpdate,
@@ -37,8 +42,8 @@ export class AssistantStreamSession {
   private pendingFinalReasoningBlock: string | null = null;
   private capturedErrorMessage: string | null = null;
   private turnCompleted = false;
-  private seenStatusMessages = new Set<string>();
   private thinkingUpdates: ConversationThinkingUpdate[] = [];
+  private activeStepLabel: string | null = null;
 
   constructor({
     initialSessionId,
@@ -57,14 +62,13 @@ export class AssistantStreamSession {
   start(showInitialStatus?: boolean) {
     this.resetThinkingState();
 
-    const initialStatusMessage = showInitialStatus
-      ? CONNECTING_STATUS_MESSAGE
-      : DEFAULT_STATUS_MESSAGE;
+    if (showInitialStatus) {
+      this.pushAssistantMessage(CONNECTING_STATUS_MESSAGE, 'status', {
+        ephemeral: true,
+      });
+    }
 
-    this.pushAssistantMessage(initialStatusMessage, 'status', {
-      ephemeral: true,
-    });
-    this.recordThinkingUpdate(initialStatusMessage, 'status');
+    this.transitionToStep(INITIAL_PROGRESS_STEP);
   }
 
   handleEvent(event: AssistantStreamEvent): StreamHandlingResult {
@@ -73,7 +77,7 @@ export class AssistantStreamSession {
     switch (event.type) {
       case 'turn_started': {
         if (this.thinkingUpdates.length === 0) {
-          this.recordThinkingUpdate(DEFAULT_STATUS_MESSAGE, 'status');
+          this.transitionToStep(INITIAL_PROGRESS_STEP);
         } else {
           this.emitThinkingSnapshot();
         }
@@ -81,7 +85,7 @@ export class AssistantStreamSession {
       }
       case 'RUN_STARTED': {
         if (this.thinkingUpdates.length === 0) {
-          this.recordThinkingUpdate(DEFAULT_STATUS_MESSAGE, 'status');
+          this.transitionToStep(INITIAL_PROGRESS_STEP);
         } else {
           this.emitThinkingSnapshot();
         }
@@ -108,7 +112,7 @@ export class AssistantStreamSession {
         return {};
       }
       case 'REASONING_MESSAGE_START': {
-        this.demotePendingReasoningBlock();
+        this.clearPendingReasoningBlock();
         this.activeReasoningMessageId = event.messageId;
         this.activeReasoningBuffer = '';
         return {};
@@ -135,10 +139,12 @@ export class AssistantStreamSession {
           this.activeReasoningBuffer.trim() || null;
         this.activeReasoningBuffer = '';
         this.activeReasoningMessageId = null;
-        this.emitThinkingSnapshot();
         return {};
       }
       case 'TEXT_MESSAGE_START': {
+        if (event.role === 'assistant') {
+          this.transitionToStep(SUMMARY_PROGRESS_STEP);
+        }
         this.ensureAssistantMessage('');
         this.syncAssistantMetadata();
         return {};
@@ -151,14 +157,13 @@ export class AssistantStreamSession {
         return {};
       }
       case 'TOOL_CALL_START': {
-        const toolText = this.formatToolStartMessage(event.toolCallName);
-        if (this.seenStatusMessages.has(toolText)) {
-          return {};
-        }
-        this.seenStatusMessages.add(toolText);
-        this.recordThinkingUpdate(toolText, 'tool');
+        this.handleToolCallStart(event.toolCallName);
         if (!this.assistantMessageId) {
-          this.pushAssistantMessage(toolText, 'tool', {ephemeral: true});
+          this.pushAssistantMessage(
+            this.getToolStartMessage(event.toolCallName),
+            'tool',
+            {ephemeral: true},
+          );
         }
         return {};
       }
@@ -226,13 +231,12 @@ export class AssistantStreamSession {
     value: unknown,
   ): StreamHandlingResult {
     if (name === 'status' || name === 'status_update') {
-      const statusText = this.resolveDisplayText(value, DEFAULT_STATUS_MESSAGE);
-      if (!statusText || this.seenStatusMessages.has(statusText)) {
+      const statusText = this.resolveDisplayText(value, INITIAL_PROGRESS_STEP);
+      if (!statusText) {
         return {};
       }
 
-      this.seenStatusMessages.add(statusText);
-      this.recordThinkingUpdate(statusText, 'status');
+      this.transitionToStep(statusText);
       if (!this.assistantMessageId) {
         this.pushAssistantMessage(statusText, 'status', {ephemeral: true});
       }
@@ -244,6 +248,9 @@ export class AssistantStreamSession {
       const successNote =
         result.message ??
         this.resolveDisplayText(value, TOOL_RESULT_FALLBACK_MESSAGE);
+      if (this.looksLikeToolError(successNote)) {
+        return {};
+      }
       this.recordThinkingUpdate(successNote, 'tool');
       if (!this.assistantMessageId) {
         this.pushAssistantMessage(successNote, 'tool', {ephemeral: true});
@@ -286,6 +293,7 @@ export class AssistantStreamSession {
   private resetThinkingState() {
     this.thinkingUpdates = [];
     this.turnCompleted = false;
+    this.activeStepLabel = null;
     this.emitThinkingSnapshot();
   }
 
@@ -309,7 +317,8 @@ export class AssistantStreamSession {
       this.thinkingUpdates.length > 0
         ? {thinkingUpdates: [...this.thinkingUpdates]}
         : undefined;
-    const structuredMetadata = this.structuredResponseAdapter?.getMetadataPatch();
+    const structuredMetadata =
+      this.structuredResponseAdapter?.getMetadataPatch();
 
     if (!thinkingUpdates && !structuredMetadata) {
       return undefined;
@@ -390,12 +399,7 @@ export class AssistantStreamSession {
     this.setAssistantMessageContent(this.accumulatedContent);
   }
 
-  private demotePendingReasoningBlock() {
-    if (!this.pendingFinalReasoningBlock) {
-      return;
-    }
-
-    this.recordThinkingUpdate(this.pendingFinalReasoningBlock, 'reasoning');
+  private clearPendingReasoningBlock() {
     this.pendingFinalReasoningBlock = null;
   }
 
@@ -531,6 +535,59 @@ export class AssistantStreamSession {
     this.updateResolvedContinuation(sessionId, conversationToken);
   }
 
+  private transitionToStep(stepLabel: string) {
+    const trimmed = stepLabel.trim();
+    if (!trimmed || trimmed === this.activeStepLabel) {
+      return;
+    }
+
+    this.activeStepLabel = trimmed;
+    this.recordThinkingUpdate(trimmed, 'status');
+  }
+
+  private handleToolCallStart(toolCallName: string | undefined) {
+    if (shouldSkipToolCallInProgress(toolCallName)) {
+      return;
+    }
+
+    const mappedProgress = mapToolCallToProgress(toolCallName);
+
+    if (mappedProgress) {
+      this.transitionToStep(mappedProgress.stepLabel);
+      if (!this.hasCurrentStepBullet(mappedProgress.bulletLabel)) {
+        this.recordThinkingUpdate(mappedProgress.bulletLabel, 'tool');
+      }
+      return;
+    }
+
+    const fallbackToolText = this.getToolStartMessage(toolCallName);
+    if (!this.hasCurrentStepBullet(fallbackToolText)) {
+      this.recordThinkingUpdate(fallbackToolText, 'tool');
+    }
+  }
+
+  private hasCurrentStepBullet(text: string) {
+    for (let index = this.thinkingUpdates.length - 1; index >= 0; index -= 1) {
+      const update = this.thinkingUpdates[index];
+      if (update.kind === 'status') {
+        break;
+      }
+      if (update.kind === 'tool' && update.text === text) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  private looksLikeToolError(text: string) {
+    const normalized = text.trim().toLowerCase();
+    return (
+      normalized.startsWith('error:') ||
+      normalized.includes('http request failed')
+    );
+  }
+
   private resolveDisplayText(value: unknown, fallback: string): string {
     if (typeof value === 'string') {
       const trimmed = value.trim();
@@ -555,7 +612,7 @@ export class AssistantStreamSession {
     return fallback;
   }
 
-  private formatToolStartMessage(name: string | undefined) {
+  private getToolStartMessage(name: string | undefined) {
     const trimmed = name?.trim();
     if (!trimmed) {
       return DEFAULT_TOOL_PROGRESS_MESSAGE;
