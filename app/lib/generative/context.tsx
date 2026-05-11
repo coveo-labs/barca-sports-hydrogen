@@ -7,6 +7,9 @@ type ConversationActions = {
   onNewConversation: () => void;
   onSelectConversation: (conversation: ConversationRecord) => void;
   onDeleteConversation: (conversation: ConversationRecord) => void;
+  onCopyConversationDebugLog: (
+    conversation: ConversationRecord,
+  ) => Promise<boolean>;
 };
 
 type StreamingActions = {
@@ -60,11 +63,13 @@ export function useConversationActions(): ConversationActions {
       onNewConversation: actions.onNewConversation,
       onSelectConversation: actions.onSelectConversation,
       onDeleteConversation: actions.onDeleteConversation,
+      onCopyConversationDebugLog: actions.onCopyConversationDebugLog,
     }),
     [
       actions.onNewConversation,
       actions.onSelectConversation,
       actions.onDeleteConversation,
+      actions.onCopyConversationDebugLog,
     ],
   );
 }
@@ -129,6 +134,7 @@ type GenerativeProviderProps = {
   onNewConversation: () => void;
   onSelectConversation: (conversation: ConversationRecord) => void;
   onDeleteConversation: (conversation: ConversationRecord) => void;
+  onCopyConversationDebugLog: (conversation: ConversationRecord) => Promise<boolean>;
   onSendMessage: (message: string) => void;
   onStop: () => void;
   onToggleThinking: (messageId: string, next: boolean) => void;
@@ -150,6 +156,7 @@ export function GenerativeProvider({
   onNewConversation,
   onSelectConversation,
   onDeleteConversation,
+  onCopyConversationDebugLog,
   onSendMessage,
   onStop,
   onToggleThinking,
@@ -160,6 +167,7 @@ export function GenerativeProvider({
       onNewConversation,
       onSelectConversation,
       onDeleteConversation,
+      onCopyConversationDebugLog,
       onSendMessage,
       onStop,
       onToggleThinking,
@@ -169,6 +177,7 @@ export function GenerativeProvider({
       onNewConversation,
       onSelectConversation,
       onDeleteConversation,
+      onCopyConversationDebugLog,
       onSendMessage,
       onStop,
       onToggleThinking,
