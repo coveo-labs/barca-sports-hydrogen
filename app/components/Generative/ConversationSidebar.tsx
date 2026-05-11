@@ -1,4 +1,4 @@
-import {useState} from 'react';
+import {useEffect, useRef, useState} from 'react';
 import cx from '~/lib/cx';
 import {formatRelativeTime} from '~/lib/generative/conversation';
 import {
@@ -11,6 +11,7 @@ export function ConversationSidebar() {
   const [copiedConversationId, setCopiedConversationId] = useState<
     string | null
   >(null);
+  const copiedStateResetTimeoutRef = useRef<number | null>(null);
   const {conversations, activeConversationId} = useConversationsState();
   const {
     onSelectConversation,
@@ -18,6 +19,15 @@ export function ConversationSidebar() {
     onNewConversation,
     onCopyConversationDebugLog,
   } = useConversationActions();
+
+  useEffect(() => {
+    return () => {
+      if (copiedStateResetTimeoutRef.current !== null) {
+        window.clearTimeout(copiedStateResetTimeoutRef.current);
+      }
+    };
+  }, []);
+
   return (
     <aside
       className={cx(
@@ -150,10 +160,19 @@ export function ConversationSidebar() {
                               return;
                             }
                             setCopiedConversationId(conversation.localId);
-                            window.setTimeout(() => {
+
+                            if (copiedStateResetTimeoutRef.current !== null) {
+                              window.clearTimeout(
+                                copiedStateResetTimeoutRef.current,
+                              );
+                            }
+
+                            copiedStateResetTimeoutRef.current =
+                              window.setTimeout(() => {
                               setCopiedConversationId((current) =>
                                 current === conversation.localId ? null : current,
                               );
+                              copiedStateResetTimeoutRef.current = null;
                             }, 1600);
                           }}
                           className={cx(

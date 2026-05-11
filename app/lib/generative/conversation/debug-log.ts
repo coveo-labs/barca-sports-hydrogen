@@ -270,7 +270,7 @@ function isVisibleMessage(message: ConversationMessage) {
 export function buildConversationDebugLog(
   conversation: ConversationRecord,
   options: {currentUrl?: string} = {},
-) {
+): string {
   const visibleMessages = conversation.messages.filter(isVisibleMessage);
   const lines = [
     '# Conversation Debug Log',
