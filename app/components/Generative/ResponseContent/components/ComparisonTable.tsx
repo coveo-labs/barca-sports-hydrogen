@@ -31,6 +31,9 @@ interface ComparisonTableProps {
 
 const SKELETON_COLUMNS = 3;
 const SKELETON_ROWS = 4;
+const LABEL_COLUMN_WIDTH_CLASS = 'w-28 min-w-[7rem]';
+const PRODUCT_COLUMN_WIDTH_CLASS = 'w-[18rem] min-w-[18rem]';
+const COMPACT_PRODUCT_COLUMN_WIDTH_CLASS = 'w-[13rem] min-w-[13rem]';
 
 // border-r + border-b only: the wrapper div provides the top and left outer edges.
 // border-separate (not border-collapse) prevents any interaction with the wrapper border.
@@ -45,17 +48,23 @@ const CELL_LAST_BOTH = 'border-gray-200'; // last col + last row
 function ComparisonTableSkeleton() {
   return (
     <div className="w-full overflow-x-auto">
-      <div className="border border-gray-200 rounded-lg overflow-hidden">
-        <table className="min-w-full border-separate border-spacing-0 animate-pulse">
+      <div className="inline-block min-w-full border border-gray-200 rounded-lg overflow-hidden align-top">
+        <table className="w-max min-w-full border-separate border-spacing-0 animate-pulse">
+          <colgroup>
+            <col className={LABEL_COLUMN_WIDTH_CLASS} />
+            {Array.from({length: SKELETON_COLUMNS}).map((_, i) => (
+              <col key={i} className={PRODUCT_COLUMN_WIDTH_CLASS} />
+            ))}
+          </colgroup>
           <thead>
             <tr>
-              <th className={`${CELL} px-4 py-3 w-28 bg-white`} />
+              <th className={`${CELL} ${LABEL_COLUMN_WIDTH_CLASS} px-4 py-3 bg-white`} />
               {Array.from({length: SKELETON_COLUMNS}).map((_, i) => {
                 const isLastCol = i === SKELETON_COLUMNS - 1;
                 return (
                   <th
                     key={i}
-                    className={`${isLastCol ? CELL_LAST_COL : CELL} px-4 py-5 bg-white`}
+                    className={`${isLastCol ? CELL_LAST_COL : CELL} ${PRODUCT_COLUMN_WIDTH_CLASS} px-4 py-5 bg-white`}
                   >
                     <div className="w-full h-48 rounded-lg bg-gray-200 mb-3" />
                     <div className="h-4 rounded bg-gray-200 w-3/4 mx-auto mb-1" />
@@ -119,6 +128,13 @@ export function ComparisonTable({
 }: ComparisonTableProps) {
   const [drawerProduct, setDrawerProduct] = useState<ComparisonProduct | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const isCompactComparison = products.length > 3;
+  const productColumnWidthClass = isCompactComparison
+    ? COMPACT_PRODUCT_COLUMN_WIDTH_CLASS
+    : PRODUCT_COLUMN_WIDTH_CLASS;
+  const productImageClass = isCompactComparison
+    ? 'h-[150px] w-[150px]'
+    : 'h-[200px] w-[200px]';
 
   const openDrawer = (product: ComparisonProduct) => {
     setDrawerProduct(product);
@@ -139,14 +155,23 @@ export function ComparisonTable({
         <h2 className="text-lg font-semibold text-gray-900 mb-4">{headline}</h2>
       )}
       {/* border + rounded-lg on wrapper; overflow-hidden clips cells to rounded corners cleanly */}
-      <div className="border border-gray-200 rounded-lg overflow-hidden">
-        <table className="min-w-full border-separate border-spacing-0">
+      <div className="inline-block min-w-full border border-gray-200 rounded-lg overflow-hidden align-top">
+        <table className="w-max min-w-full border-separate border-spacing-0">
+          <colgroup>
+            <col className={LABEL_COLUMN_WIDTH_CLASS} />
+            {products.map((product) => (
+              <col
+                key={product.productId}
+                className={productColumnWidthClass}
+              />
+            ))}
+          </colgroup>
           {/* ── Column headers ── */}
           <thead>
             <tr>
               {/* "Product" label — top-left, vertically top-aligned */}
               <th
-                className={`${CELL} px-4 py-4 w-28 text-left text-sm font-medium text-gray-500 align-top whitespace-nowrap bg-white`}
+                className={`${CELL} ${LABEL_COLUMN_WIDTH_CLASS} px-4 py-4 text-left text-sm font-medium text-gray-500 align-top whitespace-nowrap bg-white`}
               >
                 Product
               </th>
@@ -158,7 +183,7 @@ export function ComparisonTable({
                 return (
                   <th
                     key={product.productId}
-                    className={`${isLastCol ? CELL_LAST_COL : CELL} px-4 py-4 text-center align-top ${
+                    className={`${isLastCol ? CELL_LAST_COL : CELL} ${productColumnWidthClass} px-4 py-4 text-center align-top ${
                       isRecommended ? 'bg-indigo-50' : 'bg-white'
                     }`}
                   >
@@ -184,9 +209,13 @@ export function ComparisonTable({
                       <img
                         src={product.imageUrl}
                         alt={product.name}
-                        className="h-[200px] w-[200px] mx-auto object-cover bg-gray-50 group-hover:opacity-90 transition-opacity"
+                        className={`${productImageClass} mx-auto object-cover bg-gray-50 group-hover:opacity-90 transition-opacity`}
                       />
-                      <p className="mt-3 text-sm font-semibold text-gray-900 leading-snug truncate text-center">
+                      <p
+                        className={`mt-3 font-semibold text-gray-900 leading-snug text-center ${
+                          isCompactComparison ? 'text-[13px]' : 'text-sm'
+                        }`}
+                      >
                         {product.name}
                       </p>
                     </button>
@@ -257,11 +286,13 @@ export function ComparisonTable({
                   return (
                     <td
                       key={product.productId}
-                      className={`${isLastCol ? CELL_LAST_COL : CELL} px-4 py-3.5 text-sm text-gray-700 text-center ${
+                      className={`${isLastCol ? CELL_LAST_COL : CELL} ${productColumnWidthClass} px-4 py-3.5 text-sm text-gray-700 text-center align-top ${
                         isRecommended ? 'bg-indigo-50' : 'bg-white'
                       }`}
                     >
-                      {formatAttributeValue(product[attr])}
+                      <div className="whitespace-normal break-words">
+                        {formatAttributeValue(product[attr])}
+                      </div>
                     </td>
                   );
                 })}
