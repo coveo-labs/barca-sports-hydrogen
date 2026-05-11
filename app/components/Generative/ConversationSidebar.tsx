@@ -1,4 +1,4 @@
-import {useState} from 'react';
+import {useEffect, useRef, useState} from 'react';
 import cx from '~/lib/cx';
 import {formatRelativeTime} from '~/lib/generative/conversation';
 import {
@@ -8,9 +8,26 @@ import {
 
 export function ConversationSidebar() {
   const [isCollapsed, setIsCollapsed] = useState(true);
+  const [copiedConversationId, setCopiedConversationId] = useState<
+    string | null
+  >(null);
+  const copiedStateResetTimeoutRef = useRef<number | null>(null);
   const {conversations, activeConversationId} = useConversationsState();
-  const {onSelectConversation, onDeleteConversation, onNewConversation} =
-    useConversationActions();
+  const {
+    onSelectConversation,
+    onDeleteConversation,
+    onNewConversation,
+    onCopyConversationDebugLog,
+  } = useConversationActions();
+
+  useEffect(() => {
+    return () => {
+      if (copiedStateResetTimeoutRef.current !== null) {
+        window.clearTimeout(copiedStateResetTimeoutRef.current);
+      }
+    };
+  }, []);
+
   return (
     <aside
       className={cx(
@@ -133,14 +150,84 @@ export function ConversationSidebar() {
                           {formatRelativeTime(conversation.updatedAt)}
                         </span>
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => onDeleteConversation(conversation)}
-                        className="mr-2 mt-2 self-start rounded-full p-1 text-xs text-slate-400 transition hover:bg-rose-50 hover:text-rose-500"
-                        aria-label="Delete conversation"
-                      >
-                        ✕
-                      </button>
+                      <div className="mr-2 mt-2 flex items-center gap-1 self-start">
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            const didCopy =
+                              await onCopyConversationDebugLog(conversation);
+                            if (!didCopy) {
+                              return;
+                            }
+                            setCopiedConversationId(conversation.localId);
+
+                            if (copiedStateResetTimeoutRef.current !== null) {
+                              window.clearTimeout(
+                                copiedStateResetTimeoutRef.current,
+                              );
+                            }
+
+                            copiedStateResetTimeoutRef.current =
+                              window.setTimeout(() => {
+                              setCopiedConversationId((current) =>
+                                current === conversation.localId ? null : current,
+                              );
+                              copiedStateResetTimeoutRef.current = null;
+                            }, 1600);
+                          }}
+                          className={cx(
+                            'rounded-full p-1.5 text-xs transition',
+                            copiedConversationId === conversation.localId
+                              ? 'bg-emerald-50 text-emerald-600'
+                              : 'text-slate-400 hover:bg-slate-100 hover:text-slate-600',
+                          )}
+                          aria-label="Copy debug log"
+                          title={
+                            copiedConversationId === conversation.localId
+                              ? 'Copied'
+                              : 'Copy debug log'
+                          }
+                        >
+                          {copiedConversationId === conversation.localId ? (
+                            <svg
+                              className="h-3.5 w-3.5"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M5 13l4 4L19 7"
+                              />
+                            </svg>
+                          ) : (
+                            <svg
+                              className="h-3.5 w-3.5"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-8 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                              />
+                            </svg>
+                          )}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onDeleteConversation(conversation)}
+                          className="rounded-full p-1 text-xs text-slate-400 transition hover:bg-rose-50 hover:text-rose-500"
+                          aria-label="Delete conversation"
+                          title="Delete conversation"
+                        >
+                          ✕
+                        </button>
+                      </div>
                     </div>
                   </li>
                 );

@@ -15,6 +15,7 @@ import {
   type ConversationRecord,
   createEmptyConversation,
 } from '~/lib/generative/conversation';
+import {buildConversationDebugLog} from '~/lib/generative/conversation/debug-log';
 import {useAssistantStreaming} from '~/lib/generative/use-assistant-streaming';
 import {useConversationState} from '~/lib/generative/conversation/use-conversation-state';
 import {useConversationUrlSync} from '~/lib/generative/view/use-conversation-url-sync';
@@ -287,6 +288,25 @@ export default function GenerativeShoppingAssistant() {
     ],
   );
 
+  const handleCopyConversationDebugLog = useCallback(
+    async (conversation: ConversationRecord) => {
+      if (!navigator.clipboard?.writeText) {
+        return false;
+      }
+
+      try {
+        const log = buildConversationDebugLog(conversation, {
+          currentUrl: window.location.href,
+        });
+        await navigator.clipboard.writeText(log);
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    [],
+  );
+
   const suggestedPrompts = useMemo(
     () => [
       'Build a beginner surfing kit with budget, mid-range, and premium options',
@@ -321,6 +341,7 @@ export default function GenerativeShoppingAssistant() {
       onNewConversation={handleNewConversation}
       onSelectConversation={handleSelectConversation}
       onDeleteConversation={handleDeleteConversation}
+      onCopyConversationDebugLog={handleCopyConversationDebugLog}
       onSendMessage={handleSuggestionClick}
       onStop={abortStream}
       onToggleThinking={toggleMessageExpansion}
