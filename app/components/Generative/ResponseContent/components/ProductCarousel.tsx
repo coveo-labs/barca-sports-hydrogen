@@ -1,3 +1,5 @@
+import {useRef} from 'react';
+import {ChevronLeftIcon, ChevronRightIcon} from '@heroicons/react/24/outline';
 import {A2UIProductCard} from './A2UIProductCard';
 
 interface ProductCarouselProps {
@@ -47,24 +49,56 @@ function SkeletonCard() {
  * placeholder cards so the UI shows progressive content immediately
  * while the LLM is still generating the real product layout.
  */
+const SCROLL_AMOUNT = 272; // card width (256) + gap (16)
+
 export function ProductCarousel({
   headline,
   products,
   isLoading = false,
   onProductSelect,
 }: ProductCarouselProps) {
+  const scrollRef = useRef<HTMLDivElement>(null);
   const showSkeleton = isLoading && products.length === 0;
+
+  const scroll = (direction: 'left' | 'right') => {
+    scrollRef.current?.scrollBy({
+      left: direction === 'left' ? -SCROLL_AMOUNT : SCROLL_AMOUNT,
+      behavior: 'smooth',
+    });
+  };
 
   return (
     <div className="w-full">
       {headline && (
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">{headline}</h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-semibold text-gray-900">{headline}</h2>
+          {!showSkeleton && products.length > 3 && (
+            <div className="flex gap-2">
+              <button
+                onClick={() => scroll('left')}
+                aria-label="Scroll left"
+                className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-100 transition-colors"
+              >
+                <ChevronLeftIcon className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => scroll('right')}
+                aria-label="Scroll right"
+                className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-100 transition-colors"
+              >
+                <ChevronRightIcon className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+        </div>
       )}
       {!headline && showSkeleton && (
-        /* Headline placeholder while skeleton is visible */
         <div className="h-6 rounded bg-gray-200 w-48 mb-4 animate-pulse" />
       )}
-      <div className="flex gap-6 overflow-x-auto pb-4 scroll-smooth snap-x snap-mandatory">
+      <div
+        ref={scrollRef}
+        className="flex gap-6 overflow-x-auto pb-4 scroll-smooth snap-x snap-mandatory"
+      >
         {showSkeleton
           ? Array.from({length: SKELETON_CARD_COUNT}).map((_, i) => (
               <SkeletonCard key={i} />
