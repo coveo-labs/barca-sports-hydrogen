@@ -1,12 +1,21 @@
-import {useRef} from 'react';
-import {ChevronLeftIcon, ChevronRightIcon} from '@heroicons/react/24/outline';
-import {A2UIProductCard} from './A2UIProductCard';
+import { A2UIProductCard } from './A2UIProductCard';
+import { useRef, useEffect } from 'react';
 
 interface ProductCarouselProps {
   headline?: string;
   products: Array<Record<string, unknown>>;
   isLoading?: boolean;
   onProductSelect?: (productId: string) => void;
+}
+
+type productDetailsForDataLayer = {
+  item_name: string,
+  item_id: string,
+  price: number,
+  index: number,
+  quantity: number,
+  item_list_name: string,
+  item_list_id: string
 }
 
 /** Number of placeholder cards to render while skeleton is loading */
@@ -32,7 +41,7 @@ function SkeletonCard() {
         <div className="h-4 rounded bg-gray-200 w-3/5" />
         {/* Rating row — five 20×20px blocks matching StarIcon height=20 */}
         <div className="flex gap-0.5 mt-1">
-          {Array.from({length: 5}).map((_, i) => (
+          {Array.from({ length: 5 }).map((_, i) => (
             <div key={i} className="h-5 w-5 rounded bg-gray-200" />
           ))}
         </div>
@@ -59,6 +68,51 @@ export function ProductCarousel({
 }: ProductCarouselProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const showSkeleton = isLoading && products.length === 0;
+  const hasTrackedRef = useRef(false);
+
+  function trackProductImpressions() {
+
+    const returnedProductsArray = [] as any;
+
+    useEffect(() => {
+      if (showSkeleton) {
+        return;
+      }
+
+      if (!products?.length) {
+        return;
+      }
+
+      if (hasTrackedRef.current) {
+        return;
+      }
+
+      hasTrackedRef.current = true;
+
+      const returnedProductsArray: productDetailsForDataLayer[] = products.map(
+        (product, index) => ({
+          item_name: product.ec_name as string,
+          item_id: product.ec_product_id as string,
+          price: product.ec_price as number,
+          quantity: 1,
+          index,
+          item_list_id: 'conversational_shopping',
+          item_list_name: 'Conversational Shopping',
+        }),
+      );
+
+      window.dataLayer = window.dataLayer || [];
+      window.dataLayer.push({ ecommerce: null });
+      window.dataLayer.push({
+        event: 'view_item_list',
+        ecommerce: {
+          item_list_id: 'conversational_shopping',
+          item_list_name: 'Conversational Shopping',
+          items: returnedProductsArray,
+        },
+      });
+    }, [products, showSkeleton]);
+  };
 
   const scroll = (direction: 'left' | 'right') => {
     scrollRef.current?.scrollBy({
@@ -68,42 +122,21 @@ export function ProductCarousel({
   };
 
   return (
-    <div className="w-full">
-      {headline && (
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold text-gray-900">{headline}</h2>
-          {!showSkeleton && products.length > 3 && (
-            <div className="flex gap-2">
-              <button
-                onClick={() => scroll('left')}
-                aria-label="Scroll left"
-                className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-100 transition-colors"
-              >
-                <ChevronLeftIcon className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => scroll('right')}
-                aria-label="Scroll right"
-                className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-100 transition-colors"
-              >
-                <ChevronRightIcon className="w-4 h-4" />
-              </button>
-            </div>
-          )}
-        </div>
-      )}
-      {!headline && showSkeleton && (
-        <div className="h-6 rounded bg-gray-200 w-48 mb-4 animate-pulse" />
-      )}
-      <div
-        ref={scrollRef}
-        className="flex gap-6 overflow-x-auto pb-4 scroll-smooth snap-x snap-mandatory"
-      >
-        {showSkeleton
-          ? Array.from({length: SKELETON_CARD_COUNT}).map((_, i) => (
+    <>
+      <div className="w-full">
+        {headline && (
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">{headline}</h2>
+        )}
+        {!headline && showSkeleton && (
+          /* Headline placeholder while skeleton is visible */
+          <div className="h-6 rounded bg-gray-200 w-48 mb-4 animate-pulse" />
+        )}
+        <div className="flex gap-6 overflow-x-auto pb-4 scroll-smooth snap-x snap-mandatory">
+          {showSkeleton
+            ? Array.from({ length: SKELETON_CARD_COUNT }).map((_, i) => (
               <SkeletonCard key={i} />
             ))
-          : products.map((product) => {
+            : products.map((product) => {
               const productId = (product.ec_product_id as string) || '';
               return (
                 <div key={productId} className="flex-none w-64 snap-start">
@@ -127,8 +160,13 @@ export function ProductCarousel({
                   />
                 </div>
               );
-            })}
+            }
+            )
+          }
+        </div>
       </div>
-    </div>
+      {trackProductImpressions()}
+    </>
+
   );
 }
