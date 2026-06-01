@@ -126,7 +126,7 @@ export function ProductCarousel({
 
   return (
     <>
-      <div className="w-full">
+      <div className="w-full" data-carousel>
         {headline && (
           <h2 className="text-xl font-semibold text-gray-900 mb-4">{headline}</h2>
         )}
