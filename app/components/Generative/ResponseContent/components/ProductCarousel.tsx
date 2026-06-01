@@ -68,7 +68,7 @@ export function ProductCarousel({
 }: ProductCarouselProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const showSkeleton = isLoading && products.length === 0;
-  const hasTrackedRef = useRef(false);
+  const hasTrackedRef = useRef<Record<string, boolean>>({});
 
   function trackProductImpressions() {
 
@@ -83,11 +83,14 @@ export function ProductCarousel({
         return;
       }
 
-      if (hasTrackedRef.current) {
+      const carouselTrackingKey = headline ?? 'conversational_shopping';
+      const carouselTrackingName = headline ?? 'Conversational Shopping';
+
+      if (hasTrackedRef.current[carouselTrackingKey]) {
         return;
       }
-
-      hasTrackedRef.current = true;
+      
+      hasTrackedRef.current[carouselTrackingKey] = true;
 
       const returnedProductsArray: productDetailsForDataLayer[] = products.map(
         (product, index) => ({
@@ -97,7 +100,7 @@ export function ProductCarousel({
           quantity: 1,
           index,
           item_list_id: 'conversational_shopping',
-          item_list_name: 'Conversational Shopping',
+          item_list_name: carouselTrackingName,
         }),
       );
 
@@ -107,7 +110,7 @@ export function ProductCarousel({
         event: 'view_item_list',
         ecommerce: {
           item_list_id: 'conversational_shopping',
-          item_list_name: 'Conversational Shopping',
+          item_list_name: carouselTrackingName,
           items: returnedProductsArray,
         },
       });
