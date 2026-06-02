@@ -4,6 +4,7 @@ import {ShoppingCartIcon} from '@heroicons/react/24/outline';
 import {useCart} from '~/lib/coveo/engine';
 import type {CartReturn} from '~/routes/($locale).cart';
 import '~/types/gtm';
+import { googleAnalyticsConfig } from 'analytics.config';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -71,7 +72,7 @@ export function useA2UIAddToCart(item: A2UICartItem) {
     let item_list_name = '';
 
     if(currentPagePath.includes('/generative')){
-      item_list_id = 'conversational_shopping';
+      item_list_id = googleAnalyticsConfig.conversationCommerceListId;
       // Finding the nearest w-full width
       const productsCarouselContainer = event.currentTarget.closest('div.w-full[data-carousel]');
       const productsCarouselHeadline = productsCarouselContainer?.querySelector('h2')?.innerText;

@@ -4,6 +4,7 @@ import {NavLink} from 'react-router';
 import type {SurfaceState} from '~/lib/generative/a2ui/surface-manager';
 import {A2UIAddToCartButton} from './A2UIAddToCartButton';
 import {ProductDrawer} from './ProductDrawer';
+import { googleAnalyticsConfig } from 'analytics.config';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -349,7 +350,7 @@ export function BundleDisplay({
       price: bundleProduct.originalPrice || bundleProduct.price,
       quantity: 1,
       index,
-      item_list_id: 'conversational_shopping',
+      item_list_id: googleAnalyticsConfig.conversationCommerceListId,
       item_list_name: title || 'Recommended Bundles'
     }));
 
@@ -358,7 +359,7 @@ export function BundleDisplay({
     window.dataLayer.push({
       event: "view_item_list",
       ecommerce: {
-        item_list_id: 'conversational_shopping',
+        item_list_id: googleAnalyticsConfig.conversationCommerceListId,
         item_list_name: title || 'Recommended Bundles',
         items: bundleProductsArray
       }

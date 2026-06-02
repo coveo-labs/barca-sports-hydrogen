@@ -1,5 +1,6 @@
 import { A2UIProductCard } from './A2UIProductCard';
 import { useRef, useEffect } from 'react';
+import { googleAnalyticsConfig } from 'analytics.config';
 
 interface ProductCarouselProps {
   headline?: string;
@@ -81,7 +82,7 @@ export function ProductCarousel({
         return;
       }
 
-      const carouselTrackingKey = headline ?? 'conversational_shopping';
+      const carouselTrackingKey = headline ?? googleAnalyticsConfig.conversationCommerceListId;
       const carouselTrackingName = headline ?? 'Conversational Shopping';
 
       if (hasTrackedRef.current[carouselTrackingKey]) {
@@ -97,7 +98,7 @@ export function ProductCarousel({
           price: product.ec_price as number,
           quantity: 1,
           index,
-          item_list_id: 'conversational_shopping',
+          item_list_id: googleAnalyticsConfig.conversationCommerceListId,
           item_list_name: carouselTrackingName,
         }),
       );
@@ -107,7 +108,7 @@ export function ProductCarousel({
       window.dataLayer.push({
         event: 'view_item_list',
         ecommerce: {
-          item_list_id: 'conversational_shopping',
+          item_list_id: googleAnalyticsConfig.conversationCommerceListId,
           item_list_name: carouselTrackingName,
           items: returnedProductsArray,
         },

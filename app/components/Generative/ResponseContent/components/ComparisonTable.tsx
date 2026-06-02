@@ -4,6 +4,7 @@ import { NavLink } from 'react-router';
 import { A2UIAddToCartButton } from './A2UIAddToCartButton';
 import { ProductDrawer } from './ProductDrawer';
 import { use } from 'marked';
+import { googleAnalyticsConfig } from 'analytics.config';
 
 interface ComparisonProduct {
   productId: string;
@@ -169,7 +170,7 @@ export function ComparisonTable({
         return;
       }
 
-      const comparisonTableTrackingKey = headline ?? 'conversational_shopping';
+      const comparisonTableTrackingKey = headline ?? googleAnalyticsConfig.conversationCommerceListId;
 
       if(hasTrackedRef.current[comparisonTableTrackingKey]){
         return;
@@ -183,7 +184,7 @@ export function ComparisonTable({
         price: product.ec_price as number,
         quantity: 1,
         index,
-        item_list_id: 'conversational_shopping',
+        item_list_id: googleAnalyticsConfig.conversationCommerceListId,
         item_list_name: headline ?? 'Conversational Shopping'
       })
       );
@@ -193,7 +194,7 @@ export function ComparisonTable({
       window.dataLayer.push({
         event: 'view_item_list',
         ecommerce: {
-          item_list_id: 'conversational_shopping',
+          item_list_id: googleAnalyticsConfig.conversationCommerceListId,
           item_list_name: headline ?? 'Conversational Shopping',
           items: returnedComparisonTableProducts
         }
