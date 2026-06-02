@@ -9,12 +9,12 @@ interface ProductCarouselProps {
 }
 
 type productDetailsForDataLayer = {
-  item_name: string,
-  item_id: string,
-  price: number,
-  index: number,
-  quantity: number,
-  item_list_name: string,
+  item_name: string;
+  item_id: string;
+  price: number;
+  index: number;
+  quantity: number;
+  item_list_name: string;
   item_list_id: string
 }
 
@@ -71,9 +71,7 @@ export function ProductCarousel({
   const hasTrackedRef = useRef<Record<string, boolean>>({});
 
   function trackProductImpressions() {
-
-    const returnedProductsArray = [] as any;
-
+    
     useEffect(() => {
       if (showSkeleton) {
         return;
