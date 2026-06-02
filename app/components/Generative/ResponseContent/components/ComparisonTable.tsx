@@ -31,13 +31,13 @@ interface ComparisonTableProps {
 }
 
 interface productDetailsForDataLayer {
-  item_name: string,
-  item_id: string
-  price: number,
-  index: number,
-  quantity: number,
-  item_list_name: string,
-  item_list_id: string
+  item_name: string;
+  item_id: string;
+  price: number;
+  index: number;
+  quantity: number;
+  item_list_name: string;
+  item_list_id: string;
 }
 
 const SKELETON_COLUMNS = 3;
