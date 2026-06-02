@@ -74,7 +74,6 @@ export function useA2UIAddToCart(item: A2UICartItem) {
       item_list_id = 'conversational_shopping';
       // Finding the nearest w-full width
       const productsCarouselContainer = event.currentTarget.closest('div.w-full[data-carousel]');
-      console.log(productsCarouselContainer);
       const productsCaourselHeadline = productsCarouselContainer?.querySelector('h2')?.innerText;
       if(productsCaourselHeadline){
         item_list_name = productsCaourselHeadline;
