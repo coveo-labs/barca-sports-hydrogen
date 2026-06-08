@@ -4,6 +4,7 @@ import {ShoppingCartIcon} from '@heroicons/react/24/outline';
 import {useCart} from '~/lib/coveo/engine';
 import type {CartReturn} from '~/routes/($locale).cart';
 import '~/types/gtm';
+import { googleAnalyticsConfig } from 'analytics.config';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -50,7 +51,7 @@ export function useA2UIAddToCart(item: A2UICartItem) {
   const coveoCart = useCart();
   const qty = item.quantity ?? 1;
 
-  return function handleAddToCart() {
+  return function handleAddToCart(event: React.MouseEvent<HTMLButtonElement>) {
     // ── Coveo cart sync ──────────────────────────────────────────────────────
     const currentQuantity =
       coveoCart.state.items.find((i) => i.productId === item.merchandiseId)
@@ -64,6 +65,22 @@ export function useA2UIAddToCart(item: A2UICartItem) {
       quantity: newQuantity,
     });
 
+    // Adding the item_list_name and item_list_id for attribution to conversational shopping
+
+    const currentPagePath = window.location.pathname;
+    let item_list_id = '';
+    let item_list_name = '';
+
+    if(currentPagePath.includes('/generative')){
+      item_list_id = googleAnalyticsConfig.conversationCommerceListId;
+      // Finding the nearest w-full width
+      const productsCarouselContainer = event.currentTarget.closest('div.w-full[data-carousel]');
+      const productsCarouselHeadline = productsCarouselContainer?.querySelector('h2')?.innerText;
+      if(productsCarouselHeadline){
+        item_list_name = productsCarouselHeadline;
+      }
+    }
+
     // ── GTM dataLayer ────────────────────────────────────────────────────────
     window.dataLayer = window.dataLayer || [];
     window.dataLayer.push({ecommerce: null}); // clear previous ecommerce object
@@ -76,6 +93,8 @@ export function useA2UIAddToCart(item: A2UICartItem) {
           {
             item_id: item.merchandiseId,
             item_name: item.name,
+            item_list_id: item_list_id || null,
+            item_list_name: item_list_name || null,
             price: item.price,
             quantity: qty,
           },

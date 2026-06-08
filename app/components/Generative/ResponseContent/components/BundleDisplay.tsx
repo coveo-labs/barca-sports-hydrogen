@@ -1,9 +1,10 @@
-import {useState} from 'react';
+import {useState, useRef, useEffect} from 'react';
 import {Money} from '@shopify/hydrogen';
 import {NavLink} from 'react-router';
 import type {SurfaceState} from '~/lib/generative/a2ui/surface-manager';
 import {A2UIAddToCartButton} from './A2UIAddToCartButton';
 import {ProductDrawer} from './ProductDrawer';
+import { googleAnalyticsConfig } from 'analytics.config';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -27,6 +28,16 @@ interface BundleDisplayProps {
   surfaceMap: Map<string, SurfaceState>;
   isLoading?: boolean;
   onProductSelect?: (productId: string) => void;
+}
+
+interface productDetailsForDataLayer {
+    item_name: string;
+    item_id: string;
+    price: number;
+    index: number;
+    quantity: number;
+    item_list_name: string;
+    item_list_id: string;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -253,6 +264,7 @@ function SlotCard({
   );
 }
 
+
 // ─── Main component ──────────────────────────────────────────────────────────
 
 export function BundleDisplay({
@@ -309,6 +321,52 @@ export function BundleDisplay({
     }
     return sum;
   }, 0);
+
+  const hasTrackedRef = useRef(false);
+  
+
+  function trackBundleProdutImpressions(){
+  useEffect(() => {
+    
+    if(!bundles.length){
+      return;
+    }
+
+    if(hasTrackedRef.current == true){
+      return;
+    }
+
+    hasTrackedRef.current = true;
+    const bundlesProducts = [] as any;
+    bundles.forEach(bundle => (
+      bundle.slots.forEach(slot => (
+        bundlesProducts.push(extractProductFromSurface(surfaceMap.get(slot.surfaceRef)))
+      ))
+    ));
+
+    const bundleProductsArray: productDetailsForDataLayer[] = bundlesProducts.map((bundleProduct:ProductSlotData, index: number) => ({
+      item_name: bundleProduct.name,
+      item_id: bundleProduct.productId,
+      price: bundleProduct.originalPrice || bundleProduct.price,
+      quantity: 1,
+      index,
+      item_list_id: googleAnalyticsConfig.conversationCommerceListId,
+      item_list_name: title || 'Recommended Bundles'
+    }));
+
+    window.dataLayer = window.dataLayer || [];
+    window.dataLayer.push({ecommerce: null});
+    window.dataLayer.push({
+      event: "view_item_list",
+      ecommerce: {
+        item_list_id: googleAnalyticsConfig.conversationCommerceListId,
+        item_list_name: title || 'Recommended Bundles',
+        items: bundleProductsArray
+      }
+    })
+
+  }, [bundles, isLoading && (!bundles || bundles.length === 0)])
+}
 
   return (
     <>
@@ -438,6 +496,7 @@ export function BundleDisplay({
           rating={drawerProduct?.rating}
           productUrl={drawerProduct?.url ?? '#'}
         />
+        {trackBundleProdutImpressions()}
     </>
   );
 }

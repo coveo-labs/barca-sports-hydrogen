@@ -143,6 +143,11 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
       // In conversational mode, use local inputValue
       if (isConversationalMode) {
         handleGenerativeSearch(query);
+        window.dataLayer.push({
+          event: 'search',
+          search_type: 'conversational',
+          search_term: encodeURIComponent(query),
+        });     
         return;
       }
 
@@ -181,6 +186,12 @@ export function StandaloneSearchBox({close}: StandaloneSearchBoxProps) {
 
   const handlePromptClick = (prompt: string) => {
     handleGenerativeSearch(prompt);
+    window.dataLayer = window.dataLayer || [];
+    window.dataLayer.push({
+      event: 'search',
+      search_type: 'conversational',
+      search_term: encodeURIComponent(prompt)
+    });
   };
 
   return (
