@@ -8,6 +8,7 @@ import {
   useLoaderData,
   useRouteLoaderData,
   type ActionFunctionArgs,
+  type AppLoadContext,
   type LoaderFunctionArgs,
   type MetaFunction,
 } from 'react-router';
@@ -39,7 +40,7 @@ export interface CartReturn {
 
 // Helper function to ensure the Web Pixel receives what it needs to emit Coveo cart events in the checkout page.
 async function setCoveoConfigAttributes(
-  context: any,
+  context: AppLoadContext,
   request: Request,
   cartResult: CartQueryDataReturn,
 ) {
@@ -48,12 +49,11 @@ async function setCoveoConfigAttributes(
 
   if (!cart) return cartResult;
 
-  const attributes = cart.attributes ?? [];
-  const attributesToUpdate = [];
+  const attributesToUpdate: {key: string; value: string}[] = [];
 
   const navigatorProvider = new ServerSideNavigatorContextProvider(request);
 
-  const {clientId} = navigatorProvider;
+  const clientId = navigatorProvider.clientId ?? '';
   const {
     configuration: {
       analytics: {trackingId},
@@ -69,12 +69,15 @@ async function setCoveoConfigAttributes(
     'coveoAccessToken',
   ];
 
-  const foundAttributes = (cart.attributes ?? []).reduce((acc, item) => {
-  if (attributesToFind.includes(item.key)) {
-    acc[item.key] = {key: item.key, value: item.value};
-  }
-    return acc;
-  }, {} as Record<string, {key: string; value: string}>);
+  const foundAttributes = (cart.attributes ?? []).reduce(
+    (acc, item) => {
+      if (attributesToFind.includes(item.key)) {
+        acc[item.key] = {key: item.key, value: item.value ?? ''};
+      }
+      return acc;
+    },
+    {} as Record<string, {key: string; value: string}>,
+  );
 
   if (!foundAttributes.coveoClientId) {
     attributesToUpdate.push({key: 'coveoClientId', value: clientId});
