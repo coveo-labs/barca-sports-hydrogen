@@ -2,11 +2,7 @@ import type {ActionFunctionArgs} from 'react-router';
 import {ServerSideNavigatorContextProvider} from '~/lib/coveo/navigator.provider';
 import {getCookieFromRequest} from '~/lib/shopify/session';
 import {
-  AGENT_SELECTION_HEADER,
-  COVEO_FEATURE_FLAG_OVERRIDE_HEADER,
-  getFeatureFlagOverridesForAgentRuntime,
-  normalizeAgentRuntimeSelection,
-  type AgentRuntimeSelection,
+  AGENT_RUNTIME,
 } from '~/lib/generative/agent-runtime';
 import type {
   ConversationMessage,
@@ -14,17 +10,13 @@ import type {
 } from '~/types/conversation';
 import {CONVERSATIONS_SESSION_KEY} from '~/types/conversation';
 
-const AGENTIC_DEV_BASE_URL =
-  'https://platformdev.cloud.coveo.com/rest/organizations/barcasportsmcy01fvu/commerce/unstable/agentic';
 const AGENTIC_PROD_BASE_URL =
   'https://platform.cloud.coveo.com/rest/organizations/barcagroupproductionkwvdy6lp/commerce/unstable/agentic';
 
 const MAX_CONVERSATIONS = 50;
 const MAX_CONTENT_LENGTH = 4000;
 const DEFAULT_TRACKING_ID = 'market_88728731922';
-type AgenticAccessTokenEnvVar =
-  | 'AGENTIC_ACCESS_TOKEN_DEV'
-  | 'AGENTIC_ACCESS_TOKEN_PROD';
+type AgenticAccessTokenEnvVar = 'AGENTIC_ACCESS_TOKEN_PROD';
 
 export async function action({request, context}: ActionFunctionArgs) {
   if (request.method === 'POST') {
@@ -68,18 +60,13 @@ async function handleStreamConversation(
     );
   }
 
-  const requestedAgentRuntime = resolveRequestedAgentRuntime(request);
-  const runtimeConfig = resolveAgenticRuntimeConfig(
-    requestedAgentRuntime,
-    context,
-  );
+  const runtimeConfig = resolveAgenticRuntimeConfig(context);
 
   console.info('[api.agentic.conversation] streaming conversation', {
     hasSessionId: Boolean(body.sessionId),
     hasConversationToken: Boolean(body.conversationToken),
-    requestedAgentRuntime,
+    agentRuntime: AGENT_RUNTIME,
     targetEnvironment: runtimeConfig.targetEnvironment,
-    featureFlagOverrideApplied: Boolean(runtimeConfig.featureFlagOverrides),
   });
 
   const navigatorContext = new ServerSideNavigatorContextProvider(request);
@@ -117,7 +104,6 @@ async function handleStreamConversation(
     signal: abortController.signal,
     baseUrl: runtimeConfig.baseUrl,
     accessToken: runtimeConfig.accessToken,
-    featureFlagOverrides: runtimeConfig.featureFlagOverrides,
   });
 
   console.info('[api.agentic.conversation] upstream response', {
@@ -439,7 +425,6 @@ type StreamAgenticConversationOptions = {
   baseUrl: string;
   signal?: AbortSignal;
   accessToken: string;
-  featureFlagOverrides?: Record<string, boolean> | null;
 };
 
 async function streamAgenticConversation(
@@ -452,12 +437,6 @@ async function streamAgenticConversation(
     'Content-Type': 'application/json',
   };
 
-  if (options.featureFlagOverrides) {
-    headers[COVEO_FEATURE_FLAG_OVERRIDE_HEADER] = JSON.stringify(
-      options.featureFlagOverrides,
-    );
-  }
-
   return fetch(url, {
     method: 'POST',
     headers,
@@ -466,37 +445,16 @@ async function streamAgenticConversation(
   });
 }
 
-function resolveRequestedAgentRuntime(request: Request): AgentRuntimeSelection {
-  return normalizeAgentRuntimeSelection(
-    request.headers.get(AGENT_SELECTION_HEADER),
-  );
-}
-
 function resolveAgenticRuntimeConfig(
-  requestedAgentRuntime: AgentRuntimeSelection,
   context: ActionFunctionArgs['context'],
 ) {
-  if (requestedAgentRuntime === 'agent-smith-commerce-agent') {
-    return {
-      targetEnvironment: 'prod' as const,
-      baseUrl: AGENTIC_PROD_BASE_URL,
-      accessToken: getRequiredAgenticAccessToken(
-        context,
-        'AGENTIC_ACCESS_TOKEN_PROD',
-      ),
-      featureFlagOverrides: null,
-    };
-  }
-
   return {
-    targetEnvironment: 'dev' as const,
-    baseUrl: AGENTIC_DEV_BASE_URL,
+    targetEnvironment: 'prod' as const,
+    baseUrl: AGENTIC_PROD_BASE_URL,
     accessToken: getRequiredAgenticAccessToken(
       context,
-      'AGENTIC_ACCESS_TOKEN_DEV',
+      'AGENTIC_ACCESS_TOKEN_PROD',
     ),
-    featureFlagOverrides:
-      getFeatureFlagOverridesForAgentRuntime(requestedAgentRuntime),
   };
 }
 

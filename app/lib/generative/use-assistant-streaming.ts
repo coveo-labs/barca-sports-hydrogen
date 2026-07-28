@@ -2,8 +2,7 @@ import {useCallback, useRef} from 'react';
 import type {Dispatch, SetStateAction} from 'react';
 import type {ConversationRecord} from '~/lib/generative/conversation';
 import {logDebug, logError, logInfo, logWarn} from '~/lib/logger';
-import {getFeatureSettingsSnapshot} from '~/lib/feature-settings';
-import {AGENT_SELECTION_HEADER} from '~/lib/generative/agent-runtime';
+import {AGENT_RUNTIME} from '~/lib/generative/agent-runtime';
 import {
   createBufferProcessor,
   parseAssistantStreamEvent,
@@ -107,14 +106,12 @@ export function useAssistantStreaming({
       };
 
       try {
-        const requestedAgentRuntime = getFeatureSettingsSnapshot().agentRuntime;
-
         logInfo('streaming request start', {
           conversationLocalId,
           sessionId,
           hasConversationToken: Boolean(conversationToken),
           endpoint,
-          requestedAgentRuntime,
+          agentRuntime: AGENT_RUNTIME,
         });
 
         session.start(showInitialStatus);
@@ -124,7 +121,6 @@ export function useAssistantStreaming({
           headers: {
             'Content-Type': 'application/json; charset=UTF-8',
             Accept: 'text/event-stream;charset=UTF-8',
-            [AGENT_SELECTION_HEADER]: requestedAgentRuntime,
           },
           signal: controller.signal,
           body: JSON.stringify({
