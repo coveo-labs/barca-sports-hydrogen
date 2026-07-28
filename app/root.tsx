@@ -28,7 +28,6 @@ import {
 } from '~/lib/coveo/navigator.provider';
 import {StandaloneProvider} from './components/Search/Context';
 import {GlobalLoading} from './components/ProgressBar';
-import {FeaturePanel} from './components/FeaturePanel';
 import {getLocaleFromRequest} from './lib/i18n';
 import {getCookieFromRequest} from '~/lib/shopify/session';
 import type {Route} from './+types/root';
@@ -275,7 +274,6 @@ export default function App() {
         </StandaloneProvider>
       </Analytics.Provider>
       <GlobalLoading />
-      <FeaturePanel />
       <ScrollRestoration nonce={nonce} />
       <Scripts nonce={nonce} />
     </>
