@@ -11,7 +11,7 @@ export interface FeatureSettings {
 }
 
 export const DEFAULT_FEATURE_SETTINGS: FeatureSettings = {
-  agentRuntime: 'default',
+  agentRuntime: 'agent-smith-commerce-agent',
 };
 
 export function normalizeFeatureSettings(value: unknown): FeatureSettings {
