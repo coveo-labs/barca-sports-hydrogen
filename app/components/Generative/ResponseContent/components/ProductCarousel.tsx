@@ -154,7 +154,7 @@ export function ProductCarousel({
                     description={product.ec_description as string | undefined}
                     category={product.ec_category as string | undefined}
                     url={(product.clickUri as string) || '#'}
-                    colors={product.ec_colors as string[] | undefined}
+                    colors={Array.isArray(product.ec_colors) ? (product.ec_colors as string[]) : undefined}
                     selectedColor={
                       product.ec_selected_color as string | undefined
                     }

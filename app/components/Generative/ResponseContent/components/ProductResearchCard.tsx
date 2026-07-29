@@ -117,7 +117,7 @@ export function ProductResearchCard({
               description={product.ec_description || undefined}
               category={getPrimaryCategory(product)}
               url={product.clickUri || '#'}
-              colors={product.ec_colors || undefined}
+              colors={Array.isArray(product.ec_colors) ? product.ec_colors : undefined}
               selectedColor={product.ec_selected_color || undefined}
               onSelect={() =>
                 product.ec_product_id &&

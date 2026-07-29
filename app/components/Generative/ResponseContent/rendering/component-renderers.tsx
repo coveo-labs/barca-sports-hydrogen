@@ -73,7 +73,7 @@ export function renderProductCard({
       description={productData.ec_description || undefined}
       category={getPrimaryCategory(productData)}
       url={productData.clickUri || '#'}
-      colors={productData.ec_colors || undefined}
+      colors={Array.isArray(productData.ec_colors) ? productData.ec_colors : undefined}
       selectedColor={productData.ec_selected_color || undefined}
       onSelect={() => interactionHandlers.onProductSelect?.(productId)}
     />
