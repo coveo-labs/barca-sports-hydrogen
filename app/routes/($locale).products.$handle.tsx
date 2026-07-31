@@ -30,6 +30,7 @@ import {RecommendationProvider} from '~/components/Search/Context';
 import {
   engineDefinition,
   getBadgePlacementId,
+  getSecondaryBadgePlacementId,
   useEngine,
   useProductView,
 } from '~/lib/coveo/engine';
@@ -239,7 +240,10 @@ export default function Product() {
         ? buildProductEnrichment(engine, {
             options: {
               productId,
-              placementIds: [getBadgePlacementId('pdp')],
+              placementIds: [
+                getBadgePlacementId('pdp'),
+                getSecondaryBadgePlacementId('pdp'),
+              ],
             },
           })
         : null,
@@ -300,23 +304,23 @@ export default function Product() {
     <main className="pdp-container mx-auto max-w-7xl sm:px-6 sm:pt-16 lg:px-8">
       <div className="mx-auto max-w-2xl lg:max-w-none">
         <div className="lg:grid lg:grid-cols-2 lg:items-start lg:gap-x-8">
-          <div className="relative">
-            <ProductBadges
-              badgePlacements={productBadgePlacements}
-              context="pdp"
-            />
-            <ImageGallery
-              product={product}
-              defaultImgIdx={defaultImageIdx}
-              onImgSelect={(idx) => {
-                setDefaultImageIdx(idx);
-                setColorParam(
-                  product.options.find((opt) => opt.name === 'Color')
-                    ?.optionValues[idx].name || '',
-                );
-              }}
-            />
-          </div>
+          <ImageGallery
+            product={product}
+            defaultImgIdx={defaultImageIdx}
+            onImgSelect={(idx) => {
+              setDefaultImageIdx(idx);
+              setColorParam(
+                product.options.find((opt) => opt.name === 'Color')
+                  ?.optionValues[idx].name || '',
+              );
+            }}
+            badges={
+              <ProductBadges
+                badgePlacements={productBadgePlacements}
+                context="pdp"
+              />
+            }
+          />
 
           <div className="mt-10 px-4 sm:mt-16 sm:px-0 lg:mt-0">
             <Description product={product} />

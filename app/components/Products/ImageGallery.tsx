@@ -5,10 +5,12 @@ export function ImageGallery({
   product,
   defaultImgIdx,
   onImgSelect,
+  badges,
 }: {
   product: ProductFragment;
   defaultImgIdx: number;
   onImgSelect?: (index: number) => void;
+  badges?: React.ReactNode;
 }) {
   return (
     <TabGroup
@@ -53,6 +55,7 @@ export function ImageGallery({
             />
           </TabPanel>
         ))}
+        <div className="pointer-events-none">{badges}</div>
       </TabPanels>
     </TabGroup>
   );

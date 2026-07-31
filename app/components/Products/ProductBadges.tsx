@@ -1,5 +1,6 @@
 import {
   getBadgePlacementId,
+  getSecondaryBadgePlacementId,
   type ProductBadgePlacementContext,
 } from '~/lib/coveo/engine';
 
@@ -60,14 +61,29 @@ export function ProductBadges({
   const matchingPlacement = badgePlacements.find(
     ({placementId}) => placementId === getBadgePlacementId(context),
   );
-
-  if (!matchingPlacement?.badges.length) {
-    return null;
-  }
+  const secondaryPlacement = badgePlacements.find(
+    ({placementId}) => placementId === getSecondaryBadgePlacementId(context),
+  );
+  const secondaryBadges = secondaryPlacement?.badges.slice(0, 3) ?? [];
 
   return (
-    <div className="pointer-events-none absolute left-2 top-2 z-[1] flex max-w-[calc(100%-1rem)] flex-wrap gap-2">
-      <BadgeList badges={matchingPlacement.badges} />
-    </div>
+    <>
+      {!!matchingPlacement?.badges.length && (
+        <div className="pointer-events-none absolute left-2 top-2 z-[1] flex max-w-[calc(100%-1rem)] flex-wrap gap-2">
+          <BadgeList badges={matchingPlacement.badges} />
+        </div>
+      )}
+      {secondaryBadges.length > 0 && (
+        <div
+          className={`pointer-events-none absolute bottom-2 right-2 z-[1] flex max-w-[calc(100%-1rem)] flex-wrap justify-end gap-2 ${
+            context !== 'pdp'
+              ? 'opacity-0 transition-opacity duration-150 group-hover:opacity-100'
+              : ''
+          }`}
+        >
+          <BadgeList badges={secondaryBadges} />
+        </div>
+      )}
+    </>
   );
 }
