@@ -30,26 +30,28 @@ export const coveoRecommendationSlotIds = {
   pdpUpperCarousel: '68f1384f-b27c-4355-ac9a-7b63ba084e71',
 } as const;
 
-export const coveoBadgePlacementIds = {
+export const coveoTopLeftBadgePlacementIds = {
   plp: 'a0d74b42-ff00-4c92-a9e7-0269ee9a1f32',
   search: 'bc4a5816-8e48-4960-8866-9765b99a422e',
   pdp: '18449c53-c9ba-4ddb-97fb-52cd1663242c',
 } as const satisfies Record<ProductBadgePlacementContext, string>;
 
-export function getBadgePlacementId(context: ProductBadgePlacementContext) {
-  return coveoBadgePlacementIds[context];
+export function getTopLeftBadgePlacementId(
+  context: ProductBadgePlacementContext,
+) {
+  return coveoTopLeftBadgePlacementIds[context];
 }
 
-export const coveoSecondaryBadgePlacementIds = {
+export const coveoBottomRightBadgePlacementIds = {
   plp: '497c7469-ca8c-4385-8099-7339927bcdf7',
   search: '7253a3f9-5f8b-43b0-a47d-7c6a0e5f11ff',
   pdp: '6cf94e23-e21e-4950-8acc-33dc739a6f0b',
 } as const satisfies Record<ProductBadgePlacementContext, string>;
 
-export function getSecondaryBadgePlacementId(
+export function getBottomRightBadgePlacementId(
   context: ProductBadgePlacementContext,
 ) {
-  return coveoSecondaryBadgePlacementIds[context];
+  return coveoBottomRightBadgePlacementIds[context];
 }
 
 /**

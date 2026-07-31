@@ -1,6 +1,6 @@
 import {
-  getBadgePlacementId,
-  getSecondaryBadgePlacementId,
+  getBottomRightBadgePlacementId,
+  getTopLeftBadgePlacementId,
   type ProductBadgePlacementContext,
 } from '~/lib/coveo/engine';
 
@@ -58,22 +58,22 @@ export function ProductBadges({
     return null;
   }
 
-  const matchingPlacement = badgePlacements.find(
-    ({placementId}) => placementId === getBadgePlacementId(context),
+  const topLeftPlacement = badgePlacements.find(
+    ({placementId}) => placementId === getTopLeftBadgePlacementId(context),
   );
-  const secondaryPlacement = badgePlacements.find(
-    ({placementId}) => placementId === getSecondaryBadgePlacementId(context),
+  const bottomRightPlacement = badgePlacements.find(
+    ({placementId}) => placementId === getBottomRightBadgePlacementId(context),
   );
-  const secondaryBadges = secondaryPlacement?.badges.slice(0, 3) ?? [];
+  const bottomRightBadges = bottomRightPlacement?.badges.slice(0, 3) ?? [];
 
   return (
     <>
-      {!!matchingPlacement?.badges.length && (
+      {!!topLeftPlacement?.badges.length && (
         <div className="pointer-events-none absolute left-2 top-2 z-[1] flex max-w-[calc(100%-1rem)] flex-wrap gap-2">
-          <BadgeList badges={matchingPlacement.badges} />
+          <BadgeList badges={topLeftPlacement.badges} />
         </div>
       )}
-      {secondaryBadges.length > 0 && (
+      {bottomRightBadges.length > 0 && (
         <div
           className={`pointer-events-none absolute bottom-2 right-2 z-[1] flex max-w-[calc(100%-1rem)] flex-wrap justify-end gap-2 ${
             context !== 'pdp'
@@ -81,7 +81,7 @@ export function ProductBadges({
               : ''
           }`}
         >
-          <BadgeList badges={secondaryBadges} />
+          <BadgeList badges={bottomRightBadges} />
         </div>
       )}
     </>

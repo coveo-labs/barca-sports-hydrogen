@@ -29,8 +29,8 @@ import {Sizes} from '~/components/Products/Sizes';
 import {RecommendationProvider} from '~/components/Search/Context';
 import {
   engineDefinition,
-  getBadgePlacementId,
-  getSecondaryBadgePlacementId,
+  getBottomRightBadgePlacementId,
+  getTopLeftBadgePlacementId,
   useEngine,
   useProductView,
 } from '~/lib/coveo/engine';
@@ -241,8 +241,8 @@ export default function Product() {
             options: {
               productId,
               placementIds: [
-                getBadgePlacementId('pdp'),
-                getSecondaryBadgePlacementId('pdp'),
+                getTopLeftBadgePlacementId('pdp'),
+                getBottomRightBadgePlacementId('pdp'),
               ],
             },
           })
