@@ -17,6 +17,12 @@ type MessageBubbleProps = {
   onProductSelect?: (productId: string) => void;
 };
 
+function isNextActionsSurface(surface: SurfaceState): boolean {
+  return Array.from(surface.components.values()).some(
+    (component) => component.catalogComponentId === 'NextActionsBar',
+  );
+}
+
 function MessageBubbleComponent({
   message,
   isStreaming,
@@ -185,10 +191,16 @@ function AssistantMessageContent({
     />
   );
 
+  const presentationSurfaces = surfaceArray.filter(
+    (surface) => !isNextActionsSurface(surface),
+  );
+  const nextActionsSurfaces = surfaceArray.filter(isNextActionsSurface);
+
   return (
     <div className="flex flex-col gap-4 w-full">
-      {surfaceArray.map(renderSurface)}
+      {presentationSurfaces.map(renderSurface)}
       {content.trim() && <Answer text={content.trim()} />}
+      {nextActionsSurfaces.map(renderSurface)}
     </div>
   );
 }
