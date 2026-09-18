@@ -1,4 +1,4 @@
-import {type ReactNode, memo} from 'react';
+import {memo} from 'react';
 import {useNavigate} from 'react-router';
 import cx from '~/lib/cx';
 import type {ConversationMessage} from '~/types/conversation';
@@ -10,67 +10,18 @@ import type {
 } from '~/lib/generative/a2ui/surface-manager';
 import {deserializeSurface} from '~/lib/generative/a2ui/surface-manager';
 
-function resolveStringProp(value: unknown): string | null {
-  if (typeof value === 'string') return value || null;
-  if (value && typeof value === 'object') {
-    const obj = value as Record<string, unknown>;
-    if (typeof obj.literalString === 'string') return obj.literalString || null;
-  }
-  return null;
-}
-
-function extractSurfaceHeadline(
-  serialized: SerializableSurfaceState,
-): string | null {
-  if (!serialized.root) return null;
-  const rootComp = serialized.components.find((c) => c.id === serialized.root);
-  if (!rootComp) return null;
-  const catalogId = rootComp.catalogComponentId;
-  const props = (rootComp.component as Record<string, unknown>)[catalogId] as
-    | Record<string, unknown>
-    | undefined;
-  if (!props) return null;
-  return resolveStringProp(props.heading) ?? resolveStringProp(props.headline);
-}
-
-function splitTextIntoSections(
-  text: string,
-): Array<{heading: string | null; body: string}> {
-  const normalised = text.replace(/([^\n])(#{2,3} )/g, '$1\n$2');
-
-  const lines = normalised.split('\n');
-  const sections: Array<{heading: string | null; body: string}> = [];
-  let currentHeading: string | null = null;
-  let currentLines: string[] = [];
-
-  for (const line of lines) {
-    const headingMatch = line.match(/^#{1,3}\s+(.+)/);
-    if (headingMatch) {
-      const body = currentLines.join('\n').trim();
-      if (body || currentHeading !== null) {
-        sections.push({heading: currentHeading, body});
-      }
-      currentHeading = headingMatch[1].trim();
-      currentLines = [];
-    } else {
-      currentLines.push(line);
-    }
-  }
-
-  const body = currentLines.join('\n').trim();
-  if (body || currentHeading !== null) {
-    sections.push({heading: currentHeading, body});
-  }
-
-  return sections;
-}
-
 type MessageBubbleProps = {
   message: ConversationMessage;
   isStreaming: boolean;
   onFollowUpClick?: (message: string) => void;
   onProductSelect?: (productId: string) => void;
 };
+
+function isNextActionsSurface(surface: SurfaceState): boolean {
+  return Array.from(surface.components.values()).some(
+    (component) => component.catalogComponentId === 'NextActionsBar',
+  );
+}
 
 function MessageBubbleComponent({
   message,
@@ -240,55 +191,16 @@ function AssistantMessageContent({
     />
   );
 
-  const headlineToSurface = new Map<string, SurfaceState>();
+  const presentationSurfaces = surfaceArray.filter(
+    (surface) => !isNextActionsSurface(surface),
+  );
+  const nextActionsSurfaces = surfaceArray.filter(isNextActionsSurface);
 
-  for (let i = 0; i < surfaceEntries.length; i++) {
-    const headline = extractSurfaceHeadline(surfaceEntries[i]);
-    if (headline) {
-      headlineToSurface.set(headline.toLowerCase(), surfaceArray[i]);
-    }
-  }
-
-  const sections = splitTextIntoSections(content);
-  const hasSplitPoints = sections.some((s) => s.heading !== null);
-
-  if (!hasSplitPoints) {
-    return (
-      <div className="flex flex-col gap-4 w-full">
-        {content.trim() && <Answer text={content.trim()} />}
-        {surfaceArray.map(renderSurface)}
-      </div>
-    );
-  }
-
-  // Multi-intent: interleave text sections with their matched surfaces.
-  const renderedSurfaceIds = new Set<string>();
-  const nodes: ReactNode[] = [];
-
-  for (const section of sections) {
-    if (section.body) {
-      nodes.push(
-        <Answer
-          key={`text-${section.heading ?? 'intro'}`}
-          text={section.body}
-        />,
-      );
-    }
-
-    if (section.heading) {
-      const matched = headlineToSurface.get(section.heading.toLowerCase());
-      if (matched) {
-        nodes.push(renderSurface(matched));
-        renderedSurfaceIds.add(matched.surfaceId);
-      }
-    }
-  }
-
-  for (const surface of surfaceArray) {
-    if (!renderedSurfaceIds.has(surface.surfaceId)) {
-      nodes.push(renderSurface(surface));
-    }
-  }
-
-  return <div className="flex flex-col gap-4 w-full">{nodes}</div>;
+  return (
+    <div className="flex flex-col gap-4 w-full">
+      {presentationSurfaces.map(renderSurface)}
+      {content.trim() && <Answer text={content.trim()} />}
+      {nextActionsSurfaces.map(renderSurface)}
+    </div>
+  );
 }

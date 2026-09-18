@@ -410,7 +410,9 @@ export class AssistantStreamSession {
       this.activeReasoningMessageId = null;
     }
 
-    if (this.pendingFinalReasoningBlock) {
+    // AG-UI may close its reasoning lifecycle after the final text message.
+    // Preserve that reasoning only as a fallback when the agent produced no answer.
+    if (this.pendingFinalReasoningBlock && !this.accumulatedContent.trim()) {
       this.setAssistantMessageContent(this.pendingFinalReasoningBlock);
     }
   }
