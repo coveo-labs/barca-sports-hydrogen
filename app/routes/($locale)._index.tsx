@@ -19,7 +19,7 @@ import {
 import {HEADER_QUERY} from '~/lib/shopify/fragments';
 
 export const meta: MetaFunction = () => {
-  return [{title: 'Hydrogen | Home'}];
+  return [{title: 'Home | Barca Shop'}];
 };
 
 export async function loader({request, context}: LoaderFunctionArgs) {

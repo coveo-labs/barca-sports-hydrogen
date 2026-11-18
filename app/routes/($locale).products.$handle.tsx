@@ -42,7 +42,10 @@ import {
 import {getVariantUrl} from '~/lib/shopify/variants';
 
 export const meta: MetaFunction<typeof loader> = ({data}) => {
-  return [{title: `Hydrogen | ${data?.product.title ?? ''}`}];
+  const productTitle = data?.product.title;
+  return [
+    {title: productTitle ? `${productTitle} | Barca Shop` : 'Barca Shop'},
+  ];
 };
 
 export type ProductHandleData = typeof loader;
