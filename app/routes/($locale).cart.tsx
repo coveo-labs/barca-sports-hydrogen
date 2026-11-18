@@ -31,7 +31,7 @@ import {
 import type {RootLoader} from '~/root';
 
 export const meta: MetaFunction = () => {
-  return [{title: `Hydrogen | Cart`}];
+  return [{title: `Cart | Barca Shop`}];
 };
 
 export interface CartReturn {

@@ -24,7 +24,7 @@ interface CategoryTree {
 }
 
 export const meta: MetaFunction<typeof loader> = () => {
-  return [{title: `Shop by Category | Barca Sports`}];
+  return [{title: `Shop by Category | Barca Shop`}];
 };
 
 function buildCategoryTree(categories: CategoryValue[]): CategoryTree {
